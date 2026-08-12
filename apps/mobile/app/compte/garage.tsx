@@ -167,7 +167,7 @@ export default function MonGarageScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.xs }}>
                 <StarIcon color={theme.colors.warning} size={16} />
                 {/* Note et décompte : deux données mesurées, donc en mono. */}
-                <Text variant="monoStrong">{formatNumber(data.rating, 1)}</Text>
+                <Text variant="num">{formatNumber(data.rating, 1)}</Text>
                 <Text variant="numSm" tone="muted">
                   {data.reviewCount}{' '}
                   {t(plural(data.reviewCount) === 'one' ? 'garage.reviewOne' : 'garage.reviewMany')}
@@ -272,7 +272,7 @@ export default function MonGarageScreen() {
 
           <View style={{ gap: theme.space.sm }}>
             {/* Numéro et adresse en mono : on les relit pour les vérifier. */}
-            <Text variant="monoStrong">{data.phone ?? '—'}</Text>
+            <Text variant="num">{data.phone ?? '—'}</Text>
             <Text variant="mono" tone="secondary">
               {data.email ?? '—'}
             </Text>

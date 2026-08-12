@@ -203,7 +203,7 @@ export default function GarageDetailScreen() {
                     marginTop: 2,
                   }}
                 >
-                  <Text variant="sectionLabel" tone="inverse">
+                  <Text variant="lbl" tone="inverse">
                     ✓ {t('garage.certified')}
                   </Text>
                 </View>
@@ -259,7 +259,7 @@ export default function GarageDetailScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.md }}>
               <SectionLabel>{t('garage.reviews')}</SectionLabel>
               <View style={{ flex: 1 }} />
-              <Text variant="monoStrong" tone="secondary">
+              <Text variant="num" tone="secondary">
                 {garage.reviewCount}
               </Text>
             </View>

@@ -134,7 +134,7 @@ export function GarageResultRow({
                   paddingVertical: 2,
                 }}
               >
-                <Text variant="sectionLabel" tone="inverse">
+                <Text variant="lbl" tone="inverse">
                   ✓ {t('garage.certified')}
                 </Text>
               </View>

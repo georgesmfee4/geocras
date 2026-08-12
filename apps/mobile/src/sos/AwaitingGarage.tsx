@@ -163,7 +163,7 @@ export function AwaitingGarage({
                   paddingVertical: 2,
                 }}
               >
-                <Text variant="sectionLabel" tone="inverse">
+                <Text variant="lbl" tone="inverse">
                   ✓ {t('garage.certified')}
                 </Text>
               </View>
@@ -351,5 +351,5 @@ function ElapsedClock({ since }: { since: string | null }) {
 
   const seconds = since === null ? null : elapsedSecondsSince(since, now);
 
-  return <Text variant="monoStrong">{seconds === null ? '—' : formatElapsed(seconds)}</Text>;
+  return <Text variant="num">{seconds === null ? '—' : formatElapsed(seconds)}</Text>;
 }

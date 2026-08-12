@@ -318,7 +318,7 @@ function DefaultBadge() {
         paddingRight: theme.space.md,
       }}
     >
-      <Text variant="sectionLabel" style={{ color: theme.colors.onHighlight }}>
+      <Text variant="lbl" style={{ color: theme.colors.onHighlight }}>
         {t('settings.vehicleDefault')}
       </Text>
     </ChamferView>

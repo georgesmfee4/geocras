@@ -275,7 +275,7 @@ function StatusBadge({ status, color }: { status: RequestStatus; color: string }
         paddingVertical: 2,
       }}
     >
-      <Text variant="sectionLabel" style={{ color }}>
+      <Text variant="lbl" style={{ color }}>
         {REQUEST_STATUS_LABELS[status][locale]}
       </Text>
     </View>

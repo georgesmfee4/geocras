@@ -406,7 +406,7 @@ export default function ResultatsScreen() {
               <Skeleton width={128} height={16} />
             ) : (
               <>
-                <Text variant="monoStrong">{results.length}</Text>
+                <Text variant="num">{results.length}</Text>
                 <Text variant="txt" tone="secondary">
                   {t(results.length === 1 ? 'results.countOne' : 'results.count')}
                 </Text>

@@ -349,7 +349,7 @@ function NextTierCard({ summary }: { summary: LoyaltySummary }) {
           </Text>
 
           {next ? (
-            <Text variant="monoStrong" style={{ color: tierColor(next.id, theme.colors) }}>
+            <Text variant="num" style={{ color: tierColor(next.id, theme.colors) }}>
               −{next.discountPct} %
             </Text>
           ) : null}
@@ -460,7 +460,7 @@ function EarnRow({
       <Text variant="txt" tone="secondary" style={{ flexShrink: 1 }}>
         {LOYALTY_REASON_LABELS[reason][locale]}
       </Text>
-      <Text variant="monoStrong" tone="primary">
+      <Text variant="num" tone="primary">
         +{points} {t('loyalty.points')}
       </Text>
     </View>
@@ -497,7 +497,7 @@ function EntryRow({ entry }: { entry: LoyaltyEntry }) {
       </View>
 
       <Text
-        variant="monoStrong"
+        variant="num"
         tone={entry.state === 'reversed' ? 'muted' : entry.deltaPoints >= 0 ? 'success' : 'primary'}
       >
         {entry.deltaPoints >= 0 ? '+' : ''}

@@ -432,7 +432,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
                     paddingVertical: 3,
                   }}
                 >
-                  <Text variant="sectionLabel" style={{ color: theme.colors.ink }}>
+                  <Text variant="lbl" style={{ color: theme.colors.ink }}>
                     {t('drawer.beta')}
                   </Text>
                 </View>

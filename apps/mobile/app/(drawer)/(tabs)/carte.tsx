@@ -448,7 +448,7 @@ export default function CarteScreen() {
                 gap: theme.space.sm,
               }}
             >
-              <Text variant="sectionLabel" style={{ color: theme.colors.ink }}>
+              <Text variant="lbl" style={{ color: theme.colors.ink }}>
                 Position simulée
               </Text>
               {origin ? (
@@ -927,7 +927,7 @@ function PositionRow({
       </View>
 
       <View style={{ flex: 1 }}>
-        <Text variant="sectionLabel" style={{ color: theme.colors.sectionLabel }}>
+        <Text variant="lbl" style={{ color: theme.colors.sectionLabel }}>
           {t('map.exactPosition')}
         </Text>
 

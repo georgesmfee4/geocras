@@ -222,7 +222,7 @@ function TrackingBand() {
 
         <View style={{ flexDirection: 'row', gap: theme.space.xl }}>
           <View style={{ flex: 1 }}>
-            <Text variant="sectionLabel" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <Text variant="lbl" style={{ color: 'rgba(255,255,255,0.6)' }}>
               {t('tracking.toYou')}
             </Text>
             <Text variant="h1" style={{ color: '#FFFFFF' }}>
@@ -231,7 +231,7 @@ function TrackingBand() {
           </View>
 
           <View style={{ flex: 1 }}>
-            <Text variant="sectionLabel" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <Text variant="lbl" style={{ color: 'rgba(255,255,255,0.6)' }}>
               {t('tracking.toGarage')}
             </Text>
             <Text variant="h1" tone="primary">

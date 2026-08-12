@@ -159,14 +159,14 @@ export function NoGarageFound({
             entraient en concurrence pour la même largeur, et c'est le nom —
             la seule information utile — qui se faisait couper.
           */}
-          <Text variant="sectionLabel" style={{ color: theme.colors.sectionLabel }}>
+          <Text variant="lbl" style={{ color: theme.colors.sectionLabel }}>
             {t('results.nearestOutside')}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
             <Text variant="h2" numberOfLines={1} style={{ flex: 1 }}>
               {fallbackName}
             </Text>
-            <Text variant="monoStrong" tone="primary">
+            <Text variant="num" tone="primary">
               {formatDistance(fallbackDistanceM)}
             </Text>
           </View>

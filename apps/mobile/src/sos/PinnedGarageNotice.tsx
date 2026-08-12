@@ -61,7 +61,7 @@ export function PinnedGarageNotice({ pointing, onDismiss }: PinnedGarageNoticePr
       >
         <View style={{ flex: 1, gap: 3 }}>
           <Text
-            variant="sectionLabel"
+            variant="lbl"
             style={{ color: theme.colors.onHighlight, opacity: 0.7 }}
           >
             {t('results.pinnedLabel')}

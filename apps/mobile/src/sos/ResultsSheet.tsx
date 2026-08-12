@@ -296,7 +296,7 @@ export const ResultsSheet = forwardRef<ResultsSheetRef, ResultsSheetProps>(funct
             {/* Le décompte et le tri sont la légende de la liste : ils disent
                 sur quoi porte ce qu'on lit juste en dessous. Le nombre est en
                 mono, c'est une mesure. */}
-            <Text variant="monoStrong">{garages.length}</Text>
+            <Text variant="num">{garages.length}</Text>
             <Text variant="caption" tone="muted" numberOfLines={1} style={{ flexShrink: 1 }}>
               {t('results.sortedBy')} {sortLabel.toLowerCase()}
             </Text>

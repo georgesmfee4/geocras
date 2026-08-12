@@ -237,7 +237,7 @@ function ConfirmSheet({
                 paddingVertical: 2,
               }}
             >
-              <Text variant="sectionLabel" tone="inverse">
+              <Text variant="lbl" tone="inverse">
                 ✓ {t('garage.certified')}
               </Text>
             </View>
@@ -387,7 +387,7 @@ function VisibilityCell({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         {icon}
         <Text
-          variant="sectionLabel"
+          variant="lbl"
           numberOfLines={1}
           style={{ color: theme.colors.sectionLabel, flexShrink: 1 }}
         >

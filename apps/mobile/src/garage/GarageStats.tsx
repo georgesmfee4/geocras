@@ -88,7 +88,7 @@ function StatCell({
 
   return (
     <View style={{ flex: 1, paddingVertical: theme.space.md, alignItems: 'center', gap: 2 }}>
-      <Text variant="monoStrong" tone={valueTone} numberOfLines={1}>
+      <Text variant="num" tone={valueTone} numberOfLines={1}>
         {value}
       </Text>
       <Text variant="caption" tone={labelTone} numberOfLines={1}>

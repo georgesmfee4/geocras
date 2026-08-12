@@ -413,7 +413,7 @@ export default function DevenirGaragisteScreen() {
                 <MapPinIcon color={theme.colors.userPositionDeep} size={20} />
                 <View style={{ flex: 1 }}>
                   {/* Coordonnées et précision : données mesurées, donc mono. */}
-                  <Text variant="monoStrong">
+                  <Text variant="num">
                     {formatNumber(point.lat, 5)} · {formatNumber(point.lng, 5)}
                   </Text>
 
