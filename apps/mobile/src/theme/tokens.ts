@@ -10,6 +10,8 @@
  * bleuté nulle part, pas même dans les ombres).
  */
 
+import { plexType } from './typography';
+
 const lightColors = {
   primary: '#E53935',
   primaryDark: '#C62A26',
@@ -302,7 +304,11 @@ export function em(fontSize: number, factor: number): number {
 export type TextVariant = keyof typeof type;
 
 export const type = {
-  // — Inter —
+  ...plexType,
+
+  // — Inter — échelle historique, remplacée écran par écran par `plexType`.
+  // Elle reste tant que tous les appels n'ont pas basculé : la retirer avant
+  // ferait tomber en police système chaque `<Text variant="body">` non repris.
   display: { fontFamily: fonts.sans.extrabold, fontSize: 28, lineHeight: 34 },
   title: { fontFamily: fonts.sans.extrabold, fontSize: 20, lineHeight: 26 },
   heading: { fontFamily: fonts.sans.bold, fontSize: 17, lineHeight: 22 },
@@ -366,6 +372,8 @@ export const type = {
     textTransform: 'uppercase' as const,
   },
 } as const;
+
+export type { PlexVariant } from './typography';
 
 /** Filet rouge de 14 × 2 px qui précède chaque intitulé de section. */
 export const sectionRule = { width: 14, height: 2 } as const;
