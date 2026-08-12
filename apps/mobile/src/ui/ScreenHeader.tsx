@@ -57,7 +57,13 @@ export function ScreenHeader({ title, action }: { title: string; action?: ReactN
         <ChevronLeftIcon color={theme.colors.ink} />
       </Pressable>
 
-      <Text variant="heading" numberOfLines={1} style={{ flex: 1 }}>
+      {/*
+        Titre d'écran : `h1`. Il gagne cinq points sur l'ancien `heading` — 22
+        au lieu de 17 — ce que la barre absorbe sans bouger, son gabarit étant
+        de 60 points pour 26 d'interligne. Le titre se tronque toujours plutôt
+        que de repousser le bouton d'action.
+      */}
+      <Text variant="h1" numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1 }}>
         {title}
       </Text>
 

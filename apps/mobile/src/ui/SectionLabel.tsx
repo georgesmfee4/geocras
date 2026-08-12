@@ -31,7 +31,13 @@ export function SectionLabel({
           backgroundColor: theme.colors.primary,
         }}
       />
-      <Text variant="sectionLabel" style={{ color: theme.colors.sectionLabel }}>
+      {/*
+        `lbl` est le niveau écrit pour ce composant : capitales, gras, filet
+        rouge devant. Il monte de 10 à 11 px et son interlettrage passe de 1,6
+        à 1,76 point — l'intitulé gagne à peine deux points de large, et rien
+        ici n'est contraint en largeur.
+      */}
+      <Text variant="lbl" style={{ color: theme.colors.sectionLabel }}>
         {children}
       </Text>
     </View>
