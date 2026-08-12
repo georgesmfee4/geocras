@@ -111,10 +111,9 @@ végétation `#D9E6C8`, bâtiments `#E6E1D6`.
 `GEOCRAS` en capitales. `GEO` en poids 500, `CRAS` en poids 800, letter-spacing .11em.
 Jamais « GeoCras » en CamelCase dans l'interface. Utiliser `<Wordmark>`.
 
-Il reste en **Inter** : ses deux graisses — 500 et 800 — n'ont pas d'équivalent parmi les
-trois graisses Plex Sans embarquées (400, 600, 700). Le faire basculer suppose de charger
-deux fichiers de police de plus, pour un mot qui n'apparaît qu'au splash et dans le
-tiroir : à décider séparément.
+Rendu en **IBM Plex Sans 400 / 700**. Les poids 500 et 800 n'existent pas parmi les trois
+graisses embarquées, mais 400 / 700 conserve l'écart de trois crans qui fait la lecture du
+mot — c'est le contraste qui compte, pas la graisse absolue.
 
 ## Conventions
 - Commits : `feat(carte): …`, `fix(sos): …`

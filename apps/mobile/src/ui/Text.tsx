@@ -5,7 +5,7 @@ import {
   type TextStyle,
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
-import type { TextVariant } from '../theme/tokens';
+import { fonts, type TextVariant } from '../theme/tokens';
 
 export type TextTone = 'ink' | 'secondary' | 'muted' | 'primary' | 'success' | 'warning' | 'inverse';
 
@@ -98,7 +98,16 @@ export function Text({ variant = 'body', tone = 'ink', style, ...rest }: TextPro
 }
 
 /**
- * Wordmark GEOCRAS : `GEO` en poids 500, `CRAS` en poids 800.
+ * Wordmark GEOCRAS.
+ *
+ * `GEO` léger, `CRAS` gras : c'est l'écart entre les deux qui fait le mot,
+ * pas leur graisse absolue. Le cahier des charges le note 500 / 800 ; IBM Plex
+ * Sans n'embarque ici que 400, 600 et 700, et **400 / 700 rend le même écart
+ * de trois crans** — la lecture du logotype est préservée.
+ *
+ * Il aurait pu rester en Inter, mais un logotype dans une famille que plus
+ * rien n'emploie autour de lui se remarque, et pas en bien.
+ *
  * Jamais « GeoCras » en CamelCase dans l'interface.
  */
 export function Wordmark({
@@ -125,8 +134,8 @@ export function Wordmark({
       accessibilityRole="header"
       accessibilityLabel="GeoCras"
     >
-      <RNText style={{ fontFamily: 'Inter_500Medium' }}>GEO</RNText>
-      <RNText style={{ fontFamily: 'Inter_800ExtraBold' }}>CRAS</RNText>
+      <RNText style={{ fontFamily: fonts.sans.regular }}>GEO</RNText>
+      <RNText style={{ fontFamily: fonts.sans.bold }}>CRAS</RNText>
     </RNText>
   );
 }
