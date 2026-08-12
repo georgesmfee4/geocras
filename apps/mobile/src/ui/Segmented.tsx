@@ -76,9 +76,10 @@ export function Segmented<T extends string>({
             {option.glyph?.(contentColor)}
 
             <Text
-              variant={active ? 'bodyStrong' : 'body'}
+              variant={active ? 'h2' : 'txt'}
               style={{ color: active ? contentColor : theme.colors.inkSecondary }}
               numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {option.label}
             </Text>

@@ -121,7 +121,7 @@ export default function ParametresScreen() {
               ]}
             />
 
-            <Text variant="small" tone="muted">
+            <Text variant="txt" tone="muted">
               {t('settings.appearanceHint')}
             </Text>
           </View>
@@ -173,7 +173,7 @@ export default function ParametresScreen() {
           */}
           {notifications.granted === true ? (
             <Text
-              variant="small"
+              variant="txt"
               tone="muted"
               style={{ paddingHorizontal: theme.space.xl, paddingTop: theme.space.sm }}
             >
@@ -203,7 +203,7 @@ export default function ParametresScreen() {
           </SettingsCard>
 
           <Text
-            variant="small"
+            variant="txt"
             tone="muted"
             style={{ paddingHorizontal: theme.space.xl, paddingTop: theme.space.sm }}
           >
@@ -230,8 +230,9 @@ export default function ParametresScreen() {
           <SettingsCard>
             <LinkRow
               label={t('settings.support')}
+              // Un numéro se relit chiffre par chiffre : donnée mesurée, donc mono.
               value={
-                <Text variant="monoSmall" tone="muted">
+                <Text variant="numSm" tone="muted">
                   {env.supportPhone}
                 </Text>
               }
@@ -248,8 +249,14 @@ export default function ParametresScreen() {
           </SettingsCard>
         </Section>
 
+        {/*
+          Numéro de version : donnée mesurée, donc `numSm`. C'est le niveau le
+          plus proche de l'ancien `footnote`, à ceci près qu'il n'emporte ni
+          les capitales ni l'interlettrage large — le libellé est déjà écrit en
+          capitales, l'écart tient au seul espacement.
+        */}
         <Text
-          variant="footnote"
+          variant="numSm"
           tone="muted"
           style={{ textAlign: 'center', paddingTop: theme.space.lg }}
         >

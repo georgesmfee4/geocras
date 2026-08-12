@@ -1,6 +1,7 @@
 import { Children, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
+import { size } from '../theme/sizes';
 import { MIN_TOUCH_TARGET } from '../theme/tokens';
 import { CheckIcon, ChevronRightSmallIcon } from './icons';
 import { Switch } from './Switch';
@@ -48,8 +49,30 @@ export function SettingsCard({ children }: { children: ReactNode }) {
   );
 }
 
-/** Hauteur commune à toutes les lignes de réglage — une rangée régulière se lit plus vite. */
+/**
+ * Hauteur d'une ligne de réglage.
+ *
+ * Deux cas, et un seul est arbitré.
+ *
+ * **Sans phrase d'aide** — c'est la ligne de la maquette 10 : un libellé, un
+ * contrôle, rien d'autre. Hauteur figée à `size.rowH`, 48 points. Le libellé
+ * en `h2` occupe 19 points de hauteur de ligne entre deux marges de 12 : 43
+ * au total, cinq points de marge.
+ *
+ * **Avec phrase d'aide** — le produit en a ajouté une là où la maquette n'en
+ * montrait pas, et elle porte de l'information réelle (« l'autorisation est
+ * refusée, passez par les réglages »). Le compte y devient 12 + 19 + 2 + 20 +
+ * 12, soit 65 points : figer ces lignes à 48 les rognerait. Elles gardent donc
+ * leur `minHeight` d'origine en attendant que le gabarit à deux lignes soit
+ * relevé sur maquette — l'inventer ici reviendrait à décider du dessin.
+ */
 const ROW_HEIGHT = MIN_TOUCH_TARGET + 14;
+
+/** Ligne d'une seule ligne : gabarit fixe, conforme à la maquette. */
+const singleLine = { height: size.rowH } as const;
+
+/** Ligne à deux lignes : hauteur encore déduite du contenu, cf. ci-dessus. */
+const withHint = { minHeight: ROW_HEIGHT } as const;
 
 /**
  * Ligne à choix unique, cochée quand elle est retenue.
@@ -79,7 +102,7 @@ export function OptionRow({
       accessibilityState={{ selected }}
       accessibilityLabel={hint ? `${label}. ${hint}` : label}
       style={({ pressed }) => ({
-        minHeight: ROW_HEIGHT,
+        ...(hint ? withHint : singleLine),
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.space.md,
@@ -89,11 +112,22 @@ export function OptionRow({
       })}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <Text variant={selected ? 'bodyStrong' : 'body'} tone={selected ? 'ink' : 'secondary'}>
+        {/*
+          `h2` retenu, `txt` non : le contraste de graisse — 600 contre 400 —
+          reste le premier signal de l'option choisie, avant la coche rouge et
+          avant l'encre pleine. Le libellé tient sur une ligne dans un gabarit
+          à hauteur contrainte, donc il se tronque plutôt que de repousser.
+        */}
+        <Text
+          variant={selected ? 'h2' : 'txt'}
+          tone={selected ? 'ink' : 'secondary'}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
           {label}
         </Text>
         {hint ? (
-          <Text variant="small" tone="muted">
+          <Text variant="txt" tone="muted">
             {hint}
           </Text>
         ) : null}
@@ -134,7 +168,7 @@ export function SwitchRow({
       accessibilityState={{ checked: value, disabled }}
       accessibilityLabel={hint ? `${label}. ${hint}` : label}
       style={({ pressed }) => ({
-        minHeight: ROW_HEIGHT,
+        ...(hint ? withHint : singleLine),
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.space.lg,
@@ -145,9 +179,11 @@ export function SwitchRow({
       })}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="body">{label}</Text>
+        <Text variant="h2" numberOfLines={1} ellipsizeMode="tail">
+          {label}
+        </Text>
         {hint ? (
-          <Text variant="small" tone="muted">
+          <Text variant="txt" tone="muted">
             {hint}
           </Text>
         ) : null}
@@ -188,7 +224,7 @@ export function LinkRow({
       accessibilityRole="button"
       accessibilityLabel={hint ? `${label}. ${hint}` : label}
       style={({ pressed }) => ({
-        minHeight: ROW_HEIGHT,
+        ...(hint ? withHint : singleLine),
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.space.md,
@@ -198,18 +234,25 @@ export function LinkRow({
       })}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="body" numberOfLines={1}>
+        <Text variant="h2" numberOfLines={1} ellipsizeMode="tail">
           {label}
         </Text>
         {hint ? (
-          <Text variant="small" tone="muted" numberOfLines={2}>
+          <Text variant="txt" tone="muted" numberOfLines={2} ellipsizeMode="tail">
             {hint}
           </Text>
         ) : null}
       </View>
 
       {value}
-      <ChevronRightSmallIcon color={theme.colors.muted} size={14} />
+      {/*
+        Le chevron mesure 14 px : très en deçà des 44 px de cible tactile. On
+        ne l'agrandit pas — la maquette le veut discret — on lui rend les
+        pixels manquants au doigt.
+      */}
+      <View hitSlop={size.hitSlop}>
+        <ChevronRightSmallIcon color={theme.colors.muted} size={14} />
+      </View>
     </Pressable>
   );
 }
