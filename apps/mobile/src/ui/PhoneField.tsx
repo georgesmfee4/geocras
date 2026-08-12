@@ -62,6 +62,7 @@ export function PhoneField({ label, value, onChangeText, hint, error }: PhoneFie
         </View>
 
         <TextInput
+          allowFontScaling={false}
           value={value}
           // On retire tout ce qui n'est pas un chiffre : les numéros se dictent
           // avec des espaces et se collent avec des indicatifs.

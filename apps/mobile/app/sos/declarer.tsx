@@ -949,6 +949,7 @@ function FreeText({
       </View>
 
       <TextInput
+        allowFontScaling={false}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

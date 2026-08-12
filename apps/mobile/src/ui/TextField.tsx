@@ -32,7 +32,12 @@ export function TextField({ label, hint, error, mono = false, style, ...rest }: 
     <View style={{ gap: theme.space.sm }}>
       <Text variant="bodyStrong">{label}</Text>
 
+      {/*
+        Même règle que `<Text>` : la saisie ne suit pas la taille de police du
+        système. Le champ a une hauteur fixe ; un texte agrandi y serait rogné.
+      */}
       <TextInput
+        allowFontScaling={false}
         placeholderTextColor={theme.colors.muted}
         accessibilityLabel={label}
         style={[

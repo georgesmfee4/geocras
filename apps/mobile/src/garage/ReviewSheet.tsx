@@ -241,6 +241,7 @@ function SheetBody({
           </View>
 
           <TextInput
+            allowFontScaling={false}
             value={comment}
             onChangeText={setComment}
             placeholder={t('review.commentPlaceholder')}

@@ -178,6 +178,7 @@ export default function ConnexionScreen() {
             <View style={{ gap: theme.space.sm }}>
               <Text variant="bodyStrong">{t('auth.fullName')}</Text>
               <TextInput
+                allowFontScaling={false}
                 value={fullName}
                 onChangeText={setFullName}
                 placeholder={t('auth.fullNamePlaceholder')}
@@ -210,6 +211,7 @@ export default function ConnexionScreen() {
               </View>
 
               <TextInput
+                allowFontScaling={false}
                 value={localPhone}
                 // On retire tout ce qui n'est pas un chiffre : les numéros se
                 // dictent avec des espaces, et se collent avec des indicatifs.
@@ -234,6 +236,7 @@ export default function ConnexionScreen() {
           <View style={{ gap: theme.space.sm }}>
             <Text variant="bodyStrong">{t('auth.password')}</Text>
             <TextInput
+              allowFontScaling={false}
               value={password}
               onChangeText={setPassword}
               placeholder={t('auth.passwordPlaceholder')}

@@ -490,6 +490,7 @@ export default function CarteScreen() {
             <MagnifierIcon color={theme.colors.inkSecondary} />
 
             <TextInput
+              allowFontScaling={false}
               value={query}
               onChangeText={setQuery}
               placeholder={t('map.searchPlaceholder')}
