@@ -51,7 +51,7 @@ export function SosHeader({ title, step, totalSteps, onBack, backLabel }: SosHea
           <ChevronLeftIcon color={theme.colors.ink} />
         </Pressable>
 
-        <Text variant="title" style={{ flex: 1 }} numberOfLines={1}>
+        <Text variant="h1" style={{ flex: 1 }} numberOfLines={1}>
           {title}
         </Text>
 

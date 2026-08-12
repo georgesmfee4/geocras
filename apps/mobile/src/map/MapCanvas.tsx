@@ -231,7 +231,7 @@ export const MapCanvas = forwardRef<MapCanvasRef, MapCanvasProps>(function MapCa
         ]}
       >
         <SectionLabel>Carte indisponible</SectionLabel>
-        <Text variant="body" style={{ textAlign: 'center' }}>
+        <Text variant="txt" style={{ textAlign: 'center' }}>
           Clé MapTiler absente.
         </Text>
         <Text variant="numSm" tone="muted" style={{ textAlign: 'center' }}>

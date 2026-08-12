@@ -221,7 +221,7 @@ function ConfirmSheet({
           </View>
 
           <View style={{ flex: 1, gap: 4 }}>
-            <Text variant="bodyStrong" numberOfLines={1}>
+            <Text variant="h2" numberOfLines={1}>
               {garage.name}
             </Text>
             <Text variant="mono" tone="secondary" numberOfLines={1}>
@@ -252,7 +252,7 @@ function ConfirmSheet({
             </Text>
           </View>
 
-          <Text variant="small" tone="secondary">
+          <Text variant="txt" tone="secondary">
             {t('confirm.privacyLead')}
           </Text>
 
@@ -284,7 +284,7 @@ function ConfirmSheet({
           </View>
 
           {problemLabel ? (
-            <Text variant="small" tone="muted" numberOfLines={1}>
+            <Text variant="txt" tone="muted" numberOfLines={1}>
               {t('results.forProblem')} {problemLabel}
             </Text>
           ) : null}
@@ -307,10 +307,10 @@ function ConfirmSheet({
           >
             <AlertIcon color={theme.colors.primary} size={18} />
             <View style={{ flex: 1, gap: 4 }}>
-              <Text variant="bodyStrong" tone="primary">
+              <Text variant="h2" tone="primary">
                 {t('confirm.irreversible')}
               </Text>
-              <Text variant="small" tone="secondary">
+              <Text variant="txt" tone="secondary">
                 {t('confirm.irreversibleLead')}
               </Text>
             </View>
@@ -333,7 +333,7 @@ function ConfirmSheet({
             envoi refusé qu'on ne voit pas se termine en second appui. */}
         {error ? (
           <View style={{ backgroundColor: theme.colors.primary, padding: theme.space.md }}>
-            <Text variant="small" tone="inverse">
+            <Text variant="txt" tone="inverse">
               {error}
             </Text>
           </View>

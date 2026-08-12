@@ -135,7 +135,7 @@ export function NoGarageFound({
 
         <View style={{ flex: 1, gap: 4 }}>
           <Text variant="heading">{t('results.empty')}</Text>
-          <Text variant="small" tone="secondary">
+          <Text variant="txt" tone="secondary">
             {t('results.emptyLead')}
           </Text>
         </View>
@@ -163,7 +163,7 @@ export function NoGarageFound({
             {t('results.nearestOutside')}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-            <Text variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }}>
+            <Text variant="h2" numberOfLines={1} style={{ flex: 1 }}>
               {fallbackName}
             </Text>
             <Text variant="monoStrong" tone="primary">

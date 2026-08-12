@@ -130,7 +130,7 @@ export function ActiveRequestSearch({ visible }: ActiveRequestSearchProps) {
             <Text variant="heading" style={{ textAlign: 'center' }}>
               {t('sos.checkingActive')}
             </Text>
-            <Text variant="small" tone="secondary" style={{ textAlign: 'center' }}>
+            <Text variant="txt" tone="secondary" style={{ textAlign: 'center' }}>
               {t('sos.checkingActiveLead')}
             </Text>
           </View>

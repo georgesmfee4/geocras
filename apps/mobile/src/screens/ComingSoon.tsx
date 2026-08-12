@@ -52,7 +52,7 @@ export function ComingSoon({
         }}
         showsVerticalScrollIndicator={false}
       >
-        <Text variant="body" tone="secondary">
+        <Text variant="txt" tone="secondary">
           {lead}
         </Text>
 
@@ -65,7 +65,7 @@ export function ComingSoon({
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
           <View style={{ gap: 2 }}>
-            <Text variant="bodyStrong" tone="primary">
+            <Text variant="h2" tone="primary">
               {t('common.callSupport')}
             </Text>
             {/* Le numéro en mono : c'est ce qu'on lit à voix haute pour le composer. */}

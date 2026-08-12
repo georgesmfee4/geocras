@@ -67,7 +67,7 @@ export function SavedVehiclePicker({
               <Icon color={active ? theme.colors.surface : theme.colors.inkSecondary} size={22} />
             }
           >
-            <Text variant="bodyStrong" numberOfLines={1}>
+            <Text variant="h2" numberOfLines={1}>
               {title}
             </Text>
             <Text variant="numSm" tone="muted" numberOfLines={1}>
@@ -95,10 +95,10 @@ export function SavedVehiclePicker({
           />
         }
       >
-        <Text variant="bodyStrong" numberOfLines={1}>
+        <Text variant="h2" numberOfLines={1}>
           {t('sos.otherVehicle')}
         </Text>
-        <Text variant="small" tone="muted" numberOfLines={1}>
+        <Text variant="txt" tone="muted" numberOfLines={1}>
           {t('sos.otherVehicleHint')}
         </Text>
       </Row>

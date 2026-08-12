@@ -73,7 +73,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
         </Text>
       </View>
 
-      {review.comment ? <Text variant="body">{review.comment}</Text> : null}
+      {review.comment ? <Text variant="txt">{review.comment}</Text> : null}
     </View>
   );
 }

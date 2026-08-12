@@ -102,7 +102,7 @@ export function OpeningHoursField({
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-                <Text variant="bodyStrong" numberOfLines={1} style={{ width: 80 }}>
+                <Text variant="h2" numberOfLines={1} style={{ width: 80 }}>
                   {t(`day.${day}`)}
                 </Text>
 

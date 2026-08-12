@@ -49,7 +49,7 @@ export function LegalPage({
         }}
         showsVerticalScrollIndicator={false}
       >
-        <Text variant="body" tone="secondary">
+        <Text variant="txt" tone="secondary">
           {intro}
         </Text>
 
@@ -63,7 +63,7 @@ export function LegalPage({
             gap: theme.space.md,
           }}
         >
-          <Text variant="small" tone="muted">
+          <Text variant="txt" tone="muted">
             {t('legal.provisional')}
           </Text>
 
@@ -73,7 +73,7 @@ export function LegalPage({
             hitSlop={8}
             style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
           >
-            <Text variant="bodyStrong" tone="primary">
+            <Text variant="h2" tone="primary">
               {t('legal.contact')}
             </Text>
           </Pressable>
@@ -105,7 +105,7 @@ export function LegalSection({ label, points }: { label: string; points: readonl
               backgroundColor: theme.colors.ink,
             }}
           />
-          <Text variant="small" tone="secondary" style={{ flex: 1 }}>
+          <Text variant="txt" tone="secondary" style={{ flex: 1 }}>
             {point}
           </Text>
         </View>

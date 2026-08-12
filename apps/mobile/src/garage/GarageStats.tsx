@@ -151,7 +151,7 @@ export function OpeningHoursTable({ hours }: { hours: OpeningHours | null }) {
                 {range}
               </Text>
             ) : (
-              <Text variant="small" tone="muted">
+              <Text variant="txt" tone="muted">
                 {t('garage.closed')}
               </Text>
             )}

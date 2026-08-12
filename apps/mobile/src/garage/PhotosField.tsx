@@ -195,11 +195,11 @@ export function PhotosField({
       </View>
 
       {failed ? (
-        <Text variant="small" tone="warning">
+        <Text variant="txt" tone="warning">
           {t('account.photoFailed')}
         </Text>
       ) : (
-        <Text variant="small" tone="muted">
+        <Text variant="txt" tone="muted">
           {t('becomeGarage.photosHint')}
         </Text>
       )}

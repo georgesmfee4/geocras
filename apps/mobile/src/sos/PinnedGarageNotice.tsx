@@ -66,7 +66,7 @@ export function PinnedGarageNotice({ pointing, onDismiss }: PinnedGarageNoticePr
           >
             {t('results.pinnedLabel')}
           </Text>
-          <Text variant="bodyStrong" style={{ color: theme.colors.onHighlight }}>
+          <Text variant="h2" style={{ color: theme.colors.onHighlight }}>
             {pointing ? t('results.pinnedLead') : t('results.pinnedMissing')}
           </Text>
         </View>

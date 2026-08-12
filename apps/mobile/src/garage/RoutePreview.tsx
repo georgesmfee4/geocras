@@ -98,7 +98,7 @@ export function RoutePreview({ garage, origin }: RoutePreviewProps) {
               paddingHorizontal: theme.space.xl,
             }}
           >
-            <Text variant="small" tone="muted" style={{ textAlign: 'center' }}>
+            <Text variant="txt" tone="muted" style={{ textAlign: 'center' }}>
               {t('garage.routeNoPosition')}
             </Text>
           </View>

@@ -126,7 +126,7 @@ export function AwaitingGarage({
             <Text variant="display" style={{ textAlign: 'center' }}>
               {t('awaiting.title')}
             </Text>
-            <Text variant="body" tone="secondary" style={{ textAlign: 'center' }}>
+            <Text variant="txt" tone="secondary" style={{ textAlign: 'center' }}>
               {t('awaiting.lead')}
             </Text>
           </View>
@@ -147,7 +147,7 @@ export function AwaitingGarage({
             <GarageThumb uri={garage.photos[0]} name={garage.name} size={52} />
 
             <View style={{ flex: 1, gap: 4 }}>
-              <Text variant="bodyStrong" numberOfLines={1}>
+              <Text variant="h2" numberOfLines={1}>
                 {garage.name}
               </Text>
               <Text variant="mono" tone="secondary" numberOfLines={1}>
@@ -198,13 +198,13 @@ export function AwaitingGarage({
           }}
         >
           <ShieldLockIcon color={theme.colors.primary} size={18} />
-          <Text variant="small" tone="secondary" style={{ flex: 1 }}>
+          <Text variant="txt" tone="secondary" style={{ flex: 1 }}>
             {t('awaiting.masked')}
           </Text>
         </View>
 
         <View style={{ gap: theme.space.md }}>
-          <Text variant="small" tone="muted" style={{ textAlign: 'center' }}>
+          <Text variant="txt" tone="muted" style={{ textAlign: 'center' }}>
             {t('awaiting.noAnswer')}
           </Text>
 
@@ -229,7 +229,7 @@ export function AwaitingGarage({
               opacity: cancelling ? 0.5 : pressed ? 0.6 : 1,
             })}
           >
-            <Text variant="bodyStrong" tone="primary">
+            <Text variant="h2" tone="primary">
               {t('results.cancelRequest')}
             </Text>
           </Pressable>

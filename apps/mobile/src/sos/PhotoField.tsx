@@ -93,7 +93,7 @@ export function PhotoField({ uri, state, onChange }: PhotoFieldProps) {
         />
 
         <View style={{ flex: 1 }}>
-          <Text variant="bodyStrong">{t('sos.photoAttached')}</Text>
+          <Text variant="h2">{t('sos.photoAttached')}</Text>
 
           {/*
             L'état est dit ici et nulle part ailleurs. Le signaler au moment
@@ -103,25 +103,25 @@ export function PhotoField({ uri, state, onChange }: PhotoFieldProps) {
           {state === 'uploading' ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
               <ActivityIndicator size="small" color={theme.colors.inkSecondary} />
-              <Text variant="small" tone="secondary">
+              <Text variant="txt" tone="secondary">
                 {t('sos.photoUploading')}
               </Text>
             </View>
           ) : state === 'unavailable' ? (
             // Rien à réessayer : c'est une clé absente sur le serveur.
-            <Text variant="small" tone="warning">
+            <Text variant="txt" tone="warning">
               {t('sos.photoNotConfigured')}
             </Text>
           ) : state === 'failed' ? (
-            <Text variant="small" tone="warning">
+            <Text variant="txt" tone="warning">
               {t('sos.photoUnavailable')}
             </Text>
           ) : state === 'ready' ? (
-            <Text variant="small" tone="success">
+            <Text variant="txt" tone="success">
               {t('sos.photoReady')}
             </Text>
           ) : (
-            <Text variant="small" tone="muted">
+            <Text variant="txt" tone="muted">
               {t('sos.photoOptional')}
             </Text>
           )}

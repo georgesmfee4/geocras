@@ -198,7 +198,7 @@ export function GarageResultRow({
               paddingHorizontal: theme.space.md,
             }}
           >
-            <Text variant="bodyStrong" tone="inverse" numberOfLines={1}>
+            <Text variant="h2" tone="inverse" numberOfLines={1}>
               {t('garage.sendSos')}
             </Text>
           </ChamferView>

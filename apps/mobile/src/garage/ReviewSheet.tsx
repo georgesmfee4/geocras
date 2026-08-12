@@ -170,10 +170,10 @@ function SheetBody({
         <View style={{ gap: theme.space.md }}>
           <SectionLabel>{t('review.label')}</SectionLabel>
           <Text variant="display">{t('review.title')}</Text>
-          <Text variant="bodyStrong" tone="secondary" numberOfLines={2}>
+          <Text variant="h2" tone="secondary" numberOfLines={2}>
             {garageName}
           </Text>
-          <Text variant="small" tone="muted">
+          <Text variant="txt" tone="muted">
             {t('review.lead')}
           </Text>
         </View>
@@ -282,7 +282,7 @@ function SheetBody({
       >
         {error ? (
           <View style={{ backgroundColor: theme.colors.primary, padding: theme.space.md }}>
-            <Text variant="small" tone="inverse">
+            <Text variant="txt" tone="inverse">
               {error}
             </Text>
           </View>

@@ -184,7 +184,7 @@ export function RequestCard({
         {/* Le garage passe avant la date : c'est lui qu'on cherche en revenant. */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.xs }}>
           <Text
-            variant="small"
+            variant="txt"
             tone={request.garageName ? 'secondary' : 'muted'}
             numberOfLines={1}
             style={{ flexShrink: 1 }}
@@ -214,7 +214,7 @@ export function RequestCard({
         </View>
 
         {request.status === 'cancelled' && request.cancelReason ? (
-          <Text variant="small" tone="muted" numberOfLines={2}>
+          <Text variant="txt" tone="muted" numberOfLines={2}>
             {t('history.cancelledBy')} : {request.cancelReason}
           </Text>
         ) : null}

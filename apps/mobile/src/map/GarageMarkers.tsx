@@ -115,7 +115,7 @@ export function GarageMarkers({ garages, onSelect, selectedId = null }: GarageMa
                     gap: theme.space.sm,
                   }}
                 >
-                  <Text variant="bodyStrong" tone="inverse" numberOfLines={1}>
+                  <Text variant="h2" tone="inverse" numberOfLines={1}>
                     {garage.name}
                   </Text>
                   <Text variant="numSm" tone="primary">

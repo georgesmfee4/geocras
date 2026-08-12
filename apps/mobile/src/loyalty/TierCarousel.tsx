@@ -250,7 +250,7 @@ function Row({ label, value, strong = false }: { label: string; value: string; s
         gap: theme.space.md,
       }}
     >
-      <Text variant="small" tone="secondary" style={{ flexShrink: 1 }}>
+      <Text variant="txt" tone="secondary" style={{ flexShrink: 1 }}>
         {label}
       </Text>
       <Text variant={strong ? 'monoStrong' : 'mono'} tone={strong ? 'ink' : 'secondary'}>
