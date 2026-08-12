@@ -1,0 +1,79 @@
+{
+  "expo": {
+    "name": "GeoCras",
+    "slug": "geocras",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "geocras",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "cm.geocras.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "GeoCras utilise votre position pour trouver les garages les plus proches et envoyer votre localisation en cas de panne.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "GeoCras suit votre position pendant une intervention pour calculer les temps d'arrivée des deux côtés."
+      }
+    },
+    "android": {
+      "package": "cm.geocras.app",
+      "backgroundColor": "#E53935",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#E53935"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "VIBRATE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#E53935"
+        }
+      ],
+      "expo-font",
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "GeoCras utilise votre position pour trouver les garages les plus proches."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GeoCras accède à vos photos pour joindre une image de la panne à votre demande d'assistance.",
+          "cameraPermission": "GeoCras utilise l'appareil photo pour joindre une image de la panne à votre demande d'assistance."
+        }
+      ],
+      "@maplibre/maplibre-react-native"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d40a680e-be65-413a-a47c-5e52c287ca8f"
+      }
+    }
+  }
+}

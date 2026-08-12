@@ -1,0 +1,282 @@
+import { sql, type Kysely, type Transaction } from 'kysely';
+import type { PartyRole, RequestEventType } from '@geocras/shared';
+import type { Database } from '../../db/types';
+import { latOf, lngOf, pointFromLatLng, type LatLng } from '../../db/geo';
+
+type Db = Kysely<Database> | Transaction<Database>;
+
+const REQUEST_COLUMNS = [
+  'r.id',
+  'r.client_id',
+  'r.vehicle_id',
+  'r.garage_id',
+  'r.vehicle_type',
+  'r.vehicle_label',
+  'r.problem_type',
+  'r.description',
+  'r.urgency',
+  'r.immobilized',
+  'r.vulnerable_passengers',
+  'r.photo_url',
+  'r.accuracy_m',
+  'r.status',
+  'r.last_seq',
+  'r.created_at',
+  'r.selected_at',
+  'r.accepted_at',
+  'r.en_route_at',
+  'r.garage_arrived_at',
+  'r.client_arrived_at',
+  'r.closed_at',
+  'r.cancelled_at',
+  'r.cancel_reason',
+] as const;
+
+export function selectRequest(db: Db) {
+  return db
+    .selectFrom('assistance_requests as r')
+    .select([
+      ...REQUEST_COLUMNS,
+      latOf('r.origin').as('origin_lat'),
+      lngOf('r.origin').as('origin_lng'),
+    ]);
+}
+
+export type RequestRow = Awaited<ReturnType<ReturnType<typeof selectRequest>['executeTakeFirst']>>;
+
+export async function findRequestById(db: Db, id: string) {
+  return selectRequest(db).where('r.id', '=', id).executeTakeFirst();
+}
+
+/**
+ * Demande active d'un client, s'il en a une.
+ *
+ * Le filtre reprend **mot pour mot** celui de l'index partiel
+ * `requests_one_active_per_client_idx` (`status NOT IN ('closed','cancelled')`).
+ * Ce n'est pas seulement de la performance : c'est ce qui garantit que cette
+ * lecture voit exactement la même demande que celle qui fait échouer une
+ * seconde création avec `REQUEST_ALREADY_ACTIVE`. Une définition d'« active »
+ * qui divergerait de l'index produirait le pire des cas — l'app dit qu'il n'y
+ * a rien en cours, et la base refuse quand même la nouvelle demande.
+ *
+ * `LIMIT 1` est une précaution formelle : l'index est UNIQUE, il ne peut pas y
+ * en avoir deux.
+ */
+export async function findActiveRequestForClient(db: Db, clientId: string) {
+  return selectRequest(db)
+    .where('r.client_id', '=', clientId)
+    .where('r.status', 'not in', ['closed', 'cancelled'])
+    .orderBy('r.created_at', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+}
+
+/**
+ * Détermine le rôle de l'appelant dans la demande.
+ *
+ * Le garagiste n'est pas désigné par un champ dédié : c'est le propriétaire du
+ * garage retenu. Passer par cette fonction plutôt que par une comparaison
+ * ad hoc évite qu'un endpoint oublie de vérifier `garages.owner_user_id` et
+ * laisse un tiers écouter la position de deux inconnus.
+ */
+export async function resolveParty(
+  db: Db,
+  requestId: string,
+  userId: string,
+): Promise<PartyRole | null> {
+  const row = await db
+    .selectFrom('assistance_requests as r')
+    .leftJoin('garages as g', 'g.id', 'r.garage_id')
+    .select(['r.client_id', 'g.owner_user_id'])
+    .where('r.id', '=', requestId)
+    .executeTakeFirst();
+
+  if (!row) return null;
+  if (row.client_id === userId) return 'client';
+  if (row.owner_user_id !== null && row.owner_user_id === userId) return 'garage';
+  return null;
+}
+
+/**
+ * Ajoute un événement au journal en incrémentant `last_seq` de façon atomique.
+ *
+ * Doit toujours être appelé dans la même transaction que le changement d'état
+ * qu'il décrit : c'est ce journal qui sert de piste d'audit anti-fraude ET de
+ * source de rejeu après reconnexion. Un événement manquant, et un client
+ * reconnecté ne rattrapera jamais son retard.
+ */
+export async function appendEvent(
+  trx: Transaction<Database>,
+  params: {
+    requestId: string;
+    type: RequestEventType;
+    actorUserId: string | null;
+    actorRole: PartyRole | null;
+    payload?: unknown;
+    location?: LatLng | null;
+  },
+): Promise<number> {
+  const updated = await trx
+    .updateTable('assistance_requests')
+    .set({ last_seq: sql<number>`last_seq + 1` })
+    .where('id', '=', params.requestId)
+    .returning('last_seq')
+    .executeTakeFirstOrThrow();
+
+  await trx
+    .insertInto('request_events')
+    .values({
+      request_id: params.requestId,
+      seq: updated.last_seq,
+      actor_user_id: params.actorUserId,
+      actor_role: params.actorRole,
+      type: params.type,
+      payload: JSON.stringify(params.payload ?? {}),
+      location: params.location ? pointFromLatLng(params.location) : null,
+    })
+    .execute();
+
+  return updated.last_seq;
+}
+
+/** Événements postérieurs à `afterSeq`, pour le rattrapage après coupure. */
+export async function findEventsAfter(db: Db, requestId: string, afterSeq: number) {
+  return db
+    .selectFrom('request_events')
+    .select(['seq', 'type', 'actor_user_id', 'actor_role', 'payload', 'created_at'])
+    .where('request_id', '=', requestId)
+    .where('seq', '>', afterSeq)
+    .orderBy('seq', 'asc')
+    .limit(200)
+    .execute();
+}
+
+export type LatestPosition = {
+  role: PartyRole;
+  lat: number;
+  lng: number;
+  speed_mps: number | null;
+  recorded_at: Date;
+};
+
+/** Dernière position connue de chaque partie. */
+export async function findLatestPositions(
+  db: Db,
+  requestId: string,
+): Promise<LatestPosition[]> {
+  const { rows } = await sql<LatestPosition>`
+    SELECT DISTINCT ON (role)
+      role,
+      ST_Y(location::geometry) AS lat,
+      ST_X(location::geometry) AS lng,
+      speed_mps,
+      recorded_at
+    FROM position_pings
+    WHERE request_id = ${requestId}
+    ORDER BY role, recorded_at DESC
+  `.execute(db);
+  return rows;
+}
+
+export async function insertPing(
+  db: Db,
+  params: {
+    requestId: string;
+    userId: string;
+    role: PartyRole;
+    position: LatLng;
+    speedMps: number | null;
+    headingDeg: number | null;
+    accuracyM: number | null;
+    recordedAt: Date;
+  },
+): Promise<void> {
+  await db
+    .insertInto('position_pings')
+    .values({
+      request_id: params.requestId,
+      user_id: params.userId,
+      role: params.role,
+      location: pointFromLatLng(params.position),
+      speed_mps: params.speedMps,
+      heading_deg: params.headingDeg,
+      accuracy_m: params.accuracyM,
+      recorded_at: params.recordedAt,
+    })
+    .execute();
+}
+
+/**
+ * Distance réellement parcourue par le garagiste, cumulée entre pings
+ * consécutifs.
+ *
+ * C'est la mesure qui casse la collusion statique : deux comptes complices qui
+ * se confirment mutuellement sans bouger produisent zéro mètre parcouru.
+ */
+export async function garageTravelMeters(db: Db, requestId: string): Promise<number> {
+  const { rows } = await sql<{ meters: number }>`
+    SELECT COALESCE(SUM(ST_Distance(location, previous)), 0)::float8 AS meters
+    FROM (
+      SELECT location, LAG(location) OVER (ORDER BY recorded_at) AS previous
+      FROM position_pings
+      WHERE request_id = ${requestId} AND role = 'garage'
+    ) steps
+    WHERE previous IS NOT NULL
+  `.execute(db);
+  return Number(rows[0]?.meters ?? 0);
+}
+
+/** Distance entre le lieu de la panne et le garage retenu, à la création. */
+export async function initialSeparationMeters(
+  db: Db,
+  requestId: string,
+): Promise<number | null> {
+  const { rows } = await sql<{ meters: number | null }>`
+    SELECT ST_Distance(r.origin, g.location)::float8 AS meters
+    FROM assistance_requests r
+    JOIN garages g ON g.id = r.garage_id
+    WHERE r.id = ${requestId}
+  `.execute(db);
+  const meters = rows[0]?.meters;
+  return meters === undefined || meters === null ? null : Number(meters);
+}
+
+/** Nombre d'interventions clôturées entre ce client et ce garage sur 30 jours. */
+export async function closedPairCount(
+  db: Db,
+  clientId: string,
+  garageId: string,
+): Promise<number> {
+  const row = await db
+    .selectFrom('assistance_requests')
+    .select(({ fn }) => fn.countAll<string>().as('count'))
+    .where('client_id', '=', clientId)
+    .where('garage_id', '=', garageId)
+    .where('status', '=', 'closed')
+    .where('closed_at', '>', sql<Date>`now() - interval '30 days'`)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
+export async function findGarageSummaryById(db: Db, garageId: string) {
+  return db
+    .selectFrom('garages as g')
+    .select([
+      'g.id',
+      'g.name',
+      'g.certified',
+      'g.phone',
+      'g.address_label',
+      'g.quarter',
+      'g.services',
+      'g.photos',
+      'g.review_count',
+      'g.owner_user_id',
+      sql<number>`g.rating::float8`.as('rating'),
+      latOf('g.location').as('lat'),
+      lngOf('g.location').as('lng'),
+      sql<boolean>`garage_is_open(g.opening_hours, now())`.as('open_now'),
+    ])
+    .where('g.id', '=', garageId)
+    .executeTakeFirst();
+}
