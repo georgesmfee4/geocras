@@ -98,7 +98,7 @@ export function Button({
               {label}
             </Text>
             {sublabel ? (
-              <Text variant="small" tone={labelTone} numberOfLines={1} style={{ opacity: 0.85 }}>
+              <Text variant="txt" tone={labelTone} numberOfLines={1} style={{ opacity: 0.85 }}>
                 {sublabel}
               </Text>
             ) : null}

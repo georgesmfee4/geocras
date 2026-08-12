@@ -46,7 +46,7 @@ export function PhoneField({ label, value, onChangeText, hint, error }: PhoneFie
 
   return (
     <View style={{ gap: theme.space.sm }}>
-      <Text variant="bodyStrong">{label}</Text>
+      <Text variant="h2">{label}</Text>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
         <View
@@ -88,11 +88,11 @@ export function PhoneField({ label, value, onChangeText, hint, error }: PhoneFie
       </View>
 
       {error ? (
-        <Text variant="small" tone="primary">
+        <Text variant="txt" tone="primary">
           {error}
         </Text>
       ) : hint ? (
-        <Text variant="small" tone="muted">
+        <Text variant="txt" tone="muted">
           {hint}
         </Text>
       ) : null}

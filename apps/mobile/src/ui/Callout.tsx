@@ -60,8 +60,8 @@ export function Callout({
       </View>
 
       <View style={{ flex: 1, gap: 2 }}>
-        {title ? <Text variant="bodyStrong">{title}</Text> : null}
-        <Text variant="small" tone={tone === 'danger' ? 'primary' : 'secondary'}>
+        {title ? <Text variant="h2">{title}</Text> : null}
+        <Text variant="txt" tone={tone === 'danger' ? 'primary' : 'secondary'}>
           {children}
         </Text>
       </View>

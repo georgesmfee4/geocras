@@ -142,7 +142,7 @@ export function SosButton({ title, subtitle, onPress, disabled = false }: SosBut
               {title}
             </Text>
             <Text
-              variant="small"
+              variant="txt"
               tone="inverse"
               numberOfLines={1}
               adjustsFontSizeToFit

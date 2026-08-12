@@ -30,7 +30,7 @@ export function TextField({ label, hint, error, mono = false, style, ...rest }: 
 
   return (
     <View style={{ gap: theme.space.sm }}>
-      <Text variant="bodyStrong">{label}</Text>
+      <Text variant="h2">{label}</Text>
 
       {/*
         Même règle que `<Text>` : la saisie ne suit pas la taille de police du
@@ -58,11 +58,11 @@ export function TextField({ label, hint, error, mono = false, style, ...rest }: 
       />
 
       {error ? (
-        <Text variant="small" tone="primary">
+        <Text variant="txt" tone="primary">
           {error}
         </Text>
       ) : hint ? (
-        <Text variant="small" tone="muted">
+        <Text variant="txt" tone="muted">
           {hint}
         </Text>
       ) : null}
