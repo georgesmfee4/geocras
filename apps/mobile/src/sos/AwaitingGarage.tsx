@@ -318,7 +318,7 @@ function Step({
         </Text>
 
         {detail ? (
-          <Text variant="monoSmall" tone={state === 'current' ? 'primary' : 'muted'}>
+          <Text variant="numSm" tone={state === 'current' ? 'primary' : 'muted'}>
             {detail}
           </Text>
         ) : null}

@@ -70,7 +70,7 @@ export function SavedVehiclePicker({
             <Text variant="bodyStrong" numberOfLines={1}>
               {title}
             </Text>
-            <Text variant="monoSmall" tone="muted" numberOfLines={1}>
+            <Text variant="numSm" tone="muted" numberOfLines={1}>
               {VEHICLE_LABELS[vehicle.type][locale]}
               {vehicle.year ? ` · ${vehicle.year}` : ''}
               {vehicle.isDefault ? ` · ${t('settings.vehicleDefault')}` : ''}

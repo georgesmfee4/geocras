@@ -76,7 +76,7 @@ export function GarageCard({ garage, onPress, width = 250, selected = false }: G
           style={{ position: 'absolute', top: 0, left: 0, width: 18, height: 18 }}
           contentStyle={{ width: 18, height: 18, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Text variant="monoStrong" tone="inverse" style={{ fontSize: 10, lineHeight: 13 }}>
+          <Text variant="numSm" tone="inverse" style={{ fontSize: 10, lineHeight: 13 }}>
             {garage.rank}
           </Text>
         </ChamferView>
@@ -84,13 +84,18 @@ export function GarageCard({ garage, onPress, width = 250, selected = false }: G
 
       <View style={{ flex: 1, gap: 2 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.xs }}>
-          <Text variant="bodyStrong" numberOfLines={1} style={{ flexShrink: 1 }}>
+          <Text
+            variant="h2"
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={{ flexShrink: 1 }}
+          >
             {garage.name}
           </Text>
           {garage.certified ? <CertifiedTick color={theme.colors.primary} /> : null}
         </View>
 
-        <Text variant="monoSmall" tone="secondary" numberOfLines={1}>
+        <Text variant="numSm" tone="secondary" numberOfLines={1}>
           ★{formatNumber(garage.rating)} · {formatDistance(garage.distanceM)} ·{' '}
           {formatDuration(garage.etaMin)}
         </Text>

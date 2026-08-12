@@ -234,7 +234,7 @@ export const MapCanvas = forwardRef<MapCanvasRef, MapCanvasProps>(function MapCa
         <Text variant="body" style={{ textAlign: 'center' }}>
           Clé MapTiler absente.
         </Text>
-        <Text variant="monoSmall" tone="muted" style={{ textAlign: 'center' }}>
+        <Text variant="numSm" tone="muted" style={{ textAlign: 'center' }}>
           EXPO_PUBLIC_MAPTILER_KEY
         </Text>
       </View>

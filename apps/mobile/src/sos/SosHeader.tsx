@@ -56,7 +56,7 @@ export function SosHeader({ title, step, totalSteps, onBack, backLabel }: SosHea
         </Text>
 
         {step !== undefined && totalSteps !== undefined ? (
-          <Text variant="monoSmall" tone="muted">
+          <Text variant="numSm" tone="muted">
             {step}/{totalSteps}
           </Text>
         ) : null}

@@ -69,7 +69,7 @@ export function Stars({ value, size = 13, showValue = false, reviewCount, style 
         ))}
       </View>
       {showValue ? (
-        <Text variant="monoSmall" tone="secondary">
+        <Text variant="numSm" tone="secondary">
           {label}
         </Text>
       ) : null}

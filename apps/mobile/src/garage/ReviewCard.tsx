@@ -62,13 +62,13 @@ export function ReviewCard({ review }: ReviewCardProps) {
         </ChamferView>
 
         <View style={{ flex: 1, gap: 3 }}>
-          <Text variant="bodyStrong" numberOfLines={1}>
+          <Text variant="h2" numberOfLines={1} ellipsizeMode="tail">
             {review.authorName}
           </Text>
           <Stars value={review.rating} size={12} />
         </View>
 
-        <Text variant="monoSmall" tone="muted">
+        <Text variant="numSm" tone="muted">
           {formatAge(review.createdAt)}
         </Text>
       </View>

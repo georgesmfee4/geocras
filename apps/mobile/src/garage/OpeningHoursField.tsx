@@ -125,7 +125,7 @@ export function OpeningHoursField({
                     accessibilityLabel={`${t(`day.${day}`)} ${t('hours.from')} ${open}`}
                   />
 
-                  <Text variant="monoSmall" tone="muted">
+                  <Text variant="numSm" tone="muted">
                     –
                   </Text>
 

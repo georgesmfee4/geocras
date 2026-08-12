@@ -69,7 +69,7 @@ export function ComingSoon({
               {t('common.callSupport')}
             </Text>
             {/* Le numéro en mono : c'est ce qu'on lit à voix haute pour le composer. */}
-            <Text variant="monoSmall" tone="muted">
+            <Text variant="numSm" tone="muted">
               {env.supportPhone}
             </Text>
           </View>

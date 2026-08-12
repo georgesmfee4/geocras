@@ -118,7 +118,7 @@ export function GarageMarkers({ garages, onSelect, selectedId = null }: GarageMa
                   <Text variant="bodyStrong" tone="inverse" numberOfLines={1}>
                     {garage.name}
                   </Text>
-                  <Text variant="monoSmall" tone="primary">
+                  <Text variant="numSm" tone="primary">
                     {formatDistance(garage.distanceM)}
                   </Text>
                 </View>

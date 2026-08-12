@@ -92,7 +92,7 @@ export function Accordion({
         </View>
 
         {summary && !open ? (
-          <Text variant="monoSmall" tone="muted">
+          <Text variant="numSm" tone="muted">
             {summary}
           </Text>
         ) : null}

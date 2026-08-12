@@ -121,7 +121,7 @@ export function GarageResultRow({
         </View>
 
         <View style={{ flex: 1, gap: 5 }}>
-          <Text variant="bodyStrong" numberOfLines={1}>
+          <Text variant="h2" numberOfLines={1} ellipsizeMode="tail">
             {garage.name}
           </Text>
 

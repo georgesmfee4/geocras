@@ -235,7 +235,7 @@ function SheetBody({
             {/* Le compteur décompte ce qui **reste**, pas ce qui est écrit :
                 c'est la seule des deux valeurs sur laquelle on décide de
                 couper une phrase. */}
-            <Text variant="monoSmall" tone={tight ? 'primary' : 'muted'}>
+            <Text variant="numSm" tone={tight ? 'primary' : 'muted'}>
               {remaining}
             </Text>
           </View>

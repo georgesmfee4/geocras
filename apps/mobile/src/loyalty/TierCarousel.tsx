@@ -202,7 +202,7 @@ function TierCard({
           <Text variant="heading" numberOfLines={1}>
             {tier.label[locale]}
           </Text>
-          <Text variant="monoSmall" tone="muted">
+          <Text variant="numSm" tone="muted">
             {t(
               state === 'current'
                 ? 'loyalty.stateCurrent'

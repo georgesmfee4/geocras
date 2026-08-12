@@ -172,7 +172,7 @@ export function RequestCard({
         })}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-          <Text variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }}>
+          <Text variant="h2" numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1 }}>
             {PROBLEM_LABELS[request.problemType][locale]}
           </Text>
 
@@ -198,17 +198,17 @@ export function RequestCard({
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
           {/* Date, heure et durée : trois mesures, donc mono et chiffres tabulaires. */}
-          <Text variant="monoSmall" tone="muted">
+          <Text variant="numSm" tone="muted">
             {formatDate(request.createdAt)} · {formatTime(request.createdAt)}
           </Text>
 
           {durationMin !== null ? (
-            <Text variant="monoSmall" tone="muted">
+            <Text variant="numSm" tone="muted">
               · {formatDuration(durationMin)}
             </Text>
           ) : null}
 
-          <Text variant="monoSmall" tone="muted" numberOfLines={1} style={{ flexShrink: 1 }}>
+          <Text variant="numSm" tone="muted" numberOfLines={1} style={{ flexShrink: 1 }}>
             · {vehicle}
           </Text>
         </View>
