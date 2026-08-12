@@ -275,13 +275,42 @@ export const MAP_PITCH_3D = 52;
 /** Cible tactile minimale imposée par le cahier des charges. */
 export const MIN_TOUCH_TARGET = 44;
 
+/**
+ * Familles de caractères.
+ *
+ * `sans` est passée d'Inter à IBM Plex Sans **sans toucher à une seule
+ * dimension** : chaque variante garde sa taille, son interligne et son
+ * interlettrage, seul le fichier de police change. C'est la façon la moins
+ * risquée de faire apparaître la nouvelle police partout — aucune hauteur de
+ * conteneur ne bouge, aucun texte ne change de gabarit. Reste l'écart de
+ * chasse, IBM Plex Sans étant environ 4 % plus large qu'Inter.
+ *
+ * Deux graisses n'existent pas dans les trois fichiers embarqués, et sont
+ * rabattues sur la plus proche :
+ *
+ * - **500 → 600.** Les deux variantes concernées, `caption` et `baseline`,
+ *   sont des libellés de 11 px. À cette taille on arrondit vers le haut : le
+ *   produit doit rester lisible en plein soleil, et un 400 y disparaît.
+ * - **800 → 700.** `display` et `title` font 28 et 20 px. À cette taille on
+ *   arrondit vers le bas — un titre n'a pas besoin d'être plus gras que le
+ *   reste, il est déjà plus grand. Charger un huitième fichier de police pour
+ *   deux variantes ne se justifiait pas.
+ *
+ * Conséquence assumée : `title` et `heading` partagent désormais la graisse
+ * 700, leur hiérarchie tient à la taille. C'était déjà le cas entre `heading`
+ * et `sectionLabel`.
+ */
 export const fonts = {
   sans: {
-    regular: 'Inter_400Regular',
-    medium: 'Inter_500Medium',
-    semibold: 'Inter_600SemiBold',
-    bold: 'Inter_700Bold',
-    extrabold: 'Inter_800ExtraBold',
+    regular: 'IBMPlexSans_400Regular',
+    medium: 'IBMPlexSans_600SemiBold',
+    semibold: 'IBMPlexSans_600SemiBold',
+    bold: 'IBMPlexSans_700Bold',
+    extrabold: 'IBMPlexSans_700Bold',
+  },
+  /** Chasse étroite, réservée aux adresses longues et aux libellés contraints. */
+  condensed: {
+    semibold: 'IBMPlexSansCondensed_600SemiBold',
   },
   /**
    * IBM Plex Mono pour TOUTE donnée mesurée : distances, ETA, vitesse, notes,
