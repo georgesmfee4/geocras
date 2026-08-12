@@ -1093,7 +1093,15 @@ function ReviewStep({
           <SectionLabel>{t('sos.position')}</SectionLabel>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.md }}>
             <MapPinIcon color={theme.colors.userPositionDeep} />
-            <Text variant="h2" numberOfLines={1} style={{ flex: 1 }}>
+            {/*
+              Le seul endroit du produit qui justifie la chasse étroite : une
+              adresse relevée par géocodage inverse — « Rue 1.234, Nkolbisson,
+              Yaoundé » — coincée sur une ligne entre un pictogramme et le
+              badge de précision. `cnd` fait tenir deux ou trois mots de plus
+              avant les points de suspension, ce qui est précisément ce qu'on
+              lit pour reconnaître où l'on est.
+            */}
+            <Text variant="cnd" numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1 }}>
               {address ?? (hasOrigin ? t('map.exactPosition') : t('location.unavailable'))}
             </Text>
             {hasOrigin ? (
