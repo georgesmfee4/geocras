@@ -34,9 +34,13 @@ Utiliser `<ChamferView>` — ne pas réimplémenter.
 
 ### 2. Le chiffre en mono
 **IBM Plex Mono** pour TOUTE donnée mesurée : distances, ETA, vitesse, notes, points,
-plaques, précision GPS, horodatages, numéros de version. **Inter** pour tout le reste.
-Jamais l'inverse. Passer par `<Text variant="mono|monoSmall|monoStrong|speed|footnote">`,
+plaques, précision GPS, horodatages, numéros de version. **IBM Plex Sans** pour tout le
+reste. Jamais l'inverse. Passer par `<Text variant="mono|monoSmall|monoStrong|speed|footnote">`,
 qui active `tabular-nums` automatiquement.
+
+> **Migration en cours.** La famille sans était Inter jusqu'ici. Les deux polices sont
+> chargées le temps que les écrans basculent : un écran non repris s'affiche encore en
+> Inter, ce n'est pas un défaut mais une étape. Inter partira à la fin de la passe.
 
 ### 3. Le blanc chaud
 Pas de gris bleuté. Fond `#F6F4EF`, encre `#1C1A17`.
@@ -106,6 +110,11 @@ végétation `#D9E6C8`, bâtiments `#E6E1D6`.
 ## Wordmark
 `GEOCRAS` en capitales. `GEO` en poids 500, `CRAS` en poids 800, letter-spacing .11em.
 Jamais « GeoCras » en CamelCase dans l'interface. Utiliser `<Wordmark>`.
+
+Il reste en **Inter** : ses deux graisses — 500 et 800 — n'ont pas d'équivalent parmi les
+trois graisses Plex Sans embarquées (400, 600, 700). Le faire basculer suppose de charger
+deux fichiers de police de plus, pour un mot qui n'apparaît qu'au splash et dans le
+tiroir : à décider séparément.
 
 ## Conventions
 - Commits : `feat(carte): …`, `fix(sos): …`
