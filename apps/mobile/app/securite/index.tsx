@@ -127,7 +127,7 @@ export default function SecuriteScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
         <ScreenHeader title={t('security.title')} />
         <View style={{ padding: theme.space.xl, gap: theme.space.lg }}>
-          <Text variant="body" tone="secondary">
+          <Text variant="txt" tone="secondary">
             {t('drawer.guestLead')}
           </Text>
           <Button
@@ -156,14 +156,14 @@ export default function SecuriteScreen() {
         <View style={{ paddingTop: theme.space.xl, gap: theme.space.md }}>
           <View style={{ paddingHorizontal: theme.space.xl, gap: theme.space.sm }}>
             <SectionLabel>{t('security.contacts')}</SectionLabel>
-            <Text variant="small" tone="secondary">
+            <Text variant="txt" tone="secondary">
               {t('security.contactsLead')}
             </Text>
           </View>
 
           {contacts.contacts.length === 0 && !contacts.loading ? (
             <Text
-              variant="small"
+              variant="txt"
               tone="muted"
               style={{ paddingHorizontal: theme.space.xl }}
             >
@@ -183,7 +183,7 @@ export default function SecuriteScreen() {
 
           {position === null ? (
             <View style={{ paddingHorizontal: theme.space.xl }}>
-              <Text variant="small" tone="warning">
+              <Text variant="txt" tone="warning">
                 {t('security.noPosition')}
               </Text>
             </View>
@@ -199,7 +199,7 @@ export default function SecuriteScreen() {
                 }}
               />
             ) : contacts.contacts.length >= MAX_TRUSTED_CONTACTS ? (
-              <Text variant="small" tone="muted">
+              <Text variant="txt" tone="muted">
                 {t('security.contactsFull')}
               </Text>
             ) : (
@@ -244,7 +244,7 @@ export default function SecuriteScreen() {
                 <Text variant="mono" style={{ fontSize: 28, lineHeight: 32 }}>
                   {sessions.isPending ? '—' : sessionCount}
                 </Text>
-                <Text variant="bodyStrong" style={{ flex: 1 }}>
+                <Text variant="h2" style={{ flex: 1 }}>
                   {t(
                     plural(sessionCount) === 'one'
                       ? 'security.devicesOne'
@@ -253,7 +253,7 @@ export default function SecuriteScreen() {
                 </Text>
               </View>
 
-              <Text variant="small" tone="secondary">
+              <Text variant="txt" tone="secondary">
                 {t('security.devicesLead')}
               </Text>
 
@@ -312,7 +312,7 @@ export default function SecuriteScreen() {
                 })}
               >
                 <PhoneIcon color={theme.colors.primary} size={17} />
-                <Text variant="bodyStrong" tone="primary">
+                <Text variant="h2" tone="primary">
                   {t('security.report')}
                 </Text>
               </Pressable>
@@ -388,11 +388,11 @@ function ContactRow({
         </ChamferView>
 
         <View style={{ flex: 1 }}>
-          <Text variant="bodyStrong" numberOfLines={1}>
+          <Text variant="h2" numberOfLines={1}>
             {contact.name}
           </Text>
           {/* Un numéro se lit chiffre par chiffre : mono, toujours. */}
-          <Text variant="monoSmall" tone="secondary">
+          <Text variant="numSm" tone="secondary">
             {contact.phone}
           </Text>
         </View>
@@ -427,7 +427,7 @@ function ContactRow({
         })}
       >
         <MapPinIcon color={theme.colors.userPositionDeep} size={17} />
-        <Text variant="bodyStrong">{t('security.sendPosition')}</Text>
+        <Text variant="h2">{t('security.sendPosition')}</Text>
       </Pressable>
     </View>
   );
@@ -481,7 +481,7 @@ function ContactForm({
             opacity: pressed ? 0.6 : 1,
           })}
         >
-          <Text variant="bodyStrong" tone="secondary">
+          <Text variant="h2" tone="secondary">
             {t('common.cancel')}
           </Text>
         </Pressable>
@@ -527,10 +527,10 @@ function SessionRow({ createdAt }: { createdAt: string }) {
           backgroundColor: theme.colors.success,
         }}
       />
-      <Text variant="small" tone="secondary" style={{ flex: 1 }}>
+      <Text variant="txt" tone="secondary" style={{ flex: 1 }}>
         {t('security.devicesSince')}
       </Text>
-      <Text variant="monoSmall" tone="muted">
+      <Text variant="numSm" tone="muted">
         {formatDate(createdAt)} · {formatTime(createdAt)}
       </Text>
     </View>
@@ -556,7 +556,7 @@ function Bullet({ children, tone }: { children: string; tone: 'ink' | 'success' 
           backgroundColor: tone === 'success' ? theme.colors.success : theme.colors.ink,
         }}
       />
-      <Text variant="small" tone="secondary" style={{ flex: 1 }}>
+      <Text variant="txt" tone="secondary" style={{ flex: 1 }}>
         {children}
       </Text>
     </View>

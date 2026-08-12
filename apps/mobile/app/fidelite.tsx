@@ -85,7 +85,7 @@ export default function FideliteScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
         <ScreenHeader title={t('loyalty.title')} />
         <View style={{ padding: theme.space.xl, gap: theme.space.lg }}>
-          <Text variant="body" tone="secondary">
+          <Text variant="txt" tone="secondary">
             {t('drawer.guestLead')}
           </Text>
           <Button
@@ -123,7 +123,7 @@ export default function FideliteScreen() {
 
           {loyalty.isError ? (
             <View style={{ padding: theme.space.xl, gap: theme.space.md }}>
-              <Text variant="bodyStrong" tone="primary">
+              <Text variant="h2" tone="primary">
                 {t('loyalty.failed')}
               </Text>
               <Button
@@ -174,7 +174,7 @@ function LoyaltyContent({
       <View style={{ gap: theme.space.md }}>
         <View style={{ paddingHorizontal: theme.space.xl, gap: theme.space.sm }}>
           <SectionLabel>{t('loyalty.grades')}</SectionLabel>
-          <Text variant="small" tone="secondary">
+          <Text variant="txt" tone="secondary">
             {t('loyalty.gradesLead')}
           </Text>
         </View>
@@ -215,7 +215,7 @@ function LoyaltyContent({
         </Accordion>
 
         <Accordion title={t('loyalty.checks')}>
-          <Text variant="small" tone="secondary">
+          <Text variant="txt" tone="secondary">
             {t('loyalty.checksBody')}
           </Text>
         </Accordion>
@@ -227,11 +227,11 @@ function LoyaltyContent({
         <Accordion title={t('loyalty.history')} onToggle={onHistoryToggle}>
           <View style={{ gap: theme.space.sm }}>
             {history.isPending ? (
-              <Text variant="small" tone="muted">
+              <Text variant="txt" tone="muted">
                 {t('common.loading')}
               </Text>
             ) : (history.data?.results.length ?? 0) === 0 ? (
-              <Text variant="small" tone="muted">
+              <Text variant="txt" tone="muted">
                 {t('loyalty.historyEmpty')}
               </Text>
             ) : (
@@ -287,7 +287,7 @@ function Balance({ summary }: { summary: LoyaltySummary }) {
         afficher un solde faux pendant vingt-quatre heures.
       */}
       {summary.pending > 0 ? (
-        <Text variant="monoSmall" tone="warning">
+        <Text variant="numSm" tone="warning">
           +{groupThousands(summary.pending)} {t('loyalty.pending')}
         </Text>
       ) : null}
@@ -310,9 +310,9 @@ function Balance({ summary }: { summary: LoyaltySummary }) {
         </ChamferView>
 
         <View style={{ flex: 1 }}>
-          <Text variant="bodyStrong">{definition.label[locale]}</Text>
+          <Text variant="h2">{definition.label[locale]}</Text>
           {/* Le compteur qui décide du grade, dit en toutes lettres. */}
-          <Text variant="monoSmall" tone="muted">
+          <Text variant="numSm" tone="muted">
             {summary.completedRepairs}{' '}
             {t(
               plural(summary.completedRepairs) === 'one'
@@ -368,7 +368,7 @@ function NextTierCard({ summary }: { summary: LoyaltySummary }) {
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-              <Text variant="monoSmall" style={{ color: theme.colors.muted }}>
+              <Text variant="numSm" style={{ color: theme.colors.muted }}>
                 {summary.repairsToNext}{' '}
                 {t(
                   plural(summary.repairsToNext) === 'one'
@@ -376,11 +376,11 @@ function NextTierCard({ summary }: { summary: LoyaltySummary }) {
                     : 'loyalty.repairsLeftMany',
                 )}
               </Text>
-              <Text variant="monoSmall" style={{ color: theme.colors.muted }}>
+              <Text variant="numSm" style={{ color: theme.colors.muted }}>
                 ·
               </Text>
               <Text
-                variant="monoSmall"
+                variant="numSm"
                 numberOfLines={1}
                 style={{ color: theme.colors.muted, flexShrink: 1 }}
               >
@@ -389,7 +389,7 @@ function NextTierCard({ summary }: { summary: LoyaltySummary }) {
             </View>
           </>
         ) : (
-          <Text variant="small" style={{ color: theme.colors.muted }}>
+          <Text variant="txt" style={{ color: theme.colors.muted }}>
             {t('loyalty.maxTierLead')}
           </Text>
         )}
@@ -404,7 +404,7 @@ function ReferralBlock({ code }: { code: string }) {
 
   return (
     <View style={{ gap: theme.space.md }}>
-      <Text variant="small" tone="secondary">
+      <Text variant="txt" tone="secondary">
         {t('loyalty.referralLead')}
       </Text>
 
@@ -457,7 +457,7 @@ function EarnRow({
         paddingVertical: 3,
       }}
     >
-      <Text variant="small" tone="secondary" style={{ flexShrink: 1 }}>
+      <Text variant="txt" tone="secondary" style={{ flexShrink: 1 }}>
         {LOYALTY_REASON_LABELS[reason][locale]}
       </Text>
       <Text variant="monoStrong" tone="primary">
@@ -490,8 +490,8 @@ function EntryRow({ entry }: { entry: LoyaltyEntry }) {
       }}
     >
       <View style={{ flex: 1 }}>
-        <Text variant="small">{LOYALTY_REASON_LABELS[entry.reason][locale]}</Text>
-        <Text variant="monoSmall" tone="muted">
+        <Text variant="txt">{LOYALTY_REASON_LABELS[entry.reason][locale]}</Text>
+        <Text variant="numSm" tone="muted">
           {formatDate(entry.createdAt)} · {stateLabel}
         </Text>
       </View>

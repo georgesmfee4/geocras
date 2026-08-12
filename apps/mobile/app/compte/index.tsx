@@ -210,7 +210,7 @@ export default function CompteScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
         <ScreenHeader title={t('account.title')} />
         <View style={{ padding: theme.space.xl, gap: theme.space.lg }}>
-          <Text variant="body" tone="secondary">
+          <Text variant="txt" tone="secondary">
             {t('drawer.guestLead')}
           </Text>
           <Button
@@ -342,7 +342,7 @@ export default function CompteScreen() {
                       </View>
                     ) : (
                       <Text
-                        variant="monoSmall"
+                        variant="numSm"
                         tone={myGarage.isActive ? 'success' : 'warning'}
                       >
                         {t(myGarage.isActive ? 'garage.open' : 'garage.closed')}

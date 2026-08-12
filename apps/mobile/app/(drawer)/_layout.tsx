@@ -185,7 +185,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
       // Numéro en mono : c'est ce qu'on lit à voix haute pour le composer
       // depuis un autre téléphone quand la batterie lâche.
       trailing={
-        <Text variant="monoSmall" tone="muted">
+        <Text variant="numSm" tone="muted">
           {env.supportPhone}
         </Text>
       }
@@ -222,7 +222,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
         <View style={{ width: MIN_TOUCH_TARGET }} />
 
         <Text
-          variant="monoSmall"
+          variant="numSm"
           tone="secondary"
           numberOfLines={1}
           style={{ flex: 1, textAlign: 'center' }}
@@ -290,7 +290,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
           */}
           {status === 'loading' ? null : signedIn ? (
             <>
-              <Text variant="title">
+              <Text variant="h1">
                 {firstName ? `${t('drawer.hello')} ${firstName} !` : t('drawer.account')}
               </Text>
 
@@ -302,14 +302,14 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
             </>
           ) : (
             <>
-              <Text variant="title">{t('drawer.guest')}</Text>
+              <Text variant="h1">{t('drawer.guest')}</Text>
 
               {/*
                 Dire ce que l'invité n'a pas, et non seulement qu'il est
                 invité : la phrase justifie le bouton juste en dessous. Sans
                 elle, « Se connecter » est une porte sans panneau.
               */}
-              <Text variant="body" tone="secondary" style={{ textAlign: 'center' }}>
+              <Text variant="txt" tone="secondary" style={{ textAlign: 'center' }}>
                 {t('drawer.guestLead')}
               </Text>
 
@@ -345,7 +345,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
             <View style={{ flex: 1, gap: 4 }}>
               {defaultVehicle ? (
                 <>
-                  <Text variant="bodyStrong" numberOfLines={1}>
+                  <Text variant="h2" numberOfLines={1}>
                     {[defaultVehicle.brand, defaultVehicle.model]
                       .filter(Boolean)
                       .join(' ') || VEHICLE_LABELS[defaultVehicle.type][locale]}
@@ -359,15 +359,15 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
                   {defaultVehicle.plate ? (
                     <PlateTag plate={defaultVehicle.plate} />
                   ) : (
-                    <Text variant="monoSmall" tone="muted">
+                    <Text variant="numSm" tone="muted">
                       {t('drawer.changeVehicle')}
                     </Text>
                   )}
                 </>
               ) : (
                 <>
-                  <Text variant="bodyStrong">{t('drawer.noVehicle')}</Text>
-                  <Text variant="monoSmall" tone="muted">
+                  <Text variant="h2">{t('drawer.noVehicle')}</Text>
+                  <Text variant="numSm" tone="muted">
                     {t('drawer.addVehicle')}
                   </Text>
                 </>
@@ -422,7 +422,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
                 }}
               >
                 <DrivingTabIcon color="#FFFFFF" size={22} />
-                <Text variant="bodyStrong" tone="inverse" style={{ flex: 1 }}>
+                <Text variant="h2" tone="inverse" style={{ flex: 1 }}>
                   {t('drawer.startDriving')}
                 </Text>
                 <View
@@ -447,7 +447,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
                 // n'affiche rien plutôt qu'un zéro qui serait faux.
                 trailing={
                   history.data ? (
-                    <Text variant="monoSmall" tone="muted">
+                    <Text variant="numSm" tone="muted">
                       {history.data.total}
                     </Text>
                   ) : null
@@ -460,7 +460,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
                 label={t('drawer.loyalty')}
                 trailing={
                   loyalty.data ? (
-                    <Text variant="monoSmall" tone="primary">
+                    <Text variant="numSm" tone="primary">
                       {formatNumber(loyalty.data.balance, 0)} pts
                     </Text>
                   ) : null
@@ -497,7 +497,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
               hitSlop={8}
               style={{ paddingHorizontal: theme.space.xl, paddingVertical: theme.space.sm }}
             >
-              <Text variant="bodyStrong" tone="primary">
+              <Text variant="h2" tone="primary">
                 {t('drawer.logout')}
               </Text>
             </Pressable>

@@ -106,7 +106,7 @@ export default function MonGarageScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
         <ScreenHeader title={t('myGarage.title')} />
         <View style={{ padding: theme.space.xl }}>
-          <Text variant="body" tone="muted">
+          <Text variant="txt" tone="muted">
             {t('common.loading')}
           </Text>
         </View>
@@ -119,7 +119,7 @@ export default function MonGarageScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
         <ScreenHeader title={t('myGarage.title')} />
         <View style={{ padding: theme.space.xl, gap: theme.space.lg }}>
-          <Text variant="body" tone="secondary">
+          <Text variant="txt" tone="secondary">
             {t('myGarage.none')}
           </Text>
           <Button
@@ -151,7 +151,7 @@ export default function MonGarageScreen() {
         <View style={{ gap: theme.space.sm }}>
           <Text variant="display">{data.name}</Text>
 
-          <Text variant="body" tone="secondary">
+          <Text variant="txt" tone="secondary">
             {[data.quarter, data.city].filter(Boolean).join(' · ')}
           </Text>
 
@@ -168,13 +168,13 @@ export default function MonGarageScreen() {
                 <StarIcon color={theme.colors.warning} size={16} />
                 {/* Note et décompte : deux données mesurées, donc en mono. */}
                 <Text variant="monoStrong">{formatNumber(data.rating, 1)}</Text>
-                <Text variant="monoSmall" tone="muted">
+                <Text variant="numSm" tone="muted">
                   {data.reviewCount}{' '}
                   {t(plural(data.reviewCount) === 'one' ? 'garage.reviewOne' : 'garage.reviewMany')}
                 </Text>
               </View>
             ) : (
-              <Text variant="small" tone="muted">
+              <Text variant="txt" tone="muted">
                 {t('myGarage.noRating')}
               </Text>
             )}
@@ -189,7 +189,7 @@ export default function MonGarageScreen() {
             ) : null}
 
             {data.yearsInBusiness !== null ? (
-              <Text variant="monoSmall" tone="muted">
+              <Text variant="numSm" tone="muted">
                 {data.yearsInBusiness}{' '}
                 {t(plural(data.yearsInBusiness) === 'one' ? 'garage.yearsOne' : 'garage.years')}
               </Text>
@@ -249,7 +249,7 @@ export default function MonGarageScreen() {
                   }}
                 >
                   <AlertIcon color={theme.colors.ink} size={20} />
-                  <Text variant="bodyStrong" style={{ flex: 1 }}>
+                  <Text variant="h2" style={{ flex: 1 }}>
                     {t('myGarage.closedBanner')}
                   </Text>
                 </View>
@@ -277,7 +277,7 @@ export default function MonGarageScreen() {
               {data.email ?? '—'}
             </Text>
             {data.addressLabel ? (
-              <Text variant="small" tone="secondary">
+              <Text variant="txt" tone="secondary">
                 {data.addressLabel}
               </Text>
             ) : null}
@@ -287,7 +287,7 @@ export default function MonGarageScreen() {
         {data.description ? (
           <View style={{ gap: theme.space.md }}>
             <SectionLabel>{t('garage.about')}</SectionLabel>
-            <Text variant="body" tone="secondary">
+            <Text variant="txt" tone="secondary">
               {data.description}
             </Text>
           </View>
@@ -329,7 +329,7 @@ export default function MonGarageScreen() {
                       borderTopColor: theme.colors.rule,
                     }}
                   >
-                    <Text variant="body">{t(`day.${day}`)}</Text>
+                    <Text variant="txt">{t(`day.${day}`)}</Text>
                     <Text variant="mono" tone={range ? 'ink' : 'muted'}>
                       {range ?? t('garage.closed')}
                     </Text>
@@ -358,7 +358,7 @@ export default function MonGarageScreen() {
         ) : null}
 
         {!data.certified && verified ? (
-          <Text variant="small" tone="muted">
+          <Text variant="txt" tone="muted">
             {t('myGarage.notCertifiedHint')}
           </Text>
         ) : null}

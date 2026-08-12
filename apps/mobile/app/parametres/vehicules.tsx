@@ -113,7 +113,7 @@ export default function VehiculesScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text variant="small" tone="secondary">
+          <Text variant="txt" tone="secondary">
             {t('settings.vehiclesLead')}
           </Text>
 
@@ -166,7 +166,7 @@ export default function VehiculesScreen() {
               }}
             />
           ) : full ? (
-            <Text variant="small" tone="muted">
+            <Text variant="txt" tone="muted">
               {t('settings.vehicleMax')}
             </Text>
           ) : editing === null ? (
@@ -257,7 +257,7 @@ function VehicleCard({
               <Text variant="heading" numberOfLines={1}>
                 {title}
               </Text>
-              <Text variant="monoSmall" tone="muted">
+              <Text variant="numSm" tone="muted">
                 {VEHICLE_LABELS[vehicle.type][locale]}
                 {vehicle.year ? ` · ${vehicle.year}` : ''}
               </Text>
@@ -269,7 +269,7 @@ function VehicleCard({
           {vehicle.plate ? (
             <PlateTag plate={vehicle.plate} />
           ) : (
-            <Text variant="small" tone="muted">
+            <Text variant="txt" tone="muted">
               {t('settings.vehicleNoPlate')}
             </Text>
           )}
@@ -347,7 +347,7 @@ function EmptyGarage() {
       }}
     >
       <PlateTag plate="— — —" />
-      <Text variant="small" tone="muted">
+      <Text variant="txt" tone="muted">
         {t('settings.vehiclesNone')}
       </Text>
     </View>
@@ -483,7 +483,7 @@ function VehicleForm({
       {plate.trim().length > 0 ? (
         <View style={{ alignItems: 'center', gap: theme.space.sm }}>
           <PlateTag plate={plate.trim()} size="large" />
-          <Text variant="small" tone="muted" style={{ textAlign: 'center' }}>
+          <Text variant="txt" tone="muted" style={{ textAlign: 'center' }}>
             {t('settings.vehiclePlateHint')}
           </Text>
         </View>
@@ -500,7 +500,7 @@ function VehicleForm({
             opacity: pressed ? 0.6 : 1,
           })}
         >
-          <Text variant="bodyStrong" tone="secondary">
+          <Text variant="h2" tone="secondary">
             {t('common.cancel')}
           </Text>
         </Pressable>
@@ -540,7 +540,7 @@ function VehicleForm({
             opacity: pressed ? 0.6 : 1,
           })}
         >
-          <Text variant="bodyStrong" tone="primary">
+          <Text variant="h2" tone="primary">
             {t('settings.vehicleRemove')}
           </Text>
         </Pressable>

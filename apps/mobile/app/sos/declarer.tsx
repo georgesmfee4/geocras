@@ -556,8 +556,8 @@ function WelcomeStep({
 
         <View style={{ padding: theme.space.lg, gap: theme.space.lg }}>
           <View style={{ gap: theme.space.sm }}>
-            <Text variant="title">{t('sos.welcomeTitle')}</Text>
-            <Text variant="body" tone="secondary">
+            <Text variant="h1">{t('sos.welcomeTitle')}</Text>
+            <Text variant="txt" tone="secondary">
               {t('sos.welcomeLead')}
             </Text>
           </View>
@@ -572,8 +572,8 @@ function WelcomeStep({
                   {point.icon({ color: theme.colors.primary, size: 20 })}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text variant="bodyStrong">{point.title}</Text>
-                  <Text variant="small" tone="secondary" style={{ marginTop: 2 }}>
+                  <Text variant="h2">{point.title}</Text>
+                  <Text variant="txt" tone="secondary" style={{ marginTop: 2 }}>
                     {point.hint}
                   </Text>
                 </View>
@@ -632,13 +632,13 @@ function WelcomeStep({
             {consented ? <CheckIcon color="#FFFFFF" size={14} /> : null}
           </View>
 
-          <Text variant="small" style={{ flex: 1 }}>
+          <Text variant="txt" style={{ flex: 1 }}>
             {t('sos.consent')}
           </Text>
         </Pressable>
 
         {showConsentError ? (
-          <Text variant="small" tone="primary">
+          <Text variant="txt" tone="primary">
             {t('sos.consentRequired')}
           </Text>
         ) : null}
@@ -710,7 +710,7 @@ function DescribeStep({
           */}
           {savedVehicles.length > 0 ? (
             <>
-              <Text variant="small" tone="muted">
+              <Text variant="txt" tone="muted">
                 {t('sos.savedVehiclesHint')}
               </Text>
 
@@ -759,7 +759,7 @@ function DescribeStep({
           <View style={{ gap: theme.space.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <SectionLabel style={{ flex: 1 }}>{t('sos.problemType')}</SectionLabel>
-              <Text variant="monoSmall" tone="muted">
+              <Text variant="numSm" tone="muted">
                 {t('sos.autoSort')}
               </Text>
             </View>
@@ -799,7 +799,7 @@ function DescribeStep({
 
             <View style={{ gap: theme.space.sm }}>
               <SectionLabel>{t('sos.photo')}</SectionLabel>
-              <Text variant="small" tone="muted">
+              <Text variant="txt" tone="muted">
                 {t('sos.photoOptional')}
               </Text>
               <PhotoField
@@ -942,7 +942,7 @@ function FreeText({
         {/* Compteur en mono — c'est une mesure. Il n'apparaît qu'une fois la
             moitié consommée : avant, il ne fait que du bruit. */}
         {value.length > maxLength / 2 ? (
-          <Text variant="monoSmall" tone="muted">
+          <Text variant="numSm" tone="muted">
             {value.length}/{maxLength}
           </Text>
         ) : null}
@@ -1044,7 +1044,7 @@ function ReviewStep({
         }}
         showsVerticalScrollIndicator={false}
       >
-        <Text variant="body" tone="secondary">
+        <Text variant="txt" tone="secondary">
           {t('sos.reviewLead')}
         </Text>
 
@@ -1068,11 +1068,11 @@ function ReviewStep({
                 borderTopColor: theme.colors.rule,
               }}
             >
-              <Text variant="small" tone="secondary" style={{ flex: 1 }}>
+              <Text variant="txt" tone="secondary" style={{ flex: 1 }}>
                 {row.label}
               </Text>
               <Text
-                variant="bodyStrong"
+                variant="h2"
                 numberOfLines={2}
                 style={{ flex: 1.4, textAlign: 'right' }}
               >
@@ -1085,7 +1085,7 @@ function ReviewStep({
         {draft.description.trim() ? (
           <View style={{ gap: theme.space.sm }}>
             <SectionLabel>{t('sos.details')}</SectionLabel>
-            <Text variant="body">{draft.description.trim()}</Text>
+            <Text variant="txt">{draft.description.trim()}</Text>
           </View>
         ) : null}
 
@@ -1093,13 +1093,13 @@ function ReviewStep({
           <SectionLabel>{t('sos.position')}</SectionLabel>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.md }}>
             <MapPinIcon color={theme.colors.userPositionDeep} />
-            <Text variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }}>
+            <Text variant="h2" numberOfLines={1} style={{ flex: 1 }}>
               {address ?? (hasOrigin ? t('map.exactPosition') : t('location.unavailable'))}
             </Text>
             {hasOrigin ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.xs }}>
                 <BlinkingDot size={6} />
-                <Text variant="monoSmall" tone="success">
+                <Text variant="numSm" tone="success">
                   ±{accuracyM === null ? '—' : Math.round(accuracyM)}m
                 </Text>
               </View>
@@ -1161,7 +1161,7 @@ function Banner({ tone, text }: { tone: 'primary' | 'warning'; text: string }) {
       }}
     >
       <AlertIcon color={theme.colors.ink} size={18} />
-      <Text variant="small" style={{ flex: 1 }}>
+      <Text variant="txt" style={{ flex: 1 }}>
         {text}
       </Text>
     </View>
@@ -1199,7 +1199,7 @@ function AccountGate({ onBack, onSignIn }: { onBack: () => void; onSignIn: () =>
         </Text>
 
         {/* La raison, pas seulement la règle : un garagiste va se déplacer. */}
-        <Text variant="body" tone="secondary" style={{ textAlign: 'center' }}>
+        <Text variant="txt" tone="secondary" style={{ textAlign: 'center' }}>
           {t('auth.requiredLead')}
         </Text>
 

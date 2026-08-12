@@ -142,7 +142,7 @@ export default function SuiviScreen() {
         }}
       >
         <ActivityIndicator color={theme.colors.primary} />
-        <Text variant="small" tone="secondary">
+        <Text variant="txt" tone="secondary">
           {t('awaiting.loading')}
         </Text>
       </View>
@@ -172,7 +172,7 @@ export default function SuiviScreen() {
               padding: theme.space.md,
             }}
           >
-            <Text variant="small" tone="inverse">
+            <Text variant="txt" tone="inverse">
               {error}
             </Text>
           </View>
@@ -209,13 +209,13 @@ function TrackingBand() {
         }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text variant="bodyStrong" style={{ color: '#FFFFFF' }}>
+          <Text variant="h2" style={{ color: '#FFFFFF' }}>
             {connection === 'live' ? t('tracking.enRoute') : t('tracking.degraded')}
           </Text>
           {/* Le compteur reflète l'âge réel du dernier paquet reçu. Afficher
               « MAJ 3s » sur une donnée qui en a quarante serait mentir sur la
               seule chose que cet indicateur mesure. */}
-          <Text variant="monoSmall" style={{ color: 'rgba(255,255,255,0.6)' }}>
+          <Text variant="numSm" style={{ color: 'rgba(255,255,255,0.6)' }}>
             {t('tracking.updated')} {age === null ? '—' : `${age}s`}
           </Text>
         </View>
@@ -225,7 +225,7 @@ function TrackingBand() {
             <Text variant="sectionLabel" style={{ color: 'rgba(255,255,255,0.6)' }}>
               {t('tracking.toYou')}
             </Text>
-            <Text variant="title" style={{ color: '#FFFFFF' }}>
+            <Text variant="h1" style={{ color: '#FFFFFF' }}>
               {toClient?.etaMin === null || toClient === null ? '—' : `${toClient.etaMin} min`}
             </Text>
           </View>
@@ -234,7 +234,7 @@ function TrackingBand() {
             <Text variant="sectionLabel" style={{ color: 'rgba(255,255,255,0.6)' }}>
               {t('tracking.toGarage')}
             </Text>
-            <Text variant="title" tone="primary">
+            <Text variant="h1" tone="primary">
               {toGarage?.etaMin === null || toGarage === null ? '—' : `${toGarage.etaMin} min`}
             </Text>
           </View>

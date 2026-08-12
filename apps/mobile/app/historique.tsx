@@ -131,7 +131,7 @@ export default function HistoriqueScreen() {
         title={t('history.title')}
         action={
           total > 0 ? (
-            <Text variant="monoSmall" tone="muted">
+            <Text variant="numSm" tone="muted">
               {total} {t(plural(total) === 'one' ? 'history.requestsOne' : 'history.requestsMany')}
             </Text>
           ) : null
@@ -177,7 +177,7 @@ export default function HistoriqueScreen() {
 
             {history.isError ? (
               <View style={{ paddingHorizontal: theme.space.xl, gap: theme.space.md }}>
-                <Text variant="bodyStrong" tone="primary">
+                <Text variant="h2" tone="primary">
                   {t('history.failed')}
                 </Text>
                 <Button
@@ -263,19 +263,19 @@ function OngoingCard({ request, onPress }: { request: HistoryRequest; onPress: (
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
           <BlinkingDot size={8} color={statusColor(request.status, theme.colors)} />
-          <Text variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
+          <Text variant="h2" style={{ flex: 1 }} numberOfLines={1}>
             {REQUEST_STATUS_LABELS[request.status][locale]}
           </Text>
           {/* Ancienneté en mono : c'est une mesure, et elle se lit d'un coup. */}
-          <Text variant="monoSmall" tone="muted">
+          <Text variant="numSm" tone="muted">
             {formatAge(request.createdAt)}
           </Text>
         </View>
 
         <View style={{ gap: 2 }}>
-          <Text variant="body">{PROBLEM_LABELS[request.problemType][locale]}</Text>
+          <Text variant="txt">{PROBLEM_LABELS[request.problemType][locale]}</Text>
           {request.garageName ? (
-            <Text variant="small" tone="secondary" numberOfLines={1}>
+            <Text variant="txt" tone="secondary" numberOfLines={1}>
               {request.garageName}
             </Text>
           ) : null}
@@ -299,7 +299,7 @@ function OngoingCard({ request, onPress }: { request: HistoryRequest; onPress: (
               paddingRight: theme.space.xxl,
             }}
           >
-            <Text variant="bodyStrong" tone="inverse">
+            <Text variant="h2" tone="inverse">
               {t('history.resume')}
             </Text>
             <ChevronRightSmallIcon color="#FFFFFF" size={16} />
@@ -338,11 +338,11 @@ function EmptyHistory({ signedIn, onOpenMap }: { signedIn: boolean; onOpenMap: (
       */}
       <View style={{ width: 1, height: 46, backgroundColor: theme.colors.rule }} />
 
-      <Text variant="title" style={{ textAlign: 'center' }}>
+      <Text variant="h1" style={{ textAlign: 'center' }}>
         {t('history.emptyTitle')}
       </Text>
 
-      <Text variant="body" tone="secondary" style={{ textAlign: 'center' }}>
+      <Text variant="txt" tone="secondary" style={{ textAlign: 'center' }}>
         {signedIn ? t('history.emptyLead') : t('drawer.guestLead')}
       </Text>
 

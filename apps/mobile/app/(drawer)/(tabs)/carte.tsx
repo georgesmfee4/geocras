@@ -452,7 +452,7 @@ export default function CarteScreen() {
                 Position simulée
               </Text>
               {origin ? (
-                <Text variant="monoSmall" style={{ color: theme.colors.ink }}>
+                <Text variant="numSm" style={{ color: theme.colors.ink }}>
                   {origin.lat.toFixed(4)} · {origin.lng.toFixed(4)}
                 </Text>
               ) : null}
@@ -742,7 +742,7 @@ export default function CarteScreen() {
               // plutôt que de le dire en petit texte gris.
               <EmptyRadius radiusKm={nearby.data?.meta.radiusKm ?? searchRadiusKm} />
             ) : (
-              <Text variant="small" tone="muted">
+              <Text variant="txt" tone="muted">
                 {emptyMessage}
               </Text>
             )}
@@ -821,11 +821,11 @@ function ContextLine({
         <View
           style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.primary }}
         />
-        <Text variant="body" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
+        <Text variant="txt" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
           {errorLabel ?? t('map.loadFailed')}
         </Text>
         <Pressable onPress={onRetry} accessibilityRole="button" hitSlop={8}>
-          <Text variant="bodyStrong" tone="primary">
+          <Text variant="h2" tone="primary">
             {t('common.retry')}
           </Text>
         </Pressable>
@@ -838,7 +838,7 @@ function ContextLine({
       {/* La pastille passe au rouge pendant un rechargement : elle signale une
           donnée vivante, sa couleur dit si elle est à jour. */}
       <BlinkingDot color={loading ? theme.colors.primary : theme.colors.success} />
-      <Text variant="body" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
+      <Text variant="txt" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
         {!hasOrigin ? (
           // Sans position, il n'y a pas de « autour de vous » : annoncer
           // « 0 garages » attribuerait au parc de garages ce qui relève du GPS.
@@ -972,13 +972,13 @@ function PositionRow({
         >
           <BlinkingDot size={6} />
           {/* Précision réelle du GPS, jamais une valeur décorative. */}
-          <Text variant="monoSmall" tone="success">
+          <Text variant="numSm" tone="success">
             ±{accuracyM === null ? '—' : Math.round(accuracyM)}m
           </Text>
         </View>
       ) : blocked ? (
         <Pressable onPress={onRetry} accessibilityRole="button" hitSlop={8}>
-          <Text variant="bodyStrong" tone="primary">
+          <Text variant="h2" tone="primary">
             {t('location.retry')}
           </Text>
         </Pressable>

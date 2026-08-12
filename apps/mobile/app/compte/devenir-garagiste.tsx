@@ -255,7 +255,7 @@ export default function DevenirGaragisteScreen() {
 
         <View style={{ padding: theme.space.xl, gap: theme.space.lg }}>
           {garage.isPending ? (
-            <Text variant="body" tone="muted">
+            <Text variant="txt" tone="muted">
               {t('common.loading')}
             </Text>
           ) : (
@@ -298,7 +298,7 @@ export default function DevenirGaragisteScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={{ gap: theme.space.md }}>
-            <Text variant="body" tone="secondary">
+            <Text variant="txt" tone="secondary">
               {editing ? t('becomeGarage.editLead') : t('becomeGarage.lead')}
             </Text>
 
@@ -423,11 +423,11 @@ export default function DevenirGaragisteScreen() {
                     réservé aux valeurs mesurées.
                   */}
                   {shownAccuracyM === null ? (
-                    <Text variant="small" tone="muted">
+                    <Text variant="txt" tone="muted">
                       {t('becomeGarage.positionSaved')}
                     </Text>
                   ) : (
-                    <Text variant="monoSmall" tone={accuracyPoor ? 'warning' : 'muted'}>
+                    <Text variant="numSm" tone={accuracyPoor ? 'warning' : 'muted'}>
                       ±{Math.round(shownAccuracyM)} m
                     </Text>
                   )}
@@ -435,7 +435,7 @@ export default function DevenirGaragisteScreen() {
               </View>
             ) : (
               <View style={{ gap: theme.space.md }}>
-                <Text variant="small" tone="warning">
+                <Text variant="txt" tone="warning">
                   {t('becomeGarage.positionMissing')}
                 </Text>
                 {locationStatus !== 'acquiring' ? (
@@ -459,7 +459,7 @@ export default function DevenirGaragisteScreen() {
                 */}
                 {livePoint === null ? (
                   <>
-                    <Text variant="small" tone="muted">
+                    <Text variant="txt" tone="muted">
                       {t('becomeGarage.positionUnavailable')}
                     </Text>
                     {locationStatus !== 'acquiring' ? (
@@ -492,7 +492,7 @@ export default function DevenirGaragisteScreen() {
             ) : null}
 
             {accuracyPoor ? (
-              <Text variant="small" tone="warning">
+              <Text variant="txt" tone="warning">
                 {t('becomeGarage.positionCoarse')}
               </Text>
             ) : null}
@@ -500,7 +500,7 @@ export default function DevenirGaragisteScreen() {
 
           <View style={{ gap: theme.space.md }}>
             <SectionLabel>{t('becomeGarage.services')}</SectionLabel>
-            <Text variant="small" tone="muted">
+            <Text variant="txt" tone="muted">
               {t('becomeGarage.servicesHint')}
             </Text>
 
@@ -518,7 +518,7 @@ export default function DevenirGaragisteScreen() {
 
           <View style={{ gap: theme.space.md }}>
             <SectionLabel>{t('becomeGarage.hours')}</SectionLabel>
-            <Text variant="small" tone="muted">
+            <Text variant="txt" tone="muted">
               {t('becomeGarage.hoursHint')}
             </Text>
             <OpeningHoursField value={hours} onChange={setHours} />
@@ -539,7 +539,7 @@ export default function DevenirGaragisteScreen() {
             fullWidth
           />
 
-          <Text variant="small" tone="muted" style={{ textAlign: 'center' }}>
+          <Text variant="txt" tone="muted" style={{ textAlign: 'center' }}>
             {editing ? t('becomeGarage.saveEditHint') : t('becomeGarage.submitHint')}
           </Text>
         </ScrollView>

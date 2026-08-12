@@ -169,14 +169,14 @@ export default function ConnexionScreen() {
             <SectionLabel>
               {t(mode === 'login' ? 'auth.loginTitle' : 'auth.signupTitle')}
             </SectionLabel>
-            <Text variant="body" tone="secondary">
+            <Text variant="txt" tone="secondary">
               {t(mode === 'login' ? 'auth.loginLead' : 'auth.signupLead')}
             </Text>
           </View>
 
           {mode === 'signup' ? (
             <View style={{ gap: theme.space.sm }}>
-              <Text variant="bodyStrong">{t('auth.fullName')}</Text>
+              <Text variant="h2">{t('auth.fullName')}</Text>
               <TextInput
                 allowFontScaling={false}
                 value={fullName}
@@ -191,7 +191,7 @@ export default function ConnexionScreen() {
           ) : null}
 
           <View style={{ gap: theme.space.sm }}>
-            <Text variant="bodyStrong">{t('auth.phone')}</Text>
+            <Text variant="h2">{t('auth.phone')}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
               {/*
                 Préfixe non éditable. Le seul format accepté par le serveur est
@@ -234,7 +234,7 @@ export default function ConnexionScreen() {
           </View>
 
           <View style={{ gap: theme.space.sm }}>
-            <Text variant="bodyStrong">{t('auth.password')}</Text>
+            <Text variant="h2">{t('auth.password')}</Text>
             <TextInput
               allowFontScaling={false}
               value={password}
@@ -247,7 +247,7 @@ export default function ConnexionScreen() {
               style={inputStyle}
             />
             {mode === 'signup' ? (
-              <Text variant="small" tone="muted">
+              <Text variant="txt" tone="muted">
                 {t('auth.passwordHint')}
               </Text>
             ) : null}
@@ -262,7 +262,7 @@ export default function ConnexionScreen() {
                 borderLeftColor: theme.colors.primary,
               }}
             >
-              <Text variant="small" tone="primary">
+              <Text variant="txt" tone="primary">
                 {error}
               </Text>
             </View>
@@ -285,7 +285,7 @@ export default function ConnexionScreen() {
             hitSlop={8}
             style={{ alignItems: 'center', paddingVertical: theme.space.sm }}
           >
-            <Text variant="body" tone="primary">
+            <Text variant="txt" tone="primary">
               {t(mode === 'login' ? 'auth.switchToSignup' : 'auth.switchToLogin')}
             </Text>
           </Pressable>

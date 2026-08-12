@@ -155,7 +155,7 @@ export default function GarageDetailScreen() {
         </Text>
         <Button label={t('common.retry')} variant="outline" onPress={() => void detail.refetch()} />
         <Pressable onPress={() => router.back()} accessibilityRole="button" hitSlop={10}>
-          <Text variant="bodyStrong" tone="primary">
+          <Text variant="h2" tone="primary">
             {t('sos.back')}
           </Text>
         </Pressable>
@@ -190,7 +190,7 @@ export default function GarageDetailScreen() {
         >
           <View style={{ gap: theme.space.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: theme.space.md }}>
-              <Text variant="title" style={{ flex: 1 }}>
+              <Text variant="h1" style={{ flex: 1 }}>
                 {garage.name}
               </Text>
 
@@ -230,7 +230,7 @@ export default function GarageDetailScreen() {
           {garage.description ? (
             <View style={{ gap: theme.space.md }}>
               <SectionLabel>{t('garage.about')}</SectionLabel>
-              <Text variant="body">{garage.description}</Text>
+              <Text variant="txt">{garage.description}</Text>
             </View>
           ) : null}
 
@@ -265,7 +265,7 @@ export default function GarageDetailScreen() {
             </View>
 
             {allReviews.length === 0 && !reviews.isLoading ? (
-              <Text variant="small" tone="muted">
+              <Text variant="txt" tone="muted">
                 {t('garage.reviewsEmpty')}
               </Text>
             ) : null}

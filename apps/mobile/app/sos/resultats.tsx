@@ -407,11 +407,11 @@ export default function ResultatsScreen() {
             ) : (
               <>
                 <Text variant="monoStrong">{results.length}</Text>
-                <Text variant="small" tone="secondary">
+                <Text variant="txt" tone="secondary">
                   {t(results.length === 1 ? 'results.countOne' : 'results.count')}
                 </Text>
                 {problemType ? (
-                  <Text variant="small" tone="muted" numberOfLines={1}>
+                  <Text variant="txt" tone="muted" numberOfLines={1}>
                     · {PROBLEM_LABELS[problemType][locale]}
                   </Text>
                 ) : null}
@@ -464,7 +464,7 @@ export default function ResultatsScreen() {
       >
         {error ? (
           <View style={{ backgroundColor: theme.colors.primary, padding: theme.space.md }}>
-            <Text variant="small" tone="inverse">
+            <Text variant="txt" tone="inverse">
               {error}
             </Text>
           </View>
@@ -491,7 +491,7 @@ export default function ResultatsScreen() {
           >
             <View style={{ flex: 1, gap: 4 }}>
               <SectionLabel>{t('results.routeShown')}</SectionLabel>
-              <Text variant="bodyStrong" numberOfLines={1}>
+              <Text variant="h2" numberOfLines={1}>
                 {routeGarage.name}
               </Text>
               <Text variant="mono">
@@ -536,7 +536,7 @@ export default function ResultatsScreen() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.md }}>
               <ActivityIndicator color={theme.colors.primary} />
-              <Text variant="bodyStrong" style={{ flex: 1 }}>
+              <Text variant="h2" style={{ flex: 1 }}>
                 {t('results.searching')}
               </Text>
             </View>
