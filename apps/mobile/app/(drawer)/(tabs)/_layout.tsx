@@ -5,6 +5,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useMyGarage } from '../../../src/api/hooks';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { useI18n } from '../../../src/i18n/I18nProvider';
+import { useJobFeed } from '../../../src/realtime/useJobFeed';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { tabBarHeight, tabIndicator, MIN_TOUCH_TARGET } from '../../../src/theme/tokens';
 import {
@@ -13,6 +14,7 @@ import {
   MapTabIcon,
   type TabIconProps,
 } from '../../../src/ui/icons';
+import { ChamferView } from '../../../src/ui/ChamferView';
 import { Text } from '../../../src/ui/Text';
 import type { TranslationKey } from '../../../src/i18n/translations';
 
@@ -64,8 +66,26 @@ export default function TabsLayout() {
   const verifiedOwner =
     role === 'garage_owner' && (garage.data?.garage?.verifiedAt ?? null) !== null;
 
+  /**
+   * Abonnement aux SOS, tenu **ici** et pas dans l'écran Interventions.
+   *
+   * Un garagiste ne passe pas sa journée sur son onglet de travail : il
+   * consulte la carte, il roule. Abonner l'écran l'aurait rendu sourd partout
+   * ailleurs — et le seul message qui compte, le SOS qui arrive, serait celui
+   * qu'il aurait manqué. La barre d'onglets, elle, est montée tant qu'il est
+   * dans l'app.
+   *
+   * Un seul abonné dans tout l'arbre : deux monteraient deux écouteurs sur le
+   * même socket, donc deux vibrations pour une demande.
+   */
+  const jobs = useJobFeed(verifiedOwner);
+  const waiting = jobs.data?.incoming.length ?? 0;
+
   return (
-    <Tabs tabBar={(props) => <GeoCrasTabBar {...props} />} screenOptions={{ headerShown: false }}>
+    <Tabs
+      tabBar={(props) => <GeoCrasTabBar {...props} badges={{ interventions: waiting }} />}
+      screenOptions={{ headerShown: false }}
+    >
       <Tabs.Screen name="carte" />
       <Tabs.Screen name="conduite" />
       {/*
@@ -87,7 +107,12 @@ export default function TabsLayout() {
  * au bord haut de la barre**, centré sur l'onglet actif — c'est ce détail qui
  * distingue la barre d'un composant par défaut.
  */
-function GeoCrasTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+function GeoCrasTabBar({
+  state,
+  descriptors,
+  navigation,
+  badges = {},
+}: BottomTabBarProps & { badges?: Record<string, number> }) {
   const theme = useTheme();
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
@@ -161,7 +186,42 @@ function GeoCrasTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               />
             ) : null}
 
-            {Icon ? Icon({ color: tint, size: 23, active: isFocused }) : null}
+            {/*
+              Le pictogramme porte son compteur : la pastille est positionnée
+              par rapport à LUI, pas par rapport à l'onglet. Ancrée sur
+              l'onglet, elle se serait décalée avec la largeur du libellé — donc
+              différemment d'une langue à l'autre.
+            */}
+            <View>
+              {Icon ? Icon({ color: tint, size: 23, active: isFocused }) : null}
+
+              {/*
+                Compteur de demandes en attente.
+
+                Un SOS arrive pendant qu'on regarde la carte : sans ce chiffre,
+                rien à l'écran ne dirait qu'il faut changer d'onglet. Chamfré et
+                en mono, comme tous les badges chiffrés du produit — et masqué à
+                zéro, parce qu'une pastille vide se lit comme une notification
+                qu'on n'arrive pas à ouvrir.
+              */}
+              {(badges[route.name] ?? 0) > 0 ? (
+                <ChamferView
+                  fill={theme.colors.primary}
+                  style={{ position: 'absolute', top: -7, left: 13 }}
+                  contentStyle={{
+                    minWidth: 17,
+                    paddingHorizontal: 4,
+                    paddingVertical: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text variant="numSm" tone="inverse">
+                    {badges[route.name]}
+                  </Text>
+                </ChamferView>
+              ) : null}
+            </View>
 
             <Text
               variant="tabLabel"

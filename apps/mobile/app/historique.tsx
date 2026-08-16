@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { isRequestOngoing, PROBLEM_LABELS, REQUEST_STATUS_LABELS } from '@geocras/shared';
-import { useMyRequestPages } from '../src/api/hooks';
+import { useMyGarage, useMyRequestPages } from '../src/api/hooks';
 import { cameroonDateParts } from '../src/time/clock';
 import { useAuth } from '../src/auth/AuthProvider';
 import { RequestCard, RAIL_WIDTH, statusColor, type HistoryRequest } from '../src/history/RequestCard';
@@ -51,21 +51,39 @@ export default function HistoriqueScreen() {
   const theme = useTheme();
   const { t, plural, formatMonthLabel } = useI18n();
   const router = useRouter();
-  const { user, status } = useAuth();
+  const { user, status, role } = useAuth();
 
   const history = useMyRequestPages(user !== null);
+
+  /**
+   * Le compte gère-t-il un garage ?
+   *
+   * Uniquement pour le libellé de l'écran vide — les lignes, elles, portent
+   * chacune leur propre rôle et n'ont besoin de rien d'autre. On n'interroge
+   * que pour un compte déjà promu : c'est la seule situation où la réponse peut
+   * changer quelque chose ici.
+   */
+  const garage = useMyGarage(role === 'garage_owner');
+  const ownsGarage = garage.data?.garage != null;
 
   const pages = history.data?.pages ?? [];
   const all = pages.flatMap((page) => page.results);
   const total = pages[0]?.total ?? 0;
 
   /**
-   * La demande vivante, s'il y en a une.
+   * La demande vivante, s'il y en a une — **la sienne, en tant que client**.
    *
-   * L'index unique `requests_one_active_per_client_idx` garantit qu'il n'y en a
-   * jamais deux : on prend donc la première trouvée sans avoir à trancher.
+   * La restriction au rôle client n'est pas cosmétique : l'unicité garantie par
+   * `requests_one_active_per_client_idx` ne vaut que de ce côté-là. Un
+   * garagiste, lui, peut avoir trois interventions ouvertes en même temps ;
+   * en extraire une au hasard pour la coller en tête aurait sorti les deux
+   * autres de la liste sans que rien ne l'explique.
+   *
+   * Ses interventions en cours restent donc dans le fil, et son poste de
+   * travail — l'onglet Interventions — est l'endroit fait pour les mener.
    */
-  const ongoing = all.find((request) => isRequestOngoing(request.status)) ?? null;
+  const ongoing =
+    all.find((request) => request.role === 'client' && isRequestOngoing(request.status)) ?? null;
 
   const rows = useMemo<Row[]>(() => {
     const past = all.filter((request) => request.id !== ongoing?.id);
@@ -98,7 +116,24 @@ export default function HistoriqueScreen() {
     return output;
   }, [all, ongoing?.id, formatMonthLabel]);
 
+  /**
+   * Où mène une ligne — et **ça dépend du côté où l'on était**.
+   *
+   * C'était le cœur du défaut : toutes les lignes ouvraient l'écran de suivi du
+   * demandeur ou la fiche publique d'un garage. Un garagiste qui touchait sa
+   * propre intervention atterrissait donc sur l'écran du client, avec la
+   * confirmation d'arrivée du client et le bouton d'annulation du client.
+   */
   const openRequest = (request: HistoryRequest): (() => void) | null => {
+    if (request.role === 'garage') {
+      // Son dossier d'intervention, dans son poste de travail. Il ne vit que
+      // tant que la demande est dans sa file : une fois close ou annulée, elle
+      // n'y est plus, et la ligne cesse d'être cliquable plutôt que d'ouvrir un
+      // écran qui dirait « cette demande n'est plus dans votre file ».
+      if (!isRequestOngoing(request.status)) return null;
+      return () => router.push(`/interventions/${request.id}` as never);
+    }
+
     if (isRequestOngoing(request.status)) {
       return () => router.push(`/suivi/${request.id}` as never);
     }
@@ -113,6 +148,10 @@ export default function HistoriqueScreen() {
   };
 
   const rateRequest = (request: HistoryRequest): (() => void) | null => {
+    // Un garage ne se note pas lui-même. L'avis appartient au demandeur, et la
+    // règle est structurelle côté serveur — la proposer ici menait droit à un
+    // refus, après avoir laissé croire le contraire.
+    if (request.role === 'garage') return null;
     if (request.status !== 'closed' || request.reviewed || !request.garageId) return null;
     // `review=1` ouvre la feuille de note dès l'arrivée sur la fiche : sans ce
     // paramètre, on renverrait l'utilisateur chercher lui-même le bouton qu'il
@@ -193,6 +232,7 @@ export default function HistoriqueScreen() {
           listEmpty && !history.isError ? (
             <EmptyHistory
               signedIn={user !== null && status !== 'loading'}
+              asGarage={ownsGarage}
               onOpenMap={() => router.replace('/(drawer)/(tabs)/carte' as never)}
             />
           ) : null
@@ -318,7 +358,21 @@ function OngoingCard({ request, onPress }: { request: HistoryRequest; onPress: (
  * lui donner l'impression d'un manque, seulement lui apprendre à quoi sert
  * l'entrée qu'il vient d'ouvrir.
  */
-function EmptyHistory({ signedIn, onOpenMap }: { signedIn: boolean; onOpenMap: () => void }) {
+function EmptyHistory({
+  signedIn,
+  asGarage,
+  onOpenMap,
+}: {
+  signedIn: boolean;
+  /**
+   * Le compte gère un garage : ce qu'il attend ici, ce sont **ses
+   * interventions**, pas ses propres pannes. Lui promettre « le garage qui est
+   * intervenu et votre note » sur un écran vide, c'est lui dire une seconde
+   * fois qu'on l'a pris pour un client.
+   */
+  asGarage: boolean;
+  onOpenMap: () => void;
+}) {
   const theme = useTheme();
   const { t } = useI18n();
 
@@ -343,7 +397,11 @@ function EmptyHistory({ signedIn, onOpenMap }: { signedIn: boolean; onOpenMap: (
       </Text>
 
       <Text variant="txt" tone="secondary" style={{ textAlign: 'center' }}>
-        {signedIn ? t('history.emptyLead') : t('drawer.guestLead')}
+        {!signedIn
+          ? t('drawer.guestLead')
+          : asGarage
+            ? t('history.emptyLeadGarage')
+            : t('history.emptyLead')}
       </Text>
 
       <Button label={t('history.emptyAction')} variant="outline" onPress={onOpenMap} />

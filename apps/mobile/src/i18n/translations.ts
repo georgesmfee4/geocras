@@ -576,6 +576,8 @@ export const translations = {
     'history.emptyLead':
       'Vos SOS apparaîtront ici : le garage qui est intervenu, la date, la durée et votre note.',
     'history.emptyAction': 'Voir la carte',
+    'history.emptyLeadGarage':
+      'Vos interventions apparaîtront ici : qui vous avez dépanné, quand, et combien de temps cela a pris.',
     'history.loadMore': 'Charger les plus anciennes',
     'history.failed': 'Historique indisponible',
     'history.rate': 'Noter ce garage',
@@ -751,18 +753,116 @@ export const translations = {
     'soon.drivingTitle': 'Mode conduite',
     'soon.drivingLead':
       'Le mode conduite affichera votre vitesse, les alertes sur votre trajet et un score de conduite à l’arrivée. Il ouvre bientôt.',
-    'soon.jobsTitle': 'Interventions',
-    'soon.jobsLead':
-      'Vous recevrez ici les demandes des conducteurs en panne autour de votre garage, avec le trajet et la confirmation d’arrivée. En attendant, l’assistance vous met en relation.',
-    'soon.trackingTitle': 'Suivi de l’intervention',
-    'soon.trackingLead':
-      'Le tracé du garagiste sur la carte arrive prochainement. Les informations ci-dessous sont déjà en direct.',
 
     'common.cancel': 'Annuler',
     'common.retry': 'Réessayer',
     'common.close': 'Fermer',
     'common.save': 'Enregistrer',
     'common.loading': 'Chargement…',
+    'common.error': 'Échec',
+
+    // — Côté garagiste : le poste de travail ————————————————————————
+    'jobs.deskLabel': 'Poste de travail',
+    'jobs.listening': 'À L’ÉCOUTE',
+    'jobs.soon': 'BIENTÔT',
+
+    'jobs.sosTile': 'SOS',
+    'jobs.sosTileWaiting': 'Des conducteurs attendent votre réponse.',
+    'jobs.sosTileIdle': 'Aucune demande en attente pour le moment.',
+    'jobs.radarTile': 'Radar',
+    'jobs.radarTileLead': 'Surveillance des pannes autour de votre garage.',
+
+    'jobs.sosTitle': 'Demandes SOS',
+    'jobs.incoming': 'À traiter',
+    'jobs.active': 'En cours',
+
+    'jobs.stateToAnswer': 'À RÉPONDRE',
+    'jobs.stateToLeave': 'À PARTIR',
+    'jobs.stateDriving': 'EN ROUTE',
+    'jobs.stateToConfirm': 'ARRIVÉE À CONFIRMER',
+    'jobs.stateOngoing': 'EN COURS',
+
+    'jobs.distance': 'Distance',
+    'jobs.approach': 'Approche',
+    'jobs.waiting': 'Attente',
+    'jobs.words': 'Ce que dit le client',
+    'jobs.constraints': 'À prévoir',
+    'jobs.requester': 'Le demandeur',
+    'jobs.where': 'Où',
+
+    'jobs.dangerBanner': 'Danger déclaré — intervenir en priorité',
+    'jobs.immobilized': 'Ne roule plus',
+    'jobs.immobilizedLead': 'Prévoir le plateau ou la barre de remorquage.',
+    'jobs.vulnerable': 'Passagers vulnérables',
+    'jobs.vulnerableLead': 'Enfant, personne âgée ou blessée à bord.',
+    'jobs.noPhoto': 'Aucune photo envoyée',
+    'jobs.phoneHidden': 'Numéro masqué jusqu’à l’acceptation',
+    'jobs.areaOnly': 'Zone approchée. La position exacte s’affiche dès que vous acceptez.',
+    'jobs.approxLocation': 'position approchée',
+    'jobs.gone': 'Cette demande n’est plus dans votre file. Le client l’a peut-être annulée.',
+
+    'jobs.accept': 'Accepter',
+    'jobs.decline': 'Décliner',
+    'jobs.callClient': 'Joindre',
+    'jobs.goThere': 'Y aller',
+    'jobs.enRoute': 'Je pars',
+    'jobs.confirmArrival': 'Je suis arrivé',
+    'jobs.waitingClient': 'Arrivée enregistrée — en attente du client',
+
+    'jobs.declineTitle': 'Décliner cette demande ?',
+    'jobs.declineBody':
+      'Le client sera prévenu et reprendra sa recherche : sa demande reste ouverte et il choisira un autre garage. Elle disparaîtra de votre file.',
+    'jobs.declineReason': 'garage indisponible',
+
+    // — Itinéraire ——————————————————————————————————————————————
+    'jobs.timeToArrive': 'Temps de route',
+    'jobs.arrivalAt': 'Arrivée',
+    'jobs.recenter': 'Recentrer sur le trajet',
+    'jobs.waitingGps': 'Recherche de votre position…',
+    'jobs.roughEstimate':
+      'Estimation à vol d’oiseau : le calcul routier n’a pas répondu. Comptez plus long.',
+
+    'jobs.closedTitle': 'Détection fermée',
+    'jobs.closedBody':
+      'Votre garage n’apparaît dans aucune recherche : aucun nouveau SOS ne peut vous parvenir. Rouvrez la détection depuis « Mon garage ».',
+    'jobs.noGarage': 'Aucun garage n’est rattaché à ce compte.',
+    'jobs.emptyTitle': 'Aucune demande',
+    'jobs.emptyLead':
+      'Votre garage est à l’écoute. Les SOS des conducteurs en panne autour de vous arriveront ici.',
+
+    // — Côté client : le suivi en direct ————————————————————————————
+    'live.stepAccepted': 'Acceptée',
+    'live.stepEnRoute': 'En route',
+    'live.stepArrived': 'Sur place',
+    'live.stepConfirmed': 'Confirmée',
+    'live.arrivesIn': 'Arrive dans',
+    'live.onSite': 'Sur place',
+    'live.moving': 'En approche',
+    'live.stopped': 'À l’arrêt — circulation ou pause',
+    'live.notMovingYet': 'Le garagiste n’a pas encore émis sa position : trajet depuis son atelier.',
+    'live.roughEstimate':
+      'Estimation à vol d’oiseau : le calcul routier n’a pas répondu. Comptez plus long.',
+    'live.degraded': 'Connexion instable — les informations peuvent dater.',
+    'live.callMechanic': 'Appeler',
+    'live.confirmArrival': 'Il est arrivé',
+    'live.confirmedWaiting': 'En attente du garagiste',
+    'live.confirmTitle': 'Le garagiste est arrivé ?',
+    'live.confirmBody':
+      'Ne confirmez que s’il est réellement sur place. L’intervention se clôture lorsque vous confirmez tous les deux, et c’est ce qui déclenche vos points.',
+    'live.confirmAction': 'Oui, il est là',
+    'live.doneTitle': 'Intervention terminée',
+    'live.doneLead': 'Vous avez confirmé l’arrivée tous les deux. Vos points sont crédités.',
+    'live.doneSummary': 'Récapitulatif',
+    'live.rate': 'Noter ce garage',
+    'live.backToMap': 'Revenir à la carte',
+    'live.overTitle': 'Cette demande est close',
+    'live.overLead': 'Elle a été annulée ou terminée. Relancez un SOS depuis la carte si besoin.',
+
+    // — Côté client : le garage a décliné ——————————————————————————
+    'results.declinedLabel': 'Réponse du garage',
+    'results.declinedTitle': 'Ce garage ne peut pas intervenir',
+    'results.declinedLead':
+      'Votre demande reste ouverte, rien à ressaisir. Choisissez un autre garage ci-dessous.',
   },
 
   en: {
@@ -1310,6 +1410,8 @@ export const translations = {
     'history.emptyLead':
       'Your SOS calls will show up here: which garage came, when, how long it took, and your rating.',
     'history.emptyAction': 'Open the map',
+    'history.emptyLeadGarage':
+      'Your jobs will show up here: who you helped, when, and how long it took.',
     'history.loadMore': 'Load older ones',
     'history.failed': 'History unavailable',
     'history.rate': 'Rate this garage',
@@ -1485,18 +1587,116 @@ export const translations = {
     'soon.drivingTitle': 'Driving mode',
     'soon.drivingLead':
       'Driving mode will show your speed, alerts along the way and a driving score on arrival. It opens soon.',
-    'soon.jobsTitle': 'Jobs',
-    'soon.jobsLead':
-      'Requests from stranded drivers around your garage will land here, with the route and the arrival confirmation. Until then, support puts you in touch.',
-    'soon.trackingTitle': 'Job tracking',
-    'soon.trackingLead':
-      'The mechanic’s route on the map is coming soon. The information below is already live.',
 
     'common.cancel': 'Cancel',
     'common.retry': 'Retry',
     'common.close': 'Close',
     'common.save': 'Save',
     'common.loading': 'Loading…',
+    'common.error': 'Failed',
+
+    // — Mechanic side: the work desk ——————————————————————————————
+    'jobs.deskLabel': 'Work desk',
+    'jobs.listening': 'LISTENING',
+    'jobs.soon': 'SOON',
+
+    'jobs.sosTile': 'SOS',
+    'jobs.sosTileWaiting': 'Drivers are waiting for your answer.',
+    'jobs.sosTileIdle': 'No request waiting right now.',
+    'jobs.radarTile': 'Radar',
+    'jobs.radarTileLead': 'Watch for breakdowns around your garage.',
+
+    'jobs.sosTitle': 'SOS requests',
+    'jobs.incoming': 'To handle',
+    'jobs.active': 'In progress',
+
+    'jobs.stateToAnswer': 'TO ANSWER',
+    'jobs.stateToLeave': 'TO LEAVE',
+    'jobs.stateDriving': 'ON THE WAY',
+    'jobs.stateToConfirm': 'ARRIVAL TO CONFIRM',
+    'jobs.stateOngoing': 'ONGOING',
+
+    'jobs.distance': 'Distance',
+    'jobs.approach': 'Approach',
+    'jobs.waiting': 'Waiting',
+    'jobs.words': 'What the client says',
+    'jobs.constraints': 'Bring along',
+    'jobs.requester': 'The requester',
+    'jobs.where': 'Where',
+
+    'jobs.dangerBanner': 'Danger reported — intervene first',
+    'jobs.immobilized': 'Cannot be driven',
+    'jobs.immobilizedLead': 'Plan for a flatbed or a tow bar.',
+    'jobs.vulnerable': 'Vulnerable passengers',
+    'jobs.vulnerableLead': 'A child, an elderly or injured person on board.',
+    'jobs.noPhoto': 'No photo sent',
+    'jobs.phoneHidden': 'Number hidden until you accept',
+    'jobs.areaOnly': 'Approximate area. The exact spot shows as soon as you accept.',
+    'jobs.approxLocation': 'approximate location',
+    'jobs.gone': 'This request has left your queue. The client may have cancelled it.',
+
+    'jobs.accept': 'Accept',
+    'jobs.decline': 'Decline',
+    'jobs.callClient': 'Call',
+    'jobs.goThere': 'Go there',
+    'jobs.enRoute': 'Leaving',
+    'jobs.confirmArrival': 'I have arrived',
+    'jobs.waitingClient': 'Arrival recorded — waiting for the client',
+
+    'jobs.declineTitle': 'Decline this request?',
+    'jobs.declineBody':
+      'The client will be notified and will resume the search: the request stays open and another garage will be picked. It leaves your queue.',
+    'jobs.declineReason': 'garage unavailable',
+
+    // — Route ————————————————————————————————————————————————————
+    'jobs.timeToArrive': 'Drive time',
+    'jobs.arrivalAt': 'Arrival',
+    'jobs.recenter': 'Recentre on the route',
+    'jobs.waitingGps': 'Looking for your position…',
+    'jobs.roughEstimate':
+      'Straight-line estimate: road routing did not answer. Expect longer.',
+
+    'jobs.closedTitle': 'Detection closed',
+    'jobs.closedBody':
+      'Your garage shows in no search: no new SOS can reach you. Reopen detection from “My garage”.',
+    'jobs.noGarage': 'No garage is attached to this account.',
+    'jobs.emptyTitle': 'No request',
+    'jobs.emptyLead':
+      'Your garage is listening. SOS calls from stranded drivers around you will land here.',
+
+    // — Client side: live tracking ————————————————————————————————
+    'live.stepAccepted': 'Accepted',
+    'live.stepEnRoute': 'On the way',
+    'live.stepArrived': 'On site',
+    'live.stepConfirmed': 'Confirmed',
+    'live.arrivesIn': 'Arrives in',
+    'live.onSite': 'On site',
+    'live.moving': 'Approaching',
+    'live.stopped': 'Stopped — traffic or a break',
+    'live.notMovingYet': 'The mechanic has not sent a position yet: route from the workshop.',
+    'live.roughEstimate':
+      'Straight-line estimate: road routing did not answer. Expect longer.',
+    'live.degraded': 'Unstable connection — this information may be outdated.',
+    'live.callMechanic': 'Call',
+    'live.confirmArrival': 'He has arrived',
+    'live.confirmedWaiting': 'Waiting for the mechanic',
+    'live.confirmTitle': 'Has the mechanic arrived?',
+    'live.confirmBody':
+      'Only confirm if he is really on site. The job closes when you both confirm, and that is what releases your points.',
+    'live.confirmAction': 'Yes, he is here',
+    'live.doneTitle': 'Job completed',
+    'live.doneLead': 'You both confirmed the arrival. Your points are credited.',
+    'live.doneSummary': 'Summary',
+    'live.rate': 'Rate this garage',
+    'live.backToMap': 'Back to the map',
+    'live.overTitle': 'This request is closed',
+    'live.overLead': 'It was cancelled or completed. Start a new SOS from the map if needed.',
+
+    // — Client side: the garage declined ——————————————————————————
+    'results.declinedLabel': 'Garage answer',
+    'results.declinedTitle': 'This garage cannot come',
+    'results.declinedLead':
+      'Your request stays open, nothing to fill in again. Pick another garage below.',
   },
 } as const;
 

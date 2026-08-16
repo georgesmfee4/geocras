@@ -4,6 +4,7 @@ import {
   isProblemValidForVehicle,
   isTerminal,
   matchingServices,
+  type ApproachRoute,
   type AssistanceRequest,
   type CreateRequestBody,
   type CreateRequestResponse,
@@ -15,12 +16,14 @@ import {
   type RequestStatus,
   type Service,
 } from '@geocras/shared';
+import { sql } from 'kysely';
 import { db } from '../../db/client';
 import { pointFromLatLng } from '../../db/geo';
 import { badRequest, conflict, forbidden, notFound } from '../../lib/errors';
 import { bus } from '../../realtime/bus';
 import { awardForClosedRequest } from '../loyalty/loyalty.service';
 import { searchNearby } from '../garages/garages.service';
+import { computeRoute } from '../routing/routing.service';
 import {
   appendEvent,
   findActiveRequestForClient,
@@ -267,6 +270,49 @@ export async function acceptRequest(
   });
 }
 
+/**
+ * Refus du garage : la demande repart en recherche.
+ *
+ * **Ce n'est pas une annulation.** Le client est en panne au bord d'une route ;
+ * lui tuer sa demande parce qu'un garage ne peut pas venir l'obligerait à tout
+ * ressaisir. On ne retire que le garage : la demande garde son identifiant, son
+ * journal, son ancienneté, et le client retrouve la liste des garages là où il
+ * l'avait laissée.
+ *
+ * `selected_at` repart à `null` avec `garage_id` — c'est l'origine du compteur
+ * d'attente, et le garage suivant n'est pas comptable des minutes passées à
+ * attendre celui d'avant.
+ *
+ * L'identité du garage qui refuse est écrite dans le journal, pas perdue : elle
+ * est la seule base d'un futur taux de refus, et la seule façon de savoir
+ * pourquoi une demande a fait trois garages avant d'aboutir.
+ */
+export async function declineRequest(
+  requestId: string,
+  userId: string,
+  reason: string,
+): Promise<AssistanceRequest> {
+  const { request, role } = await loadAsParty(requestId, userId);
+  if (role !== 'garage') throw forbidden('Seul le garage refuse une demande');
+  assertTransition(request.status, 'pending');
+
+  const garage = request.garage_id ? await findGarageSummaryById(db, request.garage_id) : null;
+
+  return applyTransition({
+    requestId,
+    userId,
+    role,
+    next: 'pending',
+    patch: { garage_id: null, selected_at: null },
+    eventType: 'declined',
+    payload: { garageId: request.garage_id, garageName: garage?.name ?? null, reason },
+    // La demande ne désignera plus ce garage une fois la transition écrite :
+    // sans ce rappel, l'atelier qui vient de refuser garderait la demande
+    // affichée dans sa file jusqu'au prochain sondage.
+    notifyGarageId: request.garage_id,
+  });
+}
+
 export async function declareEnRoute(
   requestId: string,
   userId: string,
@@ -419,6 +465,13 @@ type TransitionParams = {
   patch: Record<string, unknown>;
   eventType: Parameters<typeof appendEvent>[1]['type'];
   payload?: unknown;
+  /**
+   * Garage à prévenir, quand la transition vient de le détacher.
+   *
+   * Voir `RequestChangedEvent.garageId` : sans lui, un refus n'atteint jamais
+   * l'atelier qui l'a prononcé, puisque la demande ne le désigne plus.
+   */
+  notifyGarageId?: string | null;
 };
 
 async function applyTransition(params: TransitionParams): Promise<AssistanceRequest> {
@@ -445,6 +498,7 @@ async function applyTransition(params: TransitionParams): Promise<AssistanceRequ
     seq: updated.last_seq,
     type: params.eventType,
     actorRole: params.role,
+    garageId: params.notifyGarageId,
   });
 
   return toAssistanceRequest(updated);
@@ -605,6 +659,54 @@ export async function recordPosition(
   bus.emit('request:position', { requestId });
 }
 
+/**
+ * Trajet d'approche du garagiste, servi **aux deux parties**.
+ *
+ * Le garagiste a déjà `GET /:id/route`, où il fournit son départ. Le client, lui,
+ * ne peut pas : il ne connaît pas la position du dépanneur, et rien ne
+ * justifierait de la lui faire transiter pour qu'il la renvoie. Le serveur
+ * prend donc le **dernier point émis par le garage** — exactement la source de
+ * l'ETA du suivi — et trace depuis là.
+ *
+ * Une seule vérité, donc : le kilométrage que le client lit est celui que le
+ * garagiste conduit, calculé par le même moteur avec les mêmes points. Deux
+ * calculs séparés auraient fini par afficher deux distances différentes pour un
+ * même trajet, et il n'y aurait eu aucun moyen de dire laquelle avait raison.
+ *
+ * Sans aucun point émis, on part de l'adresse de l'atelier et `fromLive` le
+ * dit. C'est le cas des premières secondes après l'acceptation.
+ */
+export async function getApproachRoute(
+  requestId: string,
+  userId: string,
+): Promise<ApproachRoute> {
+  const { request } = await loadAsParty(requestId, userId);
+
+  if (request.accepted_at === null) {
+    throw conflict('INVALID_STATE_TRANSITION', 'Aucun trajet tant que la demande n’est pas acceptée');
+  }
+  if (!request.garage_id) {
+    throw notFound('GARAGE_NOT_FOUND', 'Aucun garage retenu sur cette demande');
+  }
+
+  const positions = await findLatestPositions(db, requestId);
+  const garagePing = positions.find((position) => position.role === 'garage') ?? null;
+
+  const garage = await findGarageSummaryById(db, request.garage_id);
+  if (!garage) throw notFound('GARAGE_NOT_FOUND', 'Garage introuvable');
+
+  const from = garagePing
+    ? { lat: Number(garagePing.lat), lng: Number(garagePing.lng) }
+    : { lat: Number(garage.lat), lng: Number(garage.lng) };
+
+  const leg = await computeRoute(from, {
+    lat: Number(request.origin_lat),
+    lng: Number(request.origin_lng),
+  });
+
+  return { ...leg, fromLive: garagePing !== null };
+}
+
 export async function getHistory(userId: string, page: number, pageSize: number) {
   const total = await db
     .selectFrom('assistance_requests as r')
@@ -618,7 +720,29 @@ export async function getHistory(userId: string, page: number, pageSize: number)
   const rows = await selectRequest(db)
     .leftJoin('garages as g', 'g.id', 'r.garage_id')
     .leftJoin('reviews as rev', 'rev.request_id', 'r.id')
-    .select(['g.name as garage_name', 'g.certified as garage_certified', 'rev.id as review_id'])
+    // Le demandeur est toujours présent : la colonne est NOT NULL et la clé
+    // étrangère cascade. D'où une jointure interne, qui ne peut pas perdre de
+    // ligne — contrairement au garage, facultatif tant que la demande est
+    // `pending`.
+    .innerJoin('users as cu', 'cu.id', 'r.client_id')
+    .select([
+      'g.name as garage_name',
+      'g.certified as garage_certified',
+      'cu.full_name as client_name',
+      'rev.id as review_id',
+      /**
+       * De quel côté est l'appelant.
+       *
+       * Calculé en SQL, dans la requête qui filtre déjà sur cette condition :
+       * le `OR` du `WHERE` et ce `CASE` disent la même chose, et les garder
+       * ensemble empêche qu'ils divergent. Le déduire côté mobile aurait
+       * marché aussi — mais il aurait fallu le refaire dans chaque écran, et
+       * chacun l'aurait fait un peu différemment.
+       */
+      sql<PartyRole>`CASE WHEN r.client_id = ${userId} THEN 'client' ELSE 'garage' END`.as(
+        'party_role',
+      ),
+    ])
     .where((eb) =>
       eb.or([eb('r.client_id', '=', userId), eb('g.owner_user_id', '=', userId)]),
     )
@@ -630,8 +754,10 @@ export async function getHistory(userId: string, page: number, pageSize: number)
   return {
     results: rows.map((row) => ({
       ...toAssistanceRequest(row as RequestRecord),
+      role: row.party_role,
       garageName: row.garage_name,
       garageCertified: row.garage_certified,
+      clientName: row.client_name,
       reviewed: row.review_id !== null,
     })),
     page,

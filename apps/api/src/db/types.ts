@@ -140,6 +140,8 @@ export type RequestEventsTable = {
   type:
     | 'created'
     | 'garage_selected'
+    /** Refus du garage : la demande repart en recherche. Cf. migration 0007. */
+    | 'declined'
     | 'accepted'
     | 'en_route'
     | 'position'

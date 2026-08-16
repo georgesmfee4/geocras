@@ -15,11 +15,14 @@ import { logger } from '../lib/logger';
 import { verifyAccessToken } from '../modules/auth/tokens';
 import {
   findEventsAfter,
+  findGarageOwner,
   findGarageSummaryById,
   findLatestPositions,
+  findOwnerOfRequestGarage,
   findRequestById,
   resolveParty,
 } from '../modules/requests/requests.repo';
+import { getJobsForOwner } from '../modules/requests/jobs.service';
 import { computeTracking } from '../modules/requests/tracking';
 import { recordPosition } from '../modules/requests/requests.service';
 import { bus } from './bus';
@@ -27,6 +30,42 @@ import { bus } from './bus';
 type AuthedSocket = Socket & { userId: string };
 
 const roomOf = (requestId: string): string => `request:${requestId}`;
+
+/**
+ * Room propre à un compte, rejointe dès la connexion.
+ *
+ * Les rooms par demande ne suffisent pas au garagiste : au moment où un SOS
+ * lui est adressé, il ne connaît pas encore cette demande — il n'a donc rejoint
+ * aucune room, et le seul canal qui puisse le prévenir est celui qui le désigne
+ * lui. C'est aussi ce qui tient plusieurs appareils du même garage d'accord :
+ * l'atelier accepte sur la tablette, le téléphone du dépanneur voit la file
+ * changer.
+ */
+const userRoomOf = (userId: string): string => `user:${userId}`;
+
+/**
+ * Pousse la file de travail au propriétaire du garage retenu sur cette demande.
+ *
+ * Silencieux quand le garage n'appartient à personne — c'est le cas des garages
+ * du seed, pas une anomalie.
+ */
+async function pushJobsToOwner(
+  io: Server,
+  requestId: string,
+  /**
+   * Garage désigné explicitement par l'événement, quand la demande ne le
+   * porte plus — cf. le refus, qui détache `garage_id` avant de publier.
+   */
+  garageIdHint?: string | null,
+): Promise<void> {
+  const ownerUserId = garageIdHint
+    ? await findGarageOwner(db, garageIdHint)
+    : await findOwnerOfRequestGarage(db, requestId);
+  if (!ownerUserId) return;
+
+  const jobs = await getJobsForOwner(ownerUserId);
+  if (jobs) io.to(userRoomOf(ownerUserId)).emit(SOCKET_EVENTS.jobs, jobs);
+}
 
 /**
  * Construit la charge de suivi diffusée à une room.
@@ -110,6 +149,28 @@ export function attachRealtime(httpServer: HttpServer): Server {
   io.on('connection', (socket) => {
     const userId = (socket as AuthedSocket).userId;
 
+    /**
+     * Abonnement d'office à sa propre room — aucun message à envoyer pour ça.
+     *
+     * C'est ce qui permet au garagiste de recevoir un SOS qu'il ne connaît pas
+     * encore. La room ne porte que ce qui concerne ce compte : l'identité vient
+     * du jeton vérifié à la poignée de main, jamais d'un paramètre client.
+     */
+    void socket.join(userRoomOf(userId));
+
+    /**
+     * File de travail à l'ouverture, pour qui en a une.
+     *
+     * Évite la fenêtre aveugle du garagiste qui rallume son téléphone : sans
+     * cet envoi, il ne verrait rien jusqu'au prochain changement d'état — donc
+     * pas le SOS arrivé pendant la coupure, qui est précisément celui qu'il
+     * attend.
+     */
+    void (async () => {
+      const jobs = await getJobsForOwner(userId);
+      if (jobs) socket.emit(SOCKET_EVENTS.jobs, jobs);
+    })();
+
     socket.on(SOCKET_EVENTS.join, async (raw: unknown) => {
       const parsed = joinPayloadSchema.safeParse(raw);
       if (!parsed.success) {
@@ -186,6 +247,17 @@ export function attachRealtime(httpServer: HttpServer): Server {
    */
   bus.on('request:changed', (event) => {
     void (async () => {
+      /**
+       * Le garagiste d'abord, et hors de la room de la demande.
+       *
+       * Tout changement d'état modifie sa file : un SOS qui arrive, une
+       * demande annulée qui en sort, une arrivée confirmée. C'est le seul
+       * destinataire qui ne peut pas être atteint par la room — il n'y est pas
+       * encore quand le SOS lui est adressé, et c'est justement le message qui
+       * compte le plus pour lui.
+       */
+      await pushJobsToOwner(io, event.requestId, event.garageId);
+
       const state = await buildState(event.requestId, 0);
       if (!state) return;
 

@@ -1,5 +1,6 @@
 import type {
   ActiveRequestResponse,
+  ApproachRoute,
   AssistanceRequest,
   AuthResponse,
   AuthSessionsResponse,
@@ -13,6 +14,7 @@ import type {
   EditMyGarageBody,
   GarageDetail,
   GarageReviewsResponse,
+  JobsResponse,
   LoginBody,
   LoyaltyHistoryResponse,
   LoyaltySummary,
@@ -24,6 +26,7 @@ import type {
   PublicUser,
   RequestDetail,
   RequestHistoryResponse,
+  RouteLeg,
   Review,
   RevokeOtherSessionsResponse,
   ReviewEligibility,
@@ -93,9 +96,39 @@ export const api = {
     active: () => apiFetch<ActiveRequestResponse>('/requests/active'),
     mine: (page = 1, pageSize = 20) =>
       apiFetch<RequestHistoryResponse>('/requests/mine', { query: { page, pageSize } }),
+    /**
+     * File de travail du garage détenu par le compte connecté.
+     *
+     * Répond 404 GARAGE_NOT_FOUND pour un compte sans garage : ce n'est pas la
+     * même chose qu'une file vide, et l'écran ne les affiche pas pareil.
+     */
+    garageJobs: () => apiFetch<JobsResponse>('/requests/garage'),
     selectGarage: (id: string, garageId: string) =>
       apiFetch<AssistanceRequest>(`/requests/${id}/select`, { method: 'POST', body: { garageId } }),
     accept: (id: string) => apiFetch<AssistanceRequest>(`/requests/${id}/accept`, { method: 'POST' }),
+    /**
+     * Refus du garage : la demande repart en recherche, elle n'est pas annulée.
+     * À ne pas confondre avec `cancel`, qui ferme le SOS du client.
+     */
+    decline: (id: string, reason: string) =>
+      apiFetch<AssistanceRequest>(`/requests/${id}/decline`, { method: 'POST', body: { reason } }),
+    /**
+     * Itinéraire routier vers le lieu de la panne, depuis la position courante
+     * du garagiste. L'arrivée n'est pas un paramètre : le serveur la lit sur la
+     * demande.
+     */
+    route: (id: string, from: { lat: number; lng: number }) =>
+      apiFetch<RouteLeg>(`/requests/${id}/route`, {
+        query: { fromLat: from.lat, fromLng: from.lng },
+      }),
+    /**
+     * Trajet d'approche du garagiste, servi aux **deux** parties.
+     *
+     * Aucun paramètre : le départ est le dernier point émis par le garage, que
+     * le serveur connaît. Le client n'a donc rien à savoir de la position du
+     * dépanneur pour en obtenir le tracé.
+     */
+    approach: (id: string) => apiFetch<ApproachRoute>(`/requests/${id}/approach`),
     enRoute: (id: string) =>
       apiFetch<AssistanceRequest>(`/requests/${id}/en-route`, { method: 'POST' }),
     confirmArrival: (id: string, position: { lat: number; lng: number } | null) =>

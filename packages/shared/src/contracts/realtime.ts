@@ -21,6 +21,21 @@ export const SOCKET_EVENTS = {
   tracking: 'request:tracking',
   event: 'request:event',
   error: 'request:error',
+  /**
+   * File de travail du garage, poussée à son propriétaire.
+   *
+   * Le seul événement qui ne passe pas par la room d'une demande, et il ne
+   * peut pas : au moment où un SOS lui est adressé, le garagiste ne connaît
+   * pas encore cette demande, donc n'a rejoint aucune room. Il est abonné à sa
+   * propre room utilisateur dès la connexion du socket, et c'est là qu'arrive
+   * le SOS.
+   *
+   * On pousse la **liste entière** plutôt qu'un signal à recharger : elle tient
+   * en quelques centaines d'octets, là où un aller-retour HTTP de plus sur un
+   * réseau qui met deux secondes à répondre repousse d'autant l'instant où le
+   * garagiste voit la demande.
+   */
+  jobs: 'garage:jobs',
 } as const;
 
 export const joinPayloadSchema = z.object({

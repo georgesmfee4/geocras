@@ -70,6 +70,15 @@ export function isRequestOngoing(status: RequestStatus): boolean {
 export const REQUEST_EVENT_TYPES = [
   'created',
   'garage_selected',
+  /**
+   * Le garage a refusé la demande, qui repart en recherche.
+   *
+   * Distinct de `cancelled` : la demande n'est pas morte, elle a seulement
+   * perdu son garage. Les confondre effacerait du journal la seule trace qui
+   * permette de mesurer le taux de refus d'un garage — et de le compter dans
+   * son classement, le jour où on le décidera.
+   */
+  'declined',
   'accepted',
   'en_route',
   'position',
@@ -200,6 +209,19 @@ export const cancelRequestBodySchema = z.object({
   reason: z.string().trim().max(200).default(''),
 });
 
+/**
+ * Refus du garage.
+ *
+ * Le motif est **libre et facultatif**. L'imposer aurait produit ce que
+ * produisent tous les motifs obligatoires : le premier choix de la liste,
+ * coché sans le lire, par quelqu'un qui a une dépanneuse à sortir. Un champ
+ * vide est une information plus honnête qu'un motif faux.
+ */
+export const declineRequestBodySchema = z.object({
+  reason: z.string().trim().max(200).default(''),
+});
+export type DeclineRequestBody = z.infer<typeof declineRequestBodySchema>;
+
 /** Confirmation d'arrivée — idempotente : un double appui ne compte qu'une fois. */
 export const confirmArrivalBodySchema = z.object({
   position: coordinatesSchema.nullable().default(null),
@@ -263,7 +285,19 @@ export type RequestEvent = z.infer<typeof requestEventSchema>;
  */
 export const ALLOWED_TRANSITIONS: Readonly<Record<RequestStatus, readonly RequestStatus[]>> = {
   pending: ['selected', 'cancelled'],
-  selected: ['accepted', 'cancelled'],
+  /**
+   * `selected → pending` est le **refus du garage**, et la seule marche
+   * arrière de toute la machine.
+   *
+   * Elle existe parce que l'alternative était pire : sans elle, un garage qui
+   * ne peut pas intervenir n'avait que l'annulation, c'est-à-dire tuer la
+   * demande de quelqu'un qui est en panne au bord d'une route. Le refus lui
+   * rend seulement sa liberté de choisir ailleurs — la demande garde son
+   * identifiant, son journal et son ancienneté, elle perd son garage.
+   *
+   * Rien d'autre ne recule : voir le test « ne revient jamais en arrière ».
+   */
+  selected: ['accepted', 'pending', 'cancelled'],
   accepted: ['en_route', 'cancelled'],
   en_route: ['awaiting_confirmation', 'cancelled'],
   awaiting_confirmation: ['closed', 'cancelled'],
@@ -281,8 +315,33 @@ export function isTerminal(status: RequestStatus): boolean {
 
 export const requestHistoryResponseSchema = paginatedSchema(
   assistanceRequestSchema.extend({
+    /**
+     * De quel côté se trouvait **le compte qui lit** cette ligne.
+     *
+     * L'historique mélange volontairement les deux : un garagiste y retrouve
+     * ses interventions, un client ses dépannages, et le même compte peut avoir
+     * les deux — un garagiste tombe aussi en panne.
+     *
+     * Sans ce champ, l'écran n'avait aucun moyen de le savoir et traitait tout
+     * le monde en client : il affichait au garagiste le nom de son propre
+     * garage comme s'il l'avait appelé, lui proposait de se noter lui-même, et
+     * l'envoyait sur l'écran de suivi du demandeur. C'est le serveur qui
+     * connaît la réponse — il l'a déjà calculée pour filtrer la requête — donc
+     * c'est lui qui la donne, plutôt que de laisser chaque écran la déduire à
+     * sa façon.
+     */
+    role: z.enum(PARTY_ROLES),
     garageName: z.string().nullable(),
     garageCertified: z.boolean().nullable(),
+    /**
+     * Nom du demandeur.
+     *
+     * C'est **l'autre partie** quand on lit en tant que garage : la ligne doit
+     * nommer qui on est allé dépanner, pas répéter l'enseigne de l'atelier.
+     * Côté client, c'est son propre nom — sans intérêt, mais sans fuite non
+     * plus.
+     */
+    clientName: z.string(),
     reviewed: z.boolean(),
   }),
 );

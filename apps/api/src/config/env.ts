@@ -26,6 +26,18 @@ const envSchema = z.object({
     .default('')
     .transform((v) => v.split(',').map((s) => s.trim()).filter(Boolean)),
 
+  /**
+   * Serveur de routage OSRM.
+   *
+   * ⚠️ Le défaut est le **serveur de démonstration public** du projet OSRM.
+   * Il dépanne en développement, mais sa politique d'usage interdit la
+   * production : pas de garantie de disponibilité, quota partagé, et chaque
+   * requête envoie à un tiers la position d'un garagiste et le lieu d'une
+   * panne. Le cahier des charges prévoit une instance auto-hébergée — c'est
+   * cette variable qui la désignera, et rien d'autre ne bougera.
+   */
+  OSRM_URL: z.string().url().default('https://router.project-osrm.org'),
+
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),

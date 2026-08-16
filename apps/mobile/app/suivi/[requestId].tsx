@@ -2,35 +2,34 @@ import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, View } from 'react-native';
-import { useCancelRequest } from '../../src/api/hooks';
+import { useApproachRoute, useCancelRequest } from '../../src/api/hooks';
 import { env } from '../../src/config/env';
 import { useTracking } from '../../src/realtime/useTracking';
-import { dataAgeSeconds, useTrackingStore } from '../../src/stores/tracking';
+import { useTrackingStore } from '../../src/stores/tracking';
 import { useI18n } from '../../src/i18n/I18nProvider';
 import { usePreferences } from '../../src/settings/preferences';
 import { useTheme } from '../../src/theme/ThemeProvider';
-import { ComingSoon } from '../../src/screens/ComingSoon';
 import { AwaitingGarage } from '../../src/sos/AwaitingGarage';
 import { forgetSentAt, useSentAt } from '../../src/sos/sentAt';
+import { LiveTracking } from '../../src/tracking/LiveTracking';
+import { TrackingDone } from '../../src/tracking/TrackingDone';
 import { Text } from '../../src/ui/Text';
 
 /**
- * Écran de suivi.
+ * Écran de suivi, côté client.
  *
- * Il couvre **deux moments qui n'ont rien à voir** et qu'un seul écran
- * mélangeait jusqu'ici :
+ * Il couvre **quatre moments qui n'ont rien à voir**, et c'est pour ça qu'il
+ * délègue à quatre rendus plutôt que d'empiler des conditions :
  *
- *  - `selected` — la demande est partie, le garage ne l'a pas encore acceptée.
- *    Rien ne bouge, il n'y a ni trajet ni ETA : c'est une attente, et elle a
- *    son propre écran (`AwaitingGarage`) plutôt qu'un bandeau de suivi rempli
- *    de tirets.
- *  - à partir de `accepted` — le garagiste est engagé, le suivi temps réel a
- *    quelque chose à montrer.
- *
- * Le rendu du trajet (tracé trois couches, véhicule qui avance) attend
- * MapLibre, mais la mécanique temps réel est déjà branchée et observable :
- * état de connexion, bascule en mode dégradé, et surtout la **fraîcheur
- * réelle** de la donnée.
+ *  - `selected` — la demande est partie, le garage n'a pas répondu. Rien ne
+ *    bouge : ni trajet, ni ETA. C'est une attente, et elle a son écran
+ *    (`AwaitingGarage`) plutôt qu'un suivi rempli de tirets ;
+ *  - `pending` — le garage a refusé, la demande repart en recherche. On renvoie
+ *    le client à la liste avec un mot d'explication ;
+ *  - `accepted` → `awaiting_confirmation` — le dépanneur est engagé. Carte,
+ *    position en direct, ETA recalculé sur le réseau routier, et surtout la
+ *    **confirmation d'arrivée** ;
+ *  - `closed` — c'est fini, et il faut le dire.
  */
 export default function SuiviScreen() {
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
@@ -40,6 +39,8 @@ export default function SuiviScreen() {
 
   const { detail, connection } = useTracking(requestId ?? null);
   const storeStatus = useTrackingStore((state) => state.status);
+  const toClient = useTrackingStore((state) => state.toClient);
+  const lastPacketAt = useTrackingStore((state) => state.lastPacketAt);
   const cancelRequest = useCancelRequest(requestId ?? '');
 
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +66,18 @@ export default function SuiviScreen() {
    * où le garage accepte.
    */
   const status = storeStatus ?? detail?.status ?? null;
+
+  const engaged =
+    status === 'accepted' || status === 'en_route' || status === 'awaiting_confirmation';
+
+  /**
+   * Trajet routier du dépanneur.
+   *
+   * Demandé seulement une fois le garagiste engagé, et **reclé sur sa
+   * position** : la position arrive par socket à chaque ping, le tracé n'est
+   * redemandé que lorsqu'elle a changé de rue. Voir `useApproachRoute`.
+   */
+  const approach = useApproachRoute(requestId ?? null, toClient?.position ?? null, engaged);
 
   /**
    * L'acceptation est la seule bonne nouvelle de cet écran, et elle arrive
@@ -98,6 +111,45 @@ export default function SuiviScreen() {
     if (requestId) forgetSentAt(requestId);
   }, [status, requestId]);
 
+  /**
+   * L'arrivée du dépanneur, signalée au corps.
+   *
+   * Le client ne regarde pas son écran en continu — c'est même tout l'intérêt
+   * d'un suivi. Le passage à `awaiting_confirmation` est le moment où on a
+   * besoin de lui : une vibration l'appelle, sinon la confirmation attend que
+   * quelqu'un pense à rouvrir l'app.
+   */
+  const wasEnRoute = useRef(false);
+
+  useEffect(() => {
+    if (status === 'en_route') {
+      wasEnRoute.current = true;
+      return;
+    }
+    if (wasEnRoute.current && status === 'awaiting_confirmation') {
+      if (usePreferences.getState().haptics) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      }
+    }
+    if (status !== 'awaiting_confirmation') wasEnRoute.current = false;
+  }, [status]);
+
+  /**
+   * Le garage a refusé : la demande est retombée en `pending`.
+   *
+   * C'est le seul retour en arrière de la machine à états, et il ne doit pas
+   * laisser le client sur un écran de suivi qui ne suit plus rien. On le
+   * ramène là où il choisissait — sa demande est intacte, seul le garage a
+   * disparu — et `declined` fait afficher le mot d'explication sur place.
+   *
+   * `replace` et non `push` : l'écran de suivi de cette demande-là n'a plus de
+   * sens, et le laisser dans la pile ferait revenir dessus au premier retour.
+   */
+  useEffect(() => {
+    if (status !== 'pending' || !requestId) return;
+    router.replace(`/sos/resultats?requestId=${requestId}&declined=1` as never);
+  }, [status, requestId, router]);
+
   const askCancel = useCallback(() => {
     if (!requestId) return;
 
@@ -127,6 +179,10 @@ export default function SuiviScreen() {
     ]);
   }, [requestId, cancelRequest, router, t, translateError]);
 
+  const leave = useCallback(() => {
+    router.replace('/(drawer)/(tabs)/carte');
+  }, [router]);
+
   // Premier chargement : on ne sait pas encore dans quel état est la demande.
   // Montrer le radar d'attente ici ferait clignoter l'écran quand on rouvre
   // une intervention déjà en route.
@@ -146,6 +202,40 @@ export default function SuiviScreen() {
           {t('awaiting.loading')}
         </Text>
       </View>
+    );
+  }
+
+  if (status === 'closed') {
+    return (
+      <TrackingDone
+        detail={detail}
+        /*
+          La note n'est proposée que si le garage est connu : sur une demande
+          rouverte depuis un autre appareil, le détail peut ne pas être encore
+          arrivé, et un bouton qui mène nulle part vaut moins que pas de bouton.
+        */
+        onRate={
+          detail?.garage
+            ? () => router.replace(`/garage/${detail.garage!.id}?review=1` as never)
+            : null
+        }
+        onClose={leave}
+      />
+    );
+  }
+
+  if (engaged) {
+    return (
+      <LiveTracking
+        requestId={requestId ?? ''}
+        detail={detail}
+        status={status}
+        toClient={toClient}
+        route={approach.data ?? null}
+        connection={connection}
+        lastPacketAt={lastPacketAt}
+        onBack={leave}
+      />
     );
   }
 
@@ -181,65 +271,29 @@ export default function SuiviScreen() {
     );
   }
 
-  return <TrackingBand />;
-}
-
-/**
- * Bandeau de suivi — squelette câblé, en attendant le rendu cartographique de
- * la maquette 04.
- */
-function TrackingBand() {
-  const theme = useTheme();
-  const { t } = useI18n();
-
-  const connection = useTrackingStore((state) => state.connection);
-  const toClient = useTrackingStore((state) => state.toClient);
-  const toGarage = useTrackingStore((state) => state.toGarage);
-  const lastPacketAt = useTrackingStore((state) => state.lastPacketAt);
-
-  const age = dataAgeSeconds(lastPacketAt);
-
+  /**
+   * `cancelled`, ou un état qu'on n'attendait pas ici.
+   *
+   * On ne laisse pas un écran vide : la demande est close d'une façon ou d'une
+   * autre, et le seul geste utile est de repartir de la carte.
+   */
   return (
-    <ComingSoon title={t('soon.trackingTitle')} lead={t('soon.trackingLead')}>
-      <View
-        style={{
-          backgroundColor: theme.colors.ink,
-          padding: theme.space.lg,
-          gap: theme.space.md,
-        }}
-      >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text variant="h2" style={{ color: '#FFFFFF' }}>
-            {connection === 'live' ? t('tracking.enRoute') : t('tracking.degraded')}
-          </Text>
-          {/* Le compteur reflète l'âge réel du dernier paquet reçu. Afficher
-              « MAJ 3s » sur une donnée qui en a quarante serait mentir sur la
-              seule chose que cet indicateur mesure. */}
-          <Text variant="numSm" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            {t('tracking.updated')} {age === null ? '—' : `${age}s`}
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: 'row', gap: theme.space.xl }}>
-          <View style={{ flex: 1 }}>
-            <Text variant="lbl" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              {t('tracking.toYou')}
-            </Text>
-            <Text variant="h1" style={{ color: '#FFFFFF' }}>
-              {toClient?.etaMin === null || toClient === null ? '—' : `${toClient.etaMin} min`}
-            </Text>
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <Text variant="lbl" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              {t('tracking.toGarage')}
-            </Text>
-            <Text variant="h1" tone="primary">
-              {toGarage?.etaMin === null || toGarage === null ? '—' : `${toGarage.etaMin} min`}
-            </Text>
-          </View>
-        </View>
-      </View>
-    </ComingSoon>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.colors.background,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.space.md,
+        padding: theme.space.xl,
+      }}
+    >
+      <Text variant="h1" style={{ textAlign: 'center' }}>
+        {t('live.overTitle')}
+      </Text>
+      <Text variant="txt" tone="secondary" style={{ textAlign: 'center' }}>
+        {t('live.overLead')}
+      </Text>
+    </View>
   );
 }

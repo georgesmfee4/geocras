@@ -13,7 +13,8 @@
     "db:migrate": "tsx src/db/migrate.ts up",
     "db:reset": "tsx src/db/migrate.ts reset",
     "db:seed": "tsx src/seed/yaounde.ts",
-    "db:seed:ebolowa": "tsx src/seed/ebolowa.ts"
+    "db:seed:ebolowa": "tsx src/seed/ebolowa.ts",
+    "db:seed:garagiste": "tsx src/seed/garage-owner.ts"
   },
   "dependencies": {
     "@geocras/shared": "*",

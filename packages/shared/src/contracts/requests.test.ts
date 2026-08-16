@@ -44,10 +44,29 @@ describe('machine à états d’une demande', () => {
     }
   });
 
-  it('ne revient jamais en arrière', () => {
+  it('laisse le garage rendre la demande à la recherche', () => {
+    // Le refus. Sans lui, un garage qui ne peut pas intervenir n'avait que
+    // l'annulation — c'est-à-dire fermer le SOS de quelqu'un en panne.
+    expect(canTransition('selected', 'pending')).toBe(true);
+  });
+
+  it('ne revient jamais en arrière, sauf pour ce refus', () => {
     expect(canTransition('accepted', 'selected')).toBe(false);
+    expect(canTransition('accepted', 'pending')).toBe(false);
     expect(canTransition('en_route', 'accepted')).toBe(false);
+    expect(canTransition('en_route', 'pending')).toBe(false);
     expect(canTransition('awaiting_confirmation', 'en_route')).toBe(false);
+
+    /**
+     * Le garde-fou de la règle : `selected` est le **seul** état d'où l'on
+     * puisse redescendre. Une fois le garage engagé, la demande ne peut plus
+     * lui être retirée par une transition — il reste l'annulation, qui est un
+     * fait, pas un retour en arrière.
+     */
+    const backward = REQUEST_STATUSES.filter((status) =>
+      ALLOWED_TRANSITIONS[status].includes('pending'),
+    );
+    expect(backward).toEqual(['selected']);
   });
 
   it('déclare terminaux exactement closed et cancelled', () => {

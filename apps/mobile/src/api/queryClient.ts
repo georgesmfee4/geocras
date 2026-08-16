@@ -62,6 +62,14 @@ export const queryKeys = {
     /** Demande en cours, interrogée avant d'ouvrir une nouvelle déclaration. */
     active: () => ['requests', 'active'] as const,
     /**
+     * File de travail du garagiste.
+     *
+     * Sous le préfixe `requests` : ce sont les mêmes demandes, vues de l'autre
+     * côté, et les actions du garagiste doivent invalider les deux vues d'un
+     * seul geste.
+     */
+    garageJobs: () => ['requests', 'garage'] as const,
+    /**
      * Garages proposés pour une demande.
      *
      * La création renvoie la demande **et** son classement de garages dans le

@@ -8,6 +8,7 @@ import {
   type RequestStatus,
 } from '@geocras/shared';
 import { useI18n } from '../i18n/I18nProvider';
+import type { TranslationKey } from '../i18n/translations';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET } from '../theme/tokens';
 import { BlinkingDot } from '../ui/BlinkingDot';
@@ -78,6 +79,16 @@ export function RequestCard({
 
   const ongoing = isRequestOngoing(request.status);
   const color = statusColor(request.status, theme.colors);
+
+  /**
+   * De quel côté ce compte se trouvait sur cette demande.
+   *
+   * Vient du serveur (`role`), jamais déduit ici : l'historique mêle les deux
+   * points de vue, et un même compte peut avoir les deux — un garagiste tombe
+   * aussi en panne.
+   */
+  const asGarage = request.role === 'garage';
+  const counterpart = asGarage ? request.clientName : request.garageName;
 
   /**
    * Durée réelle de l'intervention.
@@ -176,22 +187,29 @@ export function RequestCard({
             {PROBLEM_LABELS[request.problemType][locale]}
           </Text>
 
-          <StatusBadge status={request.status} color={color} />
+          <StatusBadge status={request.status} color={color} asGarage={asGarage} />
 
           {onPress ? <ChevronRightSmallIcon color={theme.colors.muted} size={14} /> : null}
         </View>
 
-        {/* Le garage passe avant la date : c'est lui qu'on cherche en revenant. */}
+        {/*
+          L'autre partie, avant la date : c'est elle qu'on cherche en revenant.
+
+          Et elle dépend du côté où l'on était. Un garagiste qui relit ses
+          interventions veut le nom de la personne dépannée ; lui répéter
+          l'enseigne de son propre atelier sur chaque ligne ne lui apprend rien
+          et lui fait lire l'écran comme s'il était le client.
+        */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.xs }}>
           <Text
             variant="txt"
-            tone={request.garageName ? 'secondary' : 'muted'}
+            tone={counterpart ? 'secondary' : 'muted'}
             numberOfLines={1}
             style={{ flexShrink: 1 }}
           >
-            {request.garageName ?? t('history.noGarage')}
+            {counterpart ?? t('history.noGarage')}
           </Text>
-          {request.garageCertified ? (
+          {asGarage ? null : request.garageCertified ? (
             <ShieldCheckIcon color={theme.colors.success} size={13} />
           ) : null}
         </View>
@@ -262,9 +280,32 @@ export function RequestCard({
  * Le rayon reste à zéro — la pilule arrondie est justement ce que la règle des
  * rayons interdit.
  */
-function StatusBadge({ status, color }: { status: RequestStatus; color: string }) {
+function StatusBadge({
+  status,
+  color,
+  asGarage,
+}: {
+  status: RequestStatus;
+  color: string;
+  asGarage: boolean;
+}) {
   const theme = useTheme();
-  const { locale } = useI18n();
+  const { t, locale } = useI18n();
+
+  /**
+   * `REQUEST_STATUS_LABELS` est écrit **du point de vue du client** — c'est dit
+   * dans le contrat. « En attente du garage » ou « Garagiste en route » sur la
+   * ligne de quelqu'un qui *est* ce garagiste inverse les rôles à la lecture.
+   *
+   * Côté garage on reprend donc les libellés du poste de travail, qui nomment
+   * l'action attendue de son côté. Deux vocabulaires pour un même état, parce
+   * qu'il y a bien deux points de vue — et c'est justement ce que l'écran
+   * ignorait.
+   */
+  const label =
+    asGarage && GARAGE_STATUS_LABELS[status]
+      ? t(GARAGE_STATUS_LABELS[status]!)
+      : REQUEST_STATUS_LABELS[status][locale];
 
   return (
     <View
@@ -276,8 +317,16 @@ function StatusBadge({ status, color }: { status: RequestStatus; color: string }
       }}
     >
       <Text variant="lbl" style={{ color }}>
-        {REQUEST_STATUS_LABELS[status][locale]}
+        {label}
       </Text>
     </View>
   );
 }
+
+/** États non terminaux, nommés du côté du garagiste. Les autres se disent pareil. */
+const GARAGE_STATUS_LABELS: Partial<Record<RequestStatus, TranslationKey>> = {
+  selected: 'jobs.stateToAnswer',
+  accepted: 'jobs.stateToLeave',
+  en_route: 'jobs.stateDriving',
+  awaiting_confirmation: 'jobs.stateToConfirm',
+};

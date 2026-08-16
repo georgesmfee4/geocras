@@ -423,6 +423,9 @@ export function useConfirmArrival(requestId: string) {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: queryKeys.requests.detail(requestId) });
       void client.invalidateQueries({ queryKey: queryKeys.me.loyalty() });
+      // Côté garagiste, une arrivée confirmée fait sortir la demande de sa
+      // file dès que le client confirme à son tour.
+      void client.invalidateQueries({ queryKey: queryKeys.requests.garageJobs() });
     },
   });
 }
@@ -434,7 +437,183 @@ export function useRequestAction(requestId: string, action: 'accept' | 'enRoute'
       action === 'accept' ? api.requests.accept(requestId) : api.requests.enRoute(requestId),
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: queryKeys.requests.detail(requestId) });
+      void client.invalidateQueries({ queryKey: queryKeys.requests.garageJobs() });
     },
+  });
+}
+
+/**
+ * Les deux transitions que le garagiste déclenche : accepter, puis partir.
+ *
+ * La demande voyage en **variable** et non en paramètre du hook, contrairement
+ * à `useRequestAction` : la file en affiche plusieurs, et un hook par ligne
+ * n'est pas possible — le nombre de hooks d'un composant ne peut pas dépendre
+ * de la longueur d'une liste.
+ *
+ * Aucun réessai : ni l'une ni l'autre n'est idempotente. Rejouée après une
+ * réponse perdue, la seconde tentative se heurterait à un
+ * `INVALID_STATE_TRANSITION` — la demande a déjà avancé — et afficherait une
+ * erreur là où tout s'est bien passé.
+ */
+export function useJobAction() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ requestId, action }: { requestId: string; action: 'accept' | 'en_route' }) =>
+      action === 'accept' ? api.requests.accept(requestId) : api.requests.enRoute(requestId),
+    onSuccess: (_result, { requestId }) => {
+      void client.invalidateQueries({ queryKey: queryKeys.requests.garageJobs() });
+      void client.invalidateQueries({ queryKey: queryKeys.requests.detail(requestId) });
+    },
+  });
+}
+
+/**
+ * Arrivée sur place, déclarée depuis la file.
+ *
+ * Séparée de `useJobAction` pour une seule raison, mais elle est décisive : la
+ * route est **idempotente**, donc celle-ci a le droit de réessayer. C'est ce
+ * réessai qui évite qu'une intervention reste ouverte parce que la
+ * confirmation est partie dans un trou de réseau — et une confirmation
+ * manquante, c'est le crédit de fidélité des deux parties qui ne tombe jamais.
+ *
+ * La position accompagne la confirmation : elle est journalisée avec
+ * l'événement et sert au contrôle anti-fraude, qui compare l'endroit déclaré à
+ * la trace réellement parcourue.
+ */
+export function useConfirmJobArrival() {
+  const client = useQueryClient();
+  return useMutation({
+    retry: 3,
+    mutationFn: ({
+      requestId,
+      position,
+    }: {
+      requestId: string;
+      position: { lat: number; lng: number } | null;
+    }) => api.requests.confirmArrival(requestId, position),
+    onSuccess: (_result, { requestId }) => {
+      void client.invalidateQueries({ queryKey: queryKeys.requests.garageJobs() });
+      void client.invalidateQueries({ queryKey: queryKeys.requests.detail(requestId) });
+      void client.invalidateQueries({ queryKey: queryKeys.me.loyalty() });
+    },
+  });
+}
+
+/**
+ * Refus d'une demande reçue.
+ *
+ * **Ce n'est pas une annulation.** La demande repart en recherche : le client
+ * garde son SOS, son ancienneté et son journal, et retrouve la liste des
+ * garages là où il l'avait laissée. Appeler `cancel` ici — ce que faisait la
+ * première version — fermait le dossier de quelqu'un en panne au bord d'une
+ * route parce qu'un garage ne pouvait pas venir.
+ */
+export function useDeclineJob() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ requestId, reason }: { requestId: string; reason: string }) =>
+      api.requests.decline(requestId, reason),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ['requests'] }),
+  });
+}
+
+/**
+ * Itinéraire routier vers le lieu de la panne.
+ *
+ * La clé de cache **contient la position de départ, arrondie à ~110 m** : c'est
+ * ce qui fait de ce hook un itinéraire vivant. Le GPS republie toutes les cinq
+ * secondes ; sans arrondi, chaque point produirait une clé neuve et donc un
+ * appel réseau, pour un tracé identique. Avec, la requête ne repart que lorsque
+ * le véhicule a réellement changé de rue — la même grille que celle du cache
+ * serveur, pour que les deux se répondent au lieu de se croiser.
+ *
+ * `enabled` reste faux tant que le GPS n'a rien rendu : demander un itinéraire
+ * depuis une position inconnue n'a pas de sens, et l'écran affiche son propre
+ * état d'acquisition.
+ */
+/**
+ * Trajet d'approche du garagiste, **vu par le client**.
+ *
+ * La clé porte la position du dépanneur arrondie à ~110 m, et c'est elle qui
+ * fait vivre le tracé : la position arrive par socket à chaque ping, mais on ne
+ * redemande le trajet que lorsqu'il a changé de rue. Sans cet arrondi, un
+ * véhicule à l'arrêt dont le GPS oscille relancerait un calcul routier toutes
+ * les cinq secondes.
+ *
+ * Le hook ne connaît pas la position — il ne fait que la recevoir pour bâtir sa
+ * clé. Le serveur, lui, relit le dernier point en base : c'est ce qui garantit
+ * que le tracé montré au client est celui que le garagiste conduit, et non une
+ * reconstitution faite de son côté.
+ */
+export function useApproachRoute(
+  requestId: string | null,
+  mechanic: { lat: number; lng: number } | null,
+  enabled: boolean,
+) {
+  const grid = (value: number) => Math.round(value / 0.001);
+
+  return useQuery({
+    queryKey: [
+      'requests',
+      'approach',
+      requestId,
+      mechanic ? grid(mechanic.lat) : null,
+      mechanic ? grid(mechanic.lng) : null,
+    ],
+    enabled: enabled && requestId !== null,
+    staleTime: 60_000,
+    // Le tracé précédent reste peint pendant le recalcul : une carte qui se
+    // vide à chaque virage donne l'impression d'avoir perdu le dépanneur.
+    placeholderData: (previous) => previous,
+    queryFn: () => api.requests.approach(requestId!),
+  });
+}
+
+export function useJobRoute(requestId: string, from: { lat: number; lng: number } | null) {
+  const grid = (value: number) => Math.round(value / 0.001);
+
+  return useQuery({
+    queryKey: [
+      'requests',
+      'route',
+      requestId,
+      from ? grid(from.lat) : null,
+      from ? grid(from.lng) : null,
+    ],
+    enabled: from !== null,
+    /**
+     * Le trajet ne dépend que des deux points, et le serveur le met déjà en
+     * cache une minute. Le garder frais cinq minutes côté app évite de le
+     * redemander à chaque retour sur l'écran depuis le même endroit.
+     */
+    staleTime: 5 * 60_000,
+    // Garde le tracé précédent affiché pendant le recalcul : une carte qui se
+    // vide à chaque virage donnerait l'impression d'avoir perdu la route.
+    placeholderData: (previous) => previous,
+    queryFn: () => api.requests.route(requestId, from!),
+  });
+}
+
+/**
+ * File de travail du garagiste.
+ *
+ * `staleTime: 0` à rebours du réglage global d'une minute : c'est la seule
+ * donnée de l'app dont une version d'il y a soixante secondes est une faute.
+ * Un SOS qu'on ne voit pas est un client au bord de la route qui attend une
+ * réponse déjà arrivée, et le compteur d'attente qu'il regarde, lui, tourne.
+ *
+ * La liste arrive normalement par socket — voir `useJobFeed`. Cette requête
+ * est le premier remplissage et le filet quand la liaison temps réel est
+ * tombée ; `pollMs` n'est donc renseigné que dans ce second cas, pour ne pas
+ * payer deux fois la même information en données mobiles.
+ */
+export function useGarageJobs({ enabled = true, pollMs = 0 } = {}) {
+  return useQuery({
+    queryKey: queryKeys.requests.garageJobs(),
+    enabled,
+    staleTime: 0,
+    refetchInterval: pollMs > 0 ? pollMs : false,
+    queryFn: api.requests.garageJobs,
   });
 }
 

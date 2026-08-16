@@ -113,6 +113,30 @@ export function useTracking(requestId: string | null) {
     };
   }, [requestId]);
 
+  /**
+   * Un changement d'état déclenche **une** relecture HTTP de la demande.
+   *
+   * Le socket transporte le statut, jamais les horodatages : ni `acceptedAt`,
+   * ni `clientArrivedAt`, ni `closedAt`. Sans cette relecture, l'écran de
+   * suivi apprenait par socket que l'intervention était close tout en gardant
+   * un `closedAt` nul — le récapitulatif affichait donc une durée vide sur une
+   * intervention manifestement terminée.
+   *
+   * Une requête par transition, soit quatre ou cinq sur toute la vie d'une
+   * demande. C'est le contraire d'un sondage : on ne relit que quand quelque
+   * chose a réellement changé, et le socket nous le dit.
+   */
+  const status = useTrackingStore((state) => state.status);
+  const detailQuery = detail;
+
+  useEffect(() => {
+    if (!requestId || status === null) return;
+    void detailQuery.refetch();
+    // Volontairement sans `detailQuery` en dépendance : l'objet de requête est
+    // reconstruit à chaque rendu, ce qui relancerait la lecture en boucle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestId, status]);
+
   // --- Mode dégradé : la réponse HTTP alimente le même store ---------------
   useEffect(() => {
     if (!degraded || !detail.data) return;

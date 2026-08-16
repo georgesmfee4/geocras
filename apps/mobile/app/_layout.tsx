@@ -133,6 +133,18 @@ function RootNavigator() {
         <Stack.Screen name="sos/resultats" options={{ gestureEnabled: false }} />
         <Stack.Screen name="garage/[id]" />
         <Stack.Screen name="suivi/[requestId]" options={{ gestureEnabled: false }} />
+        {/*
+          Poste garagiste : la liste des SOS, le dossier d'une demande, et
+          l'itinéraire vers la panne.
+
+          Hors de l'onglet et non dedans : la barre d'onglets n'a rien à faire
+          sous un dossier qu'on lit pour décider, ni sous une carte de
+          navigation. L'onglet reste le point d'entrée, ces trois écrans
+          s'empilent par-dessus.
+        */}
+        <Stack.Screen name="interventions/sos" />
+        <Stack.Screen name="interventions/[requestId]" />
+        <Stack.Screen name="interventions/route/[requestId]" />
         <Stack.Screen name="parametres/index" />
         <Stack.Screen name="parametres/vehicules" />
         {/* Compte : la fiche, le garage qu'on gère, l'inscription qui y mène. */}

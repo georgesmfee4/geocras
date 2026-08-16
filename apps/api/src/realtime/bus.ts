@@ -15,6 +15,20 @@ export type RequestChangedEvent = {
   seq: number;
   type: RequestEventType;
   actorRole: PartyRole | null;
+  /**
+   * Garage concerné par ce changement, quand il ne peut plus être déduit de la
+   * demande elle-même.
+   *
+   * Le cas qui l'impose est le **refus** : la transition détache `garage_id`
+   * avant que l'événement ne parte, si bien que la couche temps réel, en
+   * relisant la demande, ne trouve plus personne à prévenir. Le garagiste qui
+   * vient de refuser ne voyait donc pas sa propre file se mettre à jour — la
+   * demande y restait affichée jusqu'au prochain sondage.
+   *
+   * Renseigné uniquement là où c'est nécessaire : partout ailleurs, la demande
+   * porte encore son garage et la déduction suffit.
+   */
+  garageId?: string | null;
 };
 
 export type PositionReceivedEvent = {

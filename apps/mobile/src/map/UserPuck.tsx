@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { useReducedMotion } from '../ui/useReducedMotion';
+import { circlePolygon } from './circle';
 
 export type UserPuckProps = {
   position: { lat: number; lng: number };
@@ -155,33 +156,3 @@ export function UserPuck({ position, accuracyM }: UserPuckProps) {
   );
 }
 
-/**
- * Approxime un cercle géodésique par un polygone de 48 sommets.
- *
- * La correction en `cos(latitude)` sur la longitude est indispensable : sans
- * elle, le cercle est un ovale. À la latitude de Yaoundé (3,8°) l'écart reste
- * faible, mais il deviendrait visible partout ailleurs.
- */
-function circlePolygon(
-  center: { lat: number; lng: number },
-  radiusMeters: number,
-  steps = 48,
-): GeoJSON.Feature<GeoJSON.Polygon> {
-  const metersPerDegreeLat = 111_320;
-  const metersPerDegreeLng = metersPerDegreeLat * Math.cos((center.lat * Math.PI) / 180);
-
-  const ring: [number, number][] = [];
-  for (let i = 0; i <= steps; i += 1) {
-    const angle = (i / steps) * 2 * Math.PI;
-    ring.push([
-      center.lng + (radiusMeters * Math.cos(angle)) / metersPerDegreeLng,
-      center.lat + (radiusMeters * Math.sin(angle)) / metersPerDegreeLat,
-    ]);
-  }
-
-  return {
-    type: 'Feature',
-    properties: {},
-    geometry: { type: 'Polygon', coordinates: [ring] },
-  };
-}

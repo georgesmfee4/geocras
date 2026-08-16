@@ -31,6 +31,7 @@ import { MapCanvas, type MapCanvasRef } from '../../src/map/MapCanvas';
 import { RouteLine, straightLine } from '../../src/map/RouteLine';
 import { UserPuck } from '../../src/map/UserPuck';
 import { NoGarageFound } from '../../src/sos/NoGarageFound';
+import { DeclinedNotice } from '../../src/sos/DeclinedNotice';
 import { PinnedGarageNotice } from '../../src/sos/PinnedGarageNotice';
 import {
   ResultsSheet,
@@ -69,9 +70,10 @@ export default function ResultatsScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { t, locale, translateError, formatDistance, formatDuration } = useI18n();
-  const { requestId, garage: garageParam } = useLocalSearchParams<{
+  const { requestId, garage: garageParam, declined } = useLocalSearchParams<{
     requestId?: string;
     garage?: string;
+    declined?: string;
   }>();
 
   /**
@@ -83,6 +85,16 @@ export default function ResultatsScreen() {
    * avec la panne.
    */
   const pinnedId = garageParam && garageParam.trim().length > 0 ? garageParam : null;
+
+  /**
+   * On arrive ici parce qu'un garage vient de refuser la demande.
+   *
+   * Sans ce mot, le retour à la liste est incompréhensible : le client était
+   * sur son écran d'attente, et il se retrouve à choisir de nouveau sans
+   * savoir pourquoi. Le message est refermable — une fois lu, il n'apporte
+   * plus rien et occupe la place des garages.
+   */
+  const [declineNoticeShown, setDeclineNoticeShown] = useState(declined === '1');
 
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapCanvasRef>(null);
@@ -468,6 +480,10 @@ export default function ResultatsScreen() {
               {error}
             </Text>
           </View>
+        ) : null}
+
+        {declineNoticeShown ? (
+          <DeclinedNotice onDismiss={() => setDeclineNoticeShown(false)} />
         ) : null}
 
         {pinnedMissing && pinnedNoticeShown ? (

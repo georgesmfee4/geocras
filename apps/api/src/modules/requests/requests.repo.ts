@@ -72,6 +72,93 @@ export async function findActiveRequestForClient(db: Db, clientId: string) {
 }
 
 /**
+ * Statuts qui composent la file de travail d'un garage.
+ *
+ * `pending` en est absent volontairement : une demande sans garage retenu
+ * n'est adressée à personne. `closed` et `cancelled` non plus — ils relèvent
+ * de l'historique, que `getHistory` sert déjà au propriétaire.
+ */
+const LIVE_JOB_STATUSES = [
+  'selected',
+  'accepted',
+  'en_route',
+  'awaiting_confirmation',
+] as const;
+
+/** Garage détenu par ce compte, s'il en détient un. */
+export async function findGarageOwnedBy(db: Db, userId: string) {
+  return db
+    .selectFrom('garages')
+    .select(['id', 'name', 'certified', 'is_active', 'verified_at'])
+    .where('owner_user_id', '=', userId)
+    .executeTakeFirst();
+}
+
+/**
+ * Demandes vivantes adressées à ce garage, avec leur demandeur.
+ *
+ * Pas de `ST_DWithin` ici, et ce n'est pas un oubli : la règle vise les
+ * recherches de proximité, où le filtre géographique **est** la requête. On
+ * filtre ici sur `garage_id`, qui rend au plus une poignée de lignes, et la
+ * distance n'est qu'une colonne projetée sur chacune — jamais un critère de
+ * tri ni de sélection. Un `ST_DWithin` n'écarterait rien et coûterait un
+ * calcul de plus.
+ */
+export async function findGarageJobs(db: Db, garageId: string) {
+  return selectRequest(db)
+    .innerJoin('garages as g', 'g.id', 'r.garage_id')
+    .innerJoin('users as u', 'u.id', 'r.client_id')
+    // Le véhicule est facultatif : une demande peut être déposée sans en avoir
+    // enregistré aucun, auquel cas le type déclaré au SOS est tout ce qu'on a.
+    .leftJoin('vehicles as v', 'v.id', 'r.vehicle_id')
+    .select([
+      'u.full_name as client_name',
+      'u.phone as client_phone',
+      'u.avatar_url as client_avatar',
+      'v.brand as vehicle_brand',
+      'v.model as vehicle_model',
+      'v.plate as vehicle_plate',
+      sql<number>`ST_Distance(r.origin, g.location)::float8`.as('distance_m'),
+    ])
+    .where('r.garage_id', '=', garageId)
+    .where('r.status', 'in', [...LIVE_JOB_STATUSES])
+    .orderBy('r.created_at', 'desc')
+    .execute();
+}
+
+/** Propriétaire d'un garage désigné par son identifiant, s'il en a un. */
+export async function findGarageOwner(db: Db, garageId: string): Promise<string | null> {
+  const row = await db
+    .selectFrom('garages')
+    .select(['owner_user_id'])
+    .where('id', '=', garageId)
+    .executeTakeFirst();
+
+  return row?.owner_user_id ?? null;
+}
+
+/**
+ * Propriétaire du garage retenu sur cette demande, s'il y en a un.
+ *
+ * Sert au routage temps réel : c'est ce compte-là qu'il faut prévenir, et lui
+ * seul. Les garages du seed n'ont pas de propriétaire — d'où le `null`, qui
+ * est un cas normal et non une anomalie.
+ */
+export async function findOwnerOfRequestGarage(
+  db: Db,
+  requestId: string,
+): Promise<string | null> {
+  const row = await db
+    .selectFrom('assistance_requests as r')
+    .innerJoin('garages as g', 'g.id', 'r.garage_id')
+    .select(['g.owner_user_id'])
+    .where('r.id', '=', requestId)
+    .executeTakeFirst();
+
+  return row?.owner_user_id ?? null;
+}
+
+/**
  * Détermine le rôle de l'appelant dans la demande.
  *
  * Le garagiste n'est pas désigné par un champ dédié : c'est le propriétaire du
