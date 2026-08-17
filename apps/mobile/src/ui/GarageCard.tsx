@@ -85,7 +85,7 @@ export function GarageCard({ garage, onPress, width = 250, selected = false }: G
       <View style={{ flex: 1, gap: 2 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.xs }}>
           <Text
-            variant="h2"
+            variant="h2b"
             numberOfLines={1}
             ellipsizeMode="tail"
             style={{ flexShrink: 1 }}

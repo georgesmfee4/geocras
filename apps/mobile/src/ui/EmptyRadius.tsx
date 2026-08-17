@@ -160,7 +160,7 @@ export function EmptyRadius({ radiusKm }: EmptyRadiusProps) {
       </Svg>
 
       <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="h2" numberOfLines={1} ellipsizeMode="tail">
+        <Text variant="h2b" numberOfLines={1} ellipsizeMode="tail">
           {t('map.noneInRadius')}
         </Text>
         <Text variant="txt" tone="secondary" numberOfLines={2}>

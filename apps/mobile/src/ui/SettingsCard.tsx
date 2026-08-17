@@ -179,7 +179,7 @@ export function SwitchRow({
       })}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="h2" numberOfLines={1} ellipsizeMode="tail">
+        <Text variant="h2b" numberOfLines={1} ellipsizeMode="tail">
           {label}
         </Text>
         {hint ? (
@@ -234,7 +234,7 @@ export function LinkRow({
       })}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="h2" numberOfLines={1} ellipsizeMode="tail">
+        <Text variant="h2b" numberOfLines={1} ellipsizeMode="tail">
           {label}
         </Text>
         {hint ? (

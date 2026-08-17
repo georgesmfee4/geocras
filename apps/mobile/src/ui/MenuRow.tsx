@@ -61,7 +61,7 @@ export function MenuRow({
       <Icon color={color} size={21} />
 
       <View style={{ flex: 1 }}>
-        <Text variant="h2" numberOfLines={1} ellipsizeMode="tail" style={{ color }}>
+        <Text variant="h2b" numberOfLines={1} ellipsizeMode="tail" style={{ color }}>
           {label}
         </Text>
         {hint ? (

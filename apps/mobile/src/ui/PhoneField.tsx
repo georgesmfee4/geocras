@@ -46,7 +46,7 @@ export function PhoneField({ label, value, onChangeText, hint, error }: PhoneFie
 
   return (
     <View style={{ gap: theme.space.sm }}>
-      <Text variant="h2">{label}</Text>
+      <Text variant="h2b">{label}</Text>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
         <View

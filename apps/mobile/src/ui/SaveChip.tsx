@@ -105,7 +105,7 @@ export function SaveChip({ state, onPress }: { state: SaveState; onPress: () => 
           ) : null}
 
           <Text
-            variant="smallStrong"
+            variant="btnSm"
             style={{ color: saved ? '#FFFFFF' : theme.colors.onHighlight }}
           >
             {saved ? t('account.saved') : t('common.save')}

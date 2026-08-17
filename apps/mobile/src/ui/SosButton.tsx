@@ -138,7 +138,7 @@ export function SosButton({ title, subtitle, onPress, disabled = false }: SosBut
           <WaveIcon pulse={pulse} animated={!reducedMotion && !disabled} />
 
           <View style={{ flex: 1 }}>
-            <Text variant="heading" tone="inverse" numberOfLines={1} adjustsFontSizeToFit>
+            <Text variant="btn" tone="inverse" numberOfLines={1} adjustsFontSizeToFit>
               {title}
             </Text>
             <Text

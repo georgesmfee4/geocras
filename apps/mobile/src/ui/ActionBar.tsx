@@ -110,7 +110,7 @@ function ActionButton({
       }}
     >
       {Icon({ color: ink, size: 18 })}
-      <Text variant="heading" numberOfLines={1} style={{ color: ink }}>
+      <Text variant="btn" numberOfLines={1} ellipsizeMode="tail" style={{ color: ink }}>
         {label}
       </Text>
     </View>

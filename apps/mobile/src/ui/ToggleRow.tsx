@@ -44,7 +44,7 @@ export function ToggleRow({ label, hint, value, onChange }: ToggleRowProps) {
       })}
     >
       <View style={{ flex: 1 }}>
-        <Text variant="h2">{label}</Text>
+        <Text variant="h2b">{label}</Text>
         {hint ? (
           <Text variant="txt" tone="muted" style={{ marginTop: 2 }}>
             {hint}

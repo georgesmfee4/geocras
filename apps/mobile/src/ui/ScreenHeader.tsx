@@ -58,12 +58,12 @@ export function ScreenHeader({ title, action }: { title: string; action?: ReactN
       </Pressable>
 
       {/*
-        Titre d'écran : `h1`. Il gagne cinq points sur l'ancien `heading` — 22
+        Titre d'écran : `h1b`. Il gagne sept points sur l'ancien `heading` — 24
         au lieu de 17 — ce que la barre absorbe sans bouger, son gabarit étant
-        de 60 points pour 26 d'interligne. Le titre se tronque toujours plutôt
+        de 60 points pour 28 d'interligne. Le titre se tronque toujours plutôt
         que de repousser le bouton d'action.
       */}
-      <Text variant="h1" numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1 }}>
+      <Text variant="h1b" numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1 }}>
         {title}
       </Text>
 
