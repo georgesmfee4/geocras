@@ -11,7 +11,7 @@ import { MIN_TOUCH_TARGET } from '../theme/tokens';
 import { ChamferView } from './ChamferView';
 import { Text } from './Text';
 
-export type ButtonVariant = 'primary' | 'outline' | 'success';
+export type ButtonVariant = 'primary' | 'outline' | 'success' | 'danger';
 export type ButtonSize = 'regular' | 'large';
 
 export type ButtonProps = Omit<PressableProps, 'style' | 'children'> & {
@@ -55,9 +55,20 @@ export function Button({
     primary: theme.colors.primary,
     outline: 'transparent',
     success: theme.colors.success,
+    danger: 'transparent',
   };
 
-  const labelTone = variant === 'outline' ? 'ink' : 'inverse';
+  /**
+   * `danger` : contour et libellé rouges sur fond transparent.
+   *
+   * Le rouge plein appartient déjà à `primary`, qui est la couleur du SOS.
+   * Peindre une déconnexion du même aplat la mettrait au même niveau qu'un
+   * appel à l'aide au bord d'une route — c'est l'inverse de la hiérarchie
+   * qu'on veut. Le contour dit « attention », l'aplat dirait « urgence ».
+   */
+  const outlined = variant === 'outline' || variant === 'danger';
+  const stroke = variant === 'danger' ? theme.colors.primary : theme.colors.ink;
+  const labelTone = variant === 'danger' ? 'primary' : outlined ? 'ink' : 'inverse';
 
   return (
     <Pressable
@@ -75,8 +86,8 @@ export function Button({
       <ChamferView
         variant={fullWidth ? 'wide' : 'standard'}
         fill={fills[variant]}
-        borderColor={theme.colors.ink}
-        borderWidth={variant === 'outline' ? 1.5 : 0}
+        borderColor={stroke}
+        borderWidth={outlined ? 1.5 : 0}
         style={{ minHeight: height }}
         contentStyle={{
           minHeight: height,
@@ -87,9 +98,7 @@ export function Button({
         }}
       >
         {loading ? (
-          <ActivityIndicator
-            color={variant === 'outline' ? theme.colors.ink : theme.colors.surface}
-          />
+          <ActivityIndicator color={outlined ? stroke : theme.colors.surface} />
         ) : (
           <View>
             {/* `numberOfLines={1}` : le cahier des charges impose que le titre

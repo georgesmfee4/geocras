@@ -42,6 +42,21 @@ export const translations = {
     'drawer.privacy': 'Règles de confidentialité',
     'drawer.terms': 'Conditions d’utilisation',
 
+    // Descriptions des entrées de menu : ce que la page contient, pas une
+    // reformulation du libellé. « Sécurité » ne dit pas ce qu'on y règle.
+    'drawer.historyHint': 'Vos demandes passées et en cours',
+    'drawer.loyaltyHint': 'Vos points, vos grades et vos badges',
+    'drawer.securityHint': 'Contacts de confiance et appareils connectés',
+    'drawer.settingsHint': 'Apparence, langue, notifications, rayon',
+
+    // La déconnexion se confirme : elle est réversible, mais elle coupe le
+    // suivi d'une intervention en cours, et on la déclenche du pouce en
+    // refermant le tiroir.
+    'drawer.logoutTitle': 'Se déconnecter ?',
+    'drawer.logoutBody':
+      'Il faudra vous reconnecter pour retrouver vos demandes, vos points et vos véhicules.',
+    'drawer.logoutConfirm': 'Se déconnecter',
+
     'account.title': 'Gérer mon compte',
     'account.identity': 'Mes informations',
     'account.photoRemove': 'Retirer la photo',
@@ -892,6 +907,16 @@ export const translations = {
     'drawer.loyalty': 'My loyalty',
     'drawer.privacy': 'Privacy policy',
     'drawer.terms': 'Terms of use',
+
+    'drawer.historyHint': 'Your past and ongoing requests',
+    'drawer.loyaltyHint': 'Your points, tiers and badges',
+    'drawer.securityHint': 'Trusted contacts and signed-in devices',
+    'drawer.settingsHint': 'Appearance, language, alerts, radius',
+
+    'drawer.logoutTitle': 'Log out?',
+    'drawer.logoutBody':
+      'You will need to sign in again to find your requests, points and vehicles.',
+    'drawer.logoutConfirm': 'Log out',
 
     'account.title': 'Manage my account',
     'account.identity': 'My details',

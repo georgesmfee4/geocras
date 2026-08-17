@@ -3,7 +3,7 @@ import { Drawer } from 'expo-router/drawer';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { Linking, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VEHICLE_LABELS } from '@geocras/shared';
 import { useLoyalty, useMyRequests, useVehicles } from '../../src/api/hooks';
@@ -142,6 +142,34 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
    */
   const go = (route: string): void => {
     router.push(route as never);
+  };
+
+  /**
+   * La déconnexion demande confirmation.
+   *
+   * Elle est réversible — le compte survit — mais elle coupe le suivi d'une
+   * intervention en cours et vide le cache local. Surtout, elle vivait au pied
+   * d'un tiroir plein écran, là où le pouce se pose pour refermer : c'est la
+   * position la plus exposée de l'interface, pas celle qu'on réserve à une
+   * action sans retour.
+   *
+   * `Alert` et non une feuille maison : c'est le motif déjà employé pour la
+   * suppression d'un véhicule, d'un compte et le retrait de candidature. Une
+   * quatrième forme de confirmation apprendrait à l'utilisateur qu'il y en a
+   * plusieurs, ce qui est exactement ce qu'une confirmation ne doit pas faire.
+   */
+  const confirmLogout = (): void => {
+    Alert.alert(t('drawer.logoutTitle'), t('drawer.logoutBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('drawer.logoutConfirm'),
+        style: 'destructive',
+        onPress: () => {
+          close();
+          void logout();
+        },
+      },
+    ]);
   };
 
   /**
@@ -443,6 +471,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
               <MenuRow
                 icon={TrackHistoryIcon}
                 label={t('drawer.history')}
+                hint={t('drawer.historyHint')}
                 // Le décompte vient du serveur ; tant qu'il n'est pas là, on
                 // n'affiche rien plutôt qu'un zéro qui serait faux.
                 trailing={
@@ -458,6 +487,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
               <MenuRow
                 icon={LoyaltyIcon}
                 label={t('drawer.loyalty')}
+                hint={t('drawer.loyaltyHint')}
                 trailing={
                   loyalty.data ? (
                     <Text variant="numSm" tone="primary">
@@ -470,11 +500,13 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
               <MenuRow
                 icon={ShieldLockIcon}
                 label={t('drawer.security')}
+                hint={t('drawer.securityHint')}
                 onPress={() => go('/securite')}
               />
               <MenuRow
                 icon={SettingsIcon}
                 label={t('drawer.settings')}
+                hint={t('drawer.settingsHint')}
                 onPress={() => go('/parametres')}
               />
               {supportRow}
@@ -488,19 +520,21 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
 
         <View style={{ marginTop: 'auto', paddingTop: theme.space.xxl }}>
           {signedIn ? (
-            <Pressable
-              onPress={() => {
-                close();
-                void logout();
-              }}
-              accessibilityRole="button"
-              hitSlop={8}
-              style={{ paddingHorizontal: theme.space.xl, paddingVertical: theme.space.sm }}
-            >
-              <Text variant="btn" tone="primary">
-                {t('drawer.logout')}
-              </Text>
-            </Pressable>
+            /*
+              Bouton plein, et non plus le lien nu d'avant.
+
+              Aligné sur la liste de menu ci-dessus, il ferme la colonne au lieu
+              de flotter dans la marge. Le contour rouge le distingue des
+              entrées de navigation sans lui donner l'aplat du SOS.
+            */
+            <View style={{ marginHorizontal: theme.space.lg }}>
+              <Button
+                label={t('drawer.logout')}
+                variant="danger"
+                fullWidth
+                onPress={confirmLogout}
+              />
+            </View>
           ) : null}
 
           {/*

@@ -65,7 +65,16 @@ export function MenuRow({
           {label}
         </Text>
         {hint ? (
-          <Text variant="txt" tone="muted" numberOfLines={2} ellipsizeMode="tail">
+          /*
+            « secondary » et non « muted ».
+
+            Le gris discret tombe à 2,7:1 sur une surface blanche, très en
+            dessous du seuil AA de 4,5:1 — il tient en mode sombre, pas en
+            clair. Or cette seconde ligne est ce qui dit à quoi sert l'entrée,
+            et l'app doit rester lisible en plein soleil, au bord d'une route.
+            Un texte d'aide qu'on ne lit pas ne vaut pas mieux que pas de texte.
+          */
+          <Text variant="txt" tone="secondary" numberOfLines={2} ellipsizeMode="tail">
             {hint}
           </Text>
         ) : null}
