@@ -244,7 +244,7 @@ export default function SecuriteScreen() {
                 <Text variant="mono" style={{ fontSize: 28, lineHeight: 32 }}>
                   {sessions.isPending ? '—' : sessionCount}
                 </Text>
-                <Text variant="h2" style={{ flex: 1 }}>
+                <Text variant="h2b" style={{ flex: 1 }}>
                   {t(
                     plural(sessionCount) === 'one'
                       ? 'security.devicesOne'
@@ -312,7 +312,7 @@ export default function SecuriteScreen() {
                 })}
               >
                 <PhoneIcon color={theme.colors.primary} size={17} />
-                <Text variant="h2" tone="primary">
+                <Text variant="btn" tone="primary">
                   {t('security.report')}
                 </Text>
               </Pressable>
@@ -382,13 +382,13 @@ function ContactRow({
             justifyContent: 'center',
           }}
         >
-          <Text variant="heading" tone="inverse">
+          <Text variant="h2b" tone="inverse">
             {initial}
           </Text>
         </ChamferView>
 
         <View style={{ flex: 1 }}>
-          <Text variant="h2" numberOfLines={1}>
+          <Text variant="h2b" numberOfLines={1}>
             {contact.name}
           </Text>
           {/* Un numéro se lit chiffre par chiffre : mono, toujours. */}
@@ -427,7 +427,7 @@ function ContactRow({
         })}
       >
         <MapPinIcon color={theme.colors.userPositionDeep} size={17} />
-        <Text variant="h2">{t('security.sendPosition')}</Text>
+        <Text variant="btn">{t('security.sendPosition')}</Text>
       </Pressable>
     </View>
   );
@@ -481,7 +481,7 @@ function ContactForm({
             opacity: pressed ? 0.6 : 1,
           })}
         >
-          <Text variant="h2" tone="secondary">
+          <Text variant="btn" tone="secondary">
             {t('common.cancel')}
           </Text>
         </Pressable>

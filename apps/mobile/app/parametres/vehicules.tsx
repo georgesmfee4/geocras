@@ -254,7 +254,7 @@ function VehicleCard({
         <View style={{ flex: 1, gap: theme.space.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: theme.space.sm }}>
             <View style={{ flex: 1 }}>
-              <Text variant="heading" numberOfLines={1}>
+              <Text variant="h2b" numberOfLines={1}>
                 {title}
               </Text>
               <Text variant="numSm" tone="muted">
@@ -295,7 +295,7 @@ function VehicleCard({
             backgroundColor: pressed ? theme.colors.highlightTint : 'transparent',
           })}
         >
-          <Text variant="smallStrong">{t('settings.vehicleSetDefault')}</Text>
+          <Text variant="btnSm">{t('settings.vehicleSetDefault')}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -318,7 +318,7 @@ function DefaultBadge() {
         paddingRight: theme.space.md,
       }}
     >
-      <Text variant="lbl" style={{ color: theme.colors.onHighlight }}>
+      <Text variant="lblb" style={{ color: theme.colors.onHighlight }}>
         {t('settings.vehicleDefault')}
       </Text>
     </ChamferView>
@@ -500,7 +500,7 @@ function VehicleForm({
             opacity: pressed ? 0.6 : 1,
           })}
         >
-          <Text variant="h2" tone="secondary">
+          <Text variant="btn" tone="secondary">
             {t('common.cancel')}
           </Text>
         </Pressable>
@@ -540,7 +540,7 @@ function VehicleForm({
             opacity: pressed ? 0.6 : 1,
           })}
         >
-          <Text variant="h2" tone="primary">
+          <Text variant="btn" tone="primary">
             {t('settings.vehicleRemove')}
           </Text>
         </Pressable>
