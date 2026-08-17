@@ -93,7 +93,7 @@ export function LivePanel({
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: theme.space.lg }}>
         <View style={{ gap: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-            <Text variant="lbl" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            <Text variant="lblb" style={{ color: 'rgba(255,255,255,0.55)' }}>
               {arrived ? t('live.onSite') : t('live.arrivesIn')}
             </Text>
             {!arrived && connection === 'live' ? (
@@ -196,13 +196,13 @@ export function LivePanel({
             justifyContent: 'center',
           }}
         >
-          <Text variant="h2" style={{ color: theme.colors.surface }}>
+          <Text variant="h2b" style={{ color: theme.colors.surface }}>
             {mechanic?.initials ?? '—'}
           </Text>
         </View>
 
         <View style={{ flex: 1, gap: 2 }}>
-          <Text variant="h2" numberOfLines={1} style={{ color: theme.colors.surface }}>
+          <Text variant="h2b" numberOfLines={1} style={{ color: theme.colors.surface }}>
             {mechanic?.fullName ?? garageName ?? '—'}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.xs }}>
@@ -222,7 +222,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-      <Text variant="lbl" style={{ color: 'rgba(255,255,255,0.55)', width: 66 }}>
+      <Text variant="lblb" style={{ color: 'rgba(255,255,255,0.55)', width: 66 }}>
         {label}
       </Text>
       <Text variant="num" style={{ color: theme.colors.surface }}>

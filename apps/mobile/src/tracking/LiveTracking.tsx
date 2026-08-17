@@ -189,7 +189,7 @@ export function LiveTracking({
                 opacity: pressed ? 0.7 : 1,
               })}
             >
-              <Text variant="lbl">{t('jobs.recenter')}</Text>
+              <Text variant="lblb">{t('jobs.recenter')}</Text>
             </Pressable>
           ) : null}
         </View>

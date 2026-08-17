@@ -72,7 +72,7 @@ export function TrackingDone({ detail, onRate, onClose }: TrackingDoneProps) {
             <CheckIcon color={theme.colors.surface} size={26} />
           </View>
 
-          <Text variant="d1" style={{ textAlign: 'center' }}>
+          <Text variant="d1b" style={{ textAlign: 'center' }}>
             {t('live.doneTitle')}
           </Text>
           <Text variant="txt" tone="secondary" style={{ textAlign: 'center' }}>
@@ -94,7 +94,7 @@ export function TrackingDone({ detail, onRate, onClose }: TrackingDoneProps) {
           <SectionLabel>{t('live.doneSummary')}</SectionLabel>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-            <Text variant="h2" numberOfLines={1} style={{ flex: 1 }}>
+            <Text variant="h2b" numberOfLines={1} style={{ flex: 1 }}>
               {detail?.garage?.name ?? '—'}
             </Text>
             {/* Mono : c'est une durée mesurée, pas un mot. */}

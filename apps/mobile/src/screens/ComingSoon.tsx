@@ -65,7 +65,7 @@ export function ComingSoon({
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
           <View style={{ gap: 2 }}>
-            <Text variant="h2" tone="primary">
+            <Text variant="btn" tone="primary">
               {t('common.callSupport')}
             </Text>
             {/* Le numéro en mono : c'est ce qu'on lit à voix haute pour le composer. */}

@@ -288,7 +288,7 @@ export default function SuiviScreen() {
         padding: theme.space.xl,
       }}
     >
-      <Text variant="h1" style={{ textAlign: 'center' }}>
+      <Text variant="h1b" style={{ textAlign: 'center' }}>
         {t('live.overTitle')}
       </Text>
       <Text variant="txt" tone="secondary" style={{ textAlign: 'center' }}>

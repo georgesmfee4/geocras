@@ -73,7 +73,7 @@ export function LegalPage({
             hitSlop={8}
             style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
           >
-            <Text variant="h2" tone="primary">
+            <Text variant="btn" tone="primary">
               {t('legal.contact')}
             </Text>
           </Pressable>

@@ -80,7 +80,7 @@ export function TrackingProgress({ status, clientArrived }: TrackingProgressProp
             </View>
 
             <Text
-              variant="lbl"
+              variant="lblb"
               numberOfLines={2}
               style={{
                 color: active ? theme.colors.surface : 'rgba(255,255,255,0.5)',
