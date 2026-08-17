@@ -5,7 +5,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET } from '../theme/tokens';
 import { ChamferView } from '../ui/ChamferView';
 import { GarageThumb } from '../ui/GarageThumb';
-import { ChevronRightIcon } from '../ui/icons';
+import { CheckIcon, ChevronRightIcon } from '../ui/icons';
 import { Stars } from '../ui/Stars';
 import { Text } from '../ui/Text';
 
@@ -132,10 +132,15 @@ export function GarageResultRow({
                   backgroundColor: theme.colors.primary,
                   paddingHorizontal: 6,
                   paddingVertical: 2,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 3,
                 }}
               >
-                <Text variant="lbl" tone="inverse">
-                  ✓ {t('garage.certified')}
+                {/* Bebas ne contient pas ✓ : icône vectorielle plutôt que tofu. */}
+                <CheckIcon color={theme.colors.surface} size={11} />
+                <Text variant="lblb" tone="inverse">
+                  {t('garage.certified')}
                 </Text>
               </View>
             ) : null}

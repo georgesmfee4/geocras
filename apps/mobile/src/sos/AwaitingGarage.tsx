@@ -161,10 +161,15 @@ export function AwaitingGarage({
                   backgroundColor: theme.colors.primary,
                   paddingHorizontal: 6,
                   paddingVertical: 2,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 3,
                 }}
               >
-                <Text variant="lbl" tone="inverse">
-                  ✓ {t('garage.certified')}
+                {/* Bebas ne contient pas ✓ : icône vectorielle plutôt que tofu. */}
+                <CheckIcon color={theme.colors.surface} size={11} />
+                <Text variant="lblb" tone="inverse">
+                  {t('garage.certified')}
                 </Text>
               </View>
             ) : null}

@@ -24,7 +24,7 @@ import { useSosEntry } from '../../src/sos/useSosEntry';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { MIN_TOUCH_TARGET } from '../../src/theme/tokens';
 import { Button } from '../../src/ui/Button';
-import { ChevronLeftIcon, StarIcon } from '../../src/ui/icons';
+import { CheckIcon, ChevronLeftIcon, StarIcon } from '../../src/ui/icons';
 import { SectionLabel } from '../../src/ui/SectionLabel';
 import { Skeleton } from '../../src/ui/Skeleton';
 import { Stars } from '../../src/ui/Stars';
@@ -201,10 +201,21 @@ export default function GarageDetailScreen() {
                     paddingHorizontal: theme.space.sm,
                     paddingVertical: 3,
                     marginTop: 2,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 3,
                   }}
                 >
-                  <Text variant="lbl" tone="inverse">
-                    ✓ {t('garage.certified')}
+                {/*
+                  Le ✓ était un glyphe littéral. Bebas ne le contient pas — sa
+                  table de caractères s'arrête aux lettres, chiffres et
+                  ponctuation — et il serait tombé en tofu. Une icône vectorielle
+                  plutôt qu'un repli de police : c'est ce que demande le cahier
+                  des charges pour les pictogrammes.
+                */}
+                  <CheckIcon color={theme.colors.surface} size={11} />
+                  <Text variant="lblb" tone="inverse">
+                    {t('garage.certified')}
                   </Text>
                 </View>
               ) : null}
