@@ -10,7 +10,7 @@
  * bleuté nulle part, pas même dans les ombres).
  */
 
-import { plexType } from './typography';
+import { plexType, typeBebas } from './typography';
 
 const lightColors = {
   primary: '#E53935',
@@ -333,6 +333,12 @@ export function em(fontSize: number, factor: number): number {
 export type TextVariant = keyof typeof type;
 
 export const type = {
+  // — Bebas Neue — titres, sous-titres, libellés de section, textes de boutons.
+  // Aucune clé ne recouvre les échelles ci-dessous : les niveaux Bebas portent
+  // tous un nom distinct (`h1b`, `btn`, `tab`…), pour qu'un écran non repris
+  // continue de résoudre exactement ce qu'il demandait.
+  ...typeBebas,
+
   ...plexType,
 
   // — Inter — échelle historique, remplacée écran par écran par `plexType`.
@@ -402,7 +408,8 @@ export const type = {
   },
 } as const;
 
-export type { PlexVariant } from './typography';
+export type { PlexVariant, BebasVariant } from './typography';
+export { BEBAS_FAMILY, BEBAS_FALLBACK_FAMILY, BEBAS_VARIANTS } from './typography';
 
 /** Filet rouge de 14 × 2 px qui précède chaque intitulé de section. */
 export const sectionRule = { width: 14, height: 2 } as const;

@@ -78,3 +78,92 @@ export const plexType = {
 
 /** Les niveaux de la nouvelle échelle, pour distinguer le repris du reste. */
 export type PlexVariant = keyof typeof plexType;
+
+/* ------------------------------------------------------------------------ *
+ * Bebas Neue — titres, sous-titres, libellés de section, textes de boutons.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Bebas prend l'affichage, pas la lecture.
+ *
+ * C'est une capitale condensée à graisse unique : excellente en gros, en court
+ * et en capitales, illisible en paragraphe. Le partage est donc fonctionnel et
+ * ne souffre pas d'exception — **si c'est une phrase, ce n'est pas Bebas.** Un
+ * nom de garage isolé est un titre ; le même nom dans « 3 garages trouvés »
+ * est une phrase et reste en Plex Sans.
+ *
+ * Les données mesurées ne basculent jamais : `num`, `numSm`, `numXl` gardent
+ * Plex Mono. Les chiffres de Bebas sont condensés et sans chasse fixe — une
+ * colonne d'ETA y deviendrait irrégulière à chaque rafraîchissement.
+ *
+ * ---
+ *
+ * **Deux conversions déjà appliquées, à ne pas refaire.**
+ *
+ * Les tailles ≥ 14 px sont remontées d'environ 9 % : à taille nominale égale,
+ * la hauteur de capitale condensée de Bebas rend plus petit que Plex.
+ *
+ * Le crénage négatif disparaît. Plex portait un `letterSpacing` négatif pour
+ * resserrer ; Bebas est déjà condensée et la resserrer encore la ferme. Toutes
+ * les valeurs sont positives, et en **points** — React Native ne connaît pas
+ * les em.
+ *
+ * ---
+ *
+ * **Pas de `textTransform: 'uppercase'` ici, et ce n'est pas un oubli.**
+ *
+ * Les glyphes minuscules de Bebas sont des copies exactes des capitales —
+ * mêmes contours, même chasse, vérifié paire par paire dans le binaire. La
+ * capitalisation est donc acquise sans transformation, et l'ajouter n'aurait
+ * qu'un effet : casser le repli ci-dessous, qui lui a un vrai bas-de-casse.
+ */
+const bebas = 'BebasNeue_400Regular';
+
+/** La famille réellement demandée quand Bebas est disponible. */
+export const BEBAS_FAMILY = bebas;
+
+/**
+ * Repli, dans cet ordre : Bebas → IBM Plex Sans Condensed 600.
+ *
+ * React Native ne connaît pas les piles de polices : `fontFamily` prend un nom
+ * et un seul, la substitution doit donc se décider en JS. Elle est appliquée
+ * par `<Text>`, qui interroge `Font.isLoaded()`.
+ *
+ * Ce n'est pas une précaution théorique. L'app ne peint rien tant que les
+ * polices ne sont pas prêtes, mais `useFonts` signale un échec pour **le lot** :
+ * Bebas peut manquer alors que Plex Condensed est bien là. Ce sont les deux
+ * seules condensées du projet, la substitution passe presque inaperçue.
+ *
+ * Contrepartie assumée : le repli a un vrai bas-de-casse. Un libellé de section
+ * saisi « Mon activité » perdrait ses capitales pendant la substitution —
+ * `<Text>` remet donc `textTransform` uniquement dans ce cas.
+ */
+export const BEBAS_FALLBACK_FAMILY = 'IBMPlexSansCondensed_600SemiBold';
+
+export const typeBebas = {
+  /** D1 — gros chiffre d'affichage, mot SOS. */
+  d1b: { fontFamily: bebas, fontSize: 37, lineHeight: 40, letterSpacing: 1.5 },
+
+  /** H1 — titre d'écran. */
+  h1b: { fontFamily: bebas, fontSize: 24, lineHeight: 28, letterSpacing: 0.5 },
+
+  /** H2 — nom de garage, titre de carte, libellé de réglage. */
+  h2b: { fontFamily: bebas, fontSize: 16, lineHeight: 20, letterSpacing: 0.5 },
+
+  /** LBL — libellé de section précédé du filet rouge. */
+  lblb: { fontFamily: bebas, fontSize: 11, lineHeight: 13, letterSpacing: 1.76 },
+
+  /** BTN — texte de bouton principal. */
+  btn: { fontFamily: bebas, fontSize: 17, lineHeight: 20, letterSpacing: 2.2 },
+
+  /** BTNSM — puce de filtre, onglet, badge, lien secondaire. */
+  btnSm: { fontFamily: bebas, fontSize: 13, lineHeight: 16, letterSpacing: 0.7 },
+
+  /** TAB — libellé de barre d'onglets. */
+  tab: { fontFamily: bebas, fontSize: 10, lineHeight: 12, letterSpacing: 0.4 },
+} as const;
+
+/** Les niveaux qui doivent basculer sur le repli si Bebas manque. */
+export type BebasVariant = keyof typeof typeBebas;
+
+export const BEBAS_VARIANTS: ReadonlySet<string> = new Set(Object.keys(typeBebas));
