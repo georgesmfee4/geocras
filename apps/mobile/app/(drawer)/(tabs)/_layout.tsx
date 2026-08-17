@@ -224,7 +224,7 @@ function GeoCrasTabBar({
             </View>
 
             <Text
-              variant="tabLabel"
+              variant="tab"
               style={{ color: isFocused ? theme.colors.primary : theme.colors.tabInactive }}
             >
               {labelKey ? t(labelKey) : route.name}

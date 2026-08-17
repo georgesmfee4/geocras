@@ -98,7 +98,7 @@ export default function InterventionsScreen() {
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-          <Text variant="d1" numberOfLines={1} style={{ flexShrink: 1 }}>
+          <Text variant="d1b" numberOfLines={1} style={{ flexShrink: 1 }}>
             {data?.garage.name ?? '—'}
           </Text>
           {data?.garage.certified ? (
@@ -208,7 +208,7 @@ function ActiveRow({ job, onPress }: { job: Job; onPress: () => void }) {
       })}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="h2" numberOfLines={1}>
+        <Text variant="h2b" numberOfLines={1}>
           {PROBLEM_LABELS[job.problemType][locale]}
         </Text>
         <Text variant="txt" tone="secondary" numberOfLines={1}>

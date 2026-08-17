@@ -448,7 +448,7 @@ export default function CarteScreen() {
                 gap: theme.space.sm,
               }}
             >
-              <Text variant="lbl" style={{ color: theme.colors.ink }}>
+              <Text variant="lblb" style={{ color: theme.colors.ink }}>
                 Position simulée
               </Text>
               {origin ? (
@@ -825,7 +825,7 @@ function ContextLine({
           {errorLabel ?? t('map.loadFailed')}
         </Text>
         <Pressable onPress={onRetry} accessibilityRole="button" hitSlop={8}>
-          <Text variant="h2" tone="primary">
+          <Text variant="btn" tone="primary">
             {t('common.retry')}
           </Text>
         </Pressable>
@@ -927,7 +927,7 @@ function PositionRow({
       </View>
 
       <View style={{ flex: 1 }}>
-        <Text variant="lbl" style={{ color: theme.colors.sectionLabel }}>
+        <Text variant="lblb" style={{ color: theme.colors.sectionLabel }}>
           {t('map.exactPosition')}
         </Text>
 
@@ -978,7 +978,7 @@ function PositionRow({
         </View>
       ) : blocked ? (
         <Pressable onPress={onRetry} accessibilityRole="button" hitSlop={8}>
-          <Text variant="h2" tone="primary">
+          <Text variant="btn" tone="primary">
             {t('location.retry')}
           </Text>
         </Pressable>
