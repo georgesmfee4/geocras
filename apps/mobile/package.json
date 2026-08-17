@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@expo-google-fonts/bebas-neue": "^0.4.1",
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
     "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
     "@expo-google-fonts/ibm-plex-sans-condensed": "^0.4.1",

@@ -21,6 +21,7 @@ import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono/400Regu
 import { IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono/500Medium';
 import { IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono/600SemiBold';
 import { IBMPlexMono_700Bold } from '@expo-google-fonts/ibm-plex-mono/700Bold';
+import { BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue/400Regular';
 
 /**
  * Rien ne doit s'afficher avant que les polices soient prêtes : l'identité
@@ -32,6 +33,18 @@ import { IBMPlexMono_700Bold } from '@expo-google-fonts/ibm-plex-mono/700Bold';
  * ici volontairement — la retirer avant la fin de la migration ferait tomber
  * en police système tout ce qui n'a pas encore été repris. Elle partira dans
  * la passe de nettoyage, avec les graisses Plex Sans finalement inutilisées.
+ *
+ * **Bebas Neue** rejoint le lot pour les titres, sous-titres, libellés de
+ * section et textes de boutons — pas pour le corps de texte, qu'elle rendrait
+ * illisible, ni pour les données mesurées, qui restent en Plex Mono. Une seule
+ * graisse existe dans cette famille et une seule est chargée : il n'y a pas de
+ * `700Bold` à ajouter plus tard, le contraste se fait par la taille.
+ *
+ * Elle n'a pas de bas-de-casse au sens propre : ses glyphes minuscules sont
+ * des copies exactes des capitales (mêmes contours, même chasse). Un libellé
+ * saisi « Mon activité » s'affiche donc « MON ACTIVITÉ » sans qu'aucun
+ * `textTransform` n'intervienne — et les capitales accentuées françaises sont
+ * toutes présentes, vérifiées dans la table `cmap`.
  */
 export function useAppFonts(): boolean {
   const [loaded, error] = useFonts({
@@ -48,6 +61,7 @@ export function useAppFonts(): boolean {
     IBMPlexMono_500Medium,
     IBMPlexMono_600SemiBold,
     IBMPlexMono_700Bold,
+    BebasNeue_400Regular,
   });
 
   // Un échec de chargement ne doit pas figer l'app sur un écran vide : on
