@@ -149,7 +149,7 @@ export default function MonGarageScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={{ gap: theme.space.sm }}>
-          <Text variant="display">{data.name}</Text>
+          <Text variant="h1b">{data.name}</Text>
 
           <Text variant="txt" tone="secondary">
             {[data.quarter, data.city].filter(Boolean).join(' · ')}
@@ -182,7 +182,7 @@ export default function MonGarageScreen() {
             {data.certified ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.xs }}>
                 <ShieldCheckIcon color={theme.colors.success} size={16} />
-                <Text variant="smallStrong" tone="success">
+                <Text variant="btnSm" tone="success">
                   {t('myGarage.certified')}
                 </Text>
               </View>
@@ -249,7 +249,7 @@ export default function MonGarageScreen() {
                   }}
                 >
                   <AlertIcon color={theme.colors.ink} size={20} />
-                  <Text variant="h2" style={{ flex: 1 }}>
+                  <Text variant="h2b" style={{ flex: 1 }}>
                     {t('myGarage.closedBanner')}
                   </Text>
                 </View>

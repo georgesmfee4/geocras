@@ -176,7 +176,7 @@ export default function ConnexionScreen() {
 
           {mode === 'signup' ? (
             <View style={{ gap: theme.space.sm }}>
-              <Text variant="h2">{t('auth.fullName')}</Text>
+              <Text variant="h2b">{t('auth.fullName')}</Text>
               <TextInput
                 allowFontScaling={false}
                 value={fullName}
@@ -191,7 +191,7 @@ export default function ConnexionScreen() {
           ) : null}
 
           <View style={{ gap: theme.space.sm }}>
-            <Text variant="h2">{t('auth.phone')}</Text>
+            <Text variant="h2b">{t('auth.phone')}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
               {/*
                 Préfixe non éditable. Le seul format accepté par le serveur est
@@ -234,7 +234,7 @@ export default function ConnexionScreen() {
           </View>
 
           <View style={{ gap: theme.space.sm }}>
-            <Text variant="h2">{t('auth.password')}</Text>
+            <Text variant="h2b">{t('auth.password')}</Text>
             <TextInput
               allowFontScaling={false}
               value={password}

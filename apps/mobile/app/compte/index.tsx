@@ -334,7 +334,7 @@ export default function CompteScreen() {
                         }}
                       >
                         <Text
-                          variant="lbl"
+                          variant="lblb"
                           style={{ color: theme.colors.onHighlight }}
                         >
                           {t('myGarage.pendingBadge')}

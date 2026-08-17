@@ -274,7 +274,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
             }}
           >
             {initials ? (
-              <Text variant="display" tone="inverse">
+              <Text variant="h1b" tone="inverse">
                 {initials}
               </Text>
             ) : (
@@ -290,7 +290,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
           */}
           {status === 'loading' ? null : signedIn ? (
             <>
-              <Text variant="h1">
+              <Text variant="h1b">
                 {firstName ? `${t('drawer.hello')} ${firstName} !` : t('drawer.account')}
               </Text>
 
@@ -302,7 +302,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
             </>
           ) : (
             <>
-              <Text variant="h1">{t('drawer.guest')}</Text>
+              <Text variant="h1b">{t('drawer.guest')}</Text>
 
               {/*
                 Dire ce que l'invité n'a pas, et non seulement qu'il est
@@ -345,7 +345,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
             <View style={{ flex: 1, gap: 4 }}>
               {defaultVehicle ? (
                 <>
-                  <Text variant="h2" numberOfLines={1}>
+                  <Text variant="h2b" numberOfLines={1}>
                     {[defaultVehicle.brand, defaultVehicle.model]
                       .filter(Boolean)
                       .join(' ') || VEHICLE_LABELS[defaultVehicle.type][locale]}
@@ -366,7 +366,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
                 </>
               ) : (
                 <>
-                  <Text variant="h2">{t('drawer.noVehicle')}</Text>
+                  <Text variant="h2b">{t('drawer.noVehicle')}</Text>
                   <Text variant="numSm" tone="muted">
                     {t('drawer.addVehicle')}
                   </Text>
@@ -422,7 +422,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
                 }}
               >
                 <DrivingTabIcon color="#FFFFFF" size={22} />
-                <Text variant="h2" tone="inverse" style={{ flex: 1 }}>
+                <Text variant="btn" tone="inverse" style={{ flex: 1 }}>
                   {t('drawer.startDriving')}
                 </Text>
                 <View
@@ -432,7 +432,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
                     paddingVertical: 3,
                   }}
                 >
-                  <Text variant="lbl" style={{ color: theme.colors.ink }}>
+                  <Text variant="lblb" style={{ color: theme.colors.ink }}>
                     {t('drawer.beta')}
                   </Text>
                 </View>
@@ -497,7 +497,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
               hitSlop={8}
               style={{ paddingHorizontal: theme.space.xl, paddingVertical: theme.space.sm }}
             >
-              <Text variant="h2" tone="primary">
+              <Text variant="btn" tone="primary">
                 {t('drawer.logout')}
               </Text>
             </Pressable>
