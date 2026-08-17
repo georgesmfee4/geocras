@@ -556,7 +556,7 @@ function WelcomeStep({
 
         <View style={{ padding: theme.space.lg, gap: theme.space.lg }}>
           <View style={{ gap: theme.space.sm }}>
-            <Text variant="h1">{t('sos.welcomeTitle')}</Text>
+            <Text variant="h1b">{t('sos.welcomeTitle')}</Text>
             <Text variant="txt" tone="secondary">
               {t('sos.welcomeLead')}
             </Text>
@@ -572,7 +572,7 @@ function WelcomeStep({
                   {point.icon({ color: theme.colors.primary, size: 20 })}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text variant="h2">{point.title}</Text>
+                  <Text variant="h2b">{point.title}</Text>
                   <Text variant="txt" tone="secondary" style={{ marginTop: 2 }}>
                     {point.hint}
                   </Text>
@@ -906,7 +906,12 @@ function UrgencyPicker({
               opacity: pressed ? 0.85 : 1,
             })}
           >
-            <Text variant="smallStrong" numberOfLines={1} tone={active ? 'inverse' : 'ink'}>
+            <Text
+              variant="btnSm"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              tone={active ? 'inverse' : 'ink'}
+            >
               {URGENCY_LABELS[level][locale]}
             </Text>
           </Pressable>
@@ -1016,13 +1021,21 @@ function ReviewStep({
         ? VEHICLE_LABELS[draft.vehicleType][locale]
         : t('sos.none');
 
-  const rows: { label: string; value: string }[] = [
+  /**
+   * `mono` distingue la donnée mesurée du libellé.
+   *
+   * Toute la colonne de droite est passée en Bebas — ce sont des valeurs
+   * autonomes, pas des phrases. La plaque fait exception : le cahier des
+   * charges la range avec les distances et les ETA, et Bebas a des chiffres
+   * condensés sans chasse fixe. Elle reste donc en Plex Mono.
+   */
+  const rows: { label: string; value: string; mono?: boolean }[] = [
     { label: t('sos.vehicle'), value: vehicleText },
     // La plaque n'apparaît que si elle est connue : c'est ce que le garagiste
     // cherche des yeux en arrivant, et la seule chose qu'un véhicule
     // enregistré apporte et qu'une description à la main n'aurait pas.
     ...(savedVehicle?.plate
-      ? [{ label: t('settings.vehiclePlate'), value: savedVehicle.plate.toUpperCase() }]
+      ? [{ label: t('settings.vehiclePlate'), value: savedVehicle.plate.toUpperCase(), mono: true }]
       : []),
     {
       label: t('sos.problem'),
@@ -1072,7 +1085,7 @@ function ReviewStep({
                 {row.label}
               </Text>
               <Text
-                variant="h2"
+                variant={row.mono ? 'num' : 'h2b'}
                 numberOfLines={2}
                 style={{ flex: 1.4, textAlign: 'right' }}
               >
@@ -1202,7 +1215,7 @@ function AccountGate({ onBack, onSignIn }: { onBack: () => void; onSignIn: () =>
       >
         <ShieldLockIcon color={theme.colors.primary} size={36} />
 
-        <Text variant="heading" style={{ textAlign: 'center' }}>
+        <Text variant="h1b" style={{ textAlign: 'center' }}>
           {t('auth.required')}
         </Text>
 

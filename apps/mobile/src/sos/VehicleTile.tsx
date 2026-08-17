@@ -55,13 +55,17 @@ export function VehicleTile({ type, label, active, onPress }: VehicleTileProps) 
     >
       <Icon color={active ? theme.colors.primary : theme.colors.inkSecondary} size={26} />
 
+      {/*
+        La surcharge à 9 px tombe avec le passage à Bebas : le jeton `tab` en
+        donne 10, et Bebas rend plus petit qu'Inter à taille égale — les deux
+        se compensent. Mesuré à 27,9 px pour « Voiture » dans une tuile de 76,
+        le plus long libellé du lot ; il reste de la marge en anglais.
+      */}
       <Text
-        variant="tabLabel"
+        variant="tab"
         numberOfLines={1}
-        style={{
-          fontSize: 9,
-          color: active ? theme.colors.surface : theme.colors.inkSecondary,
-        }}
+        ellipsizeMode="tail"
+        style={{ color: active ? theme.colors.surface : theme.colors.inkSecondary }}
       >
         {label}
       </Text>

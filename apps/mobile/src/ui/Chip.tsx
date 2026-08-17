@@ -78,7 +78,12 @@ export function Chip({ label, active = false, onPress, icon, style }: ChipProps)
     >
       {icon?.({ color: iconColor, size: 15 })}
 
-      <Text variant="smallStrong" tone={active ? 'inverse' : 'ink'}>
+      <Text
+        variant="btnSm"
+        tone={active ? 'inverse' : 'ink'}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
         {label}
       </Text>
     </Pressable>

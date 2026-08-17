@@ -93,7 +93,9 @@ export function PhotoField({ uri, state, onChange }: PhotoFieldProps) {
         />
 
         <View style={{ flex: 1 }}>
-          <Text variant="h2">{t('sos.photoAttached')}</Text>
+          <Text variant="h2b" numberOfLines={1} ellipsizeMode="tail">
+            {t('sos.photoAttached')}
+          </Text>
 
           {/*
             L'état est dit ici et nulle part ailleurs. Le signaler au moment
@@ -187,7 +189,7 @@ function SourceButton({
       })}
     >
       <CameraIcon color={theme.colors.inkSecondary} size={19} />
-      <Text variant="smallStrong" numberOfLines={1}>
+      <Text variant="btnSm" numberOfLines={1} ellipsizeMode="tail">
         {label}
       </Text>
     </Pressable>

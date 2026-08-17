@@ -67,7 +67,7 @@ export function SavedVehiclePicker({
               <Icon color={active ? theme.colors.surface : theme.colors.inkSecondary} size={22} />
             }
           >
-            <Text variant="h2" numberOfLines={1}>
+            <Text variant="h2b" numberOfLines={1} ellipsizeMode="tail">
               {title}
             </Text>
             <Text variant="numSm" tone="muted" numberOfLines={1}>
@@ -95,7 +95,7 @@ export function SavedVehiclePicker({
           />
         }
       >
-        <Text variant="h2" numberOfLines={1}>
+        <Text variant="h2b" numberOfLines={1} ellipsizeMode="tail">
           {t('sos.otherVehicle')}
         </Text>
         <Text variant="txt" tone="muted" numberOfLines={1}>

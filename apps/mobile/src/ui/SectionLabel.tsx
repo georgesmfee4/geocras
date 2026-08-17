@@ -32,12 +32,16 @@ export function SectionLabel({
         }}
       />
       {/*
-        `lbl` est le niveau écrit pour ce composant : capitales, gras, filet
-        rouge devant. Il monte de 10 à 11 px et son interlettrage passe de 1,6
-        à 1,76 point — l'intitulé gagne à peine deux points de large, et rien
-        ici n'est contraint en largeur.
+        `lblb` est le niveau écrit pour ce composant : Bebas, 11 px, filet
+        rouge devant, interlettrage à 1,76 point. Rien ici n'est contraint en
+        largeur, d'où l'absence de `numberOfLines` — un intitulé de section
+        qui passerait à la ligne resterait lisible, le tronquer non.
+
+        Pas de `textTransform` : les glyphes minuscules de Bebas sont des
+        copies exactes des capitales, la casse est donc acquise sans lui. Le
+        repli le remet, lui en a besoin.
       */}
-      <Text variant="lbl" style={{ color: theme.colors.sectionLabel }}>
+      <Text variant="lblb" style={{ color: theme.colors.sectionLabel }}>
         {children}
       </Text>
     </View>

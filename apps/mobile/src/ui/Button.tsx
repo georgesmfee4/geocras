@@ -94,7 +94,7 @@ export function Button({
           <View>
             {/* `numberOfLines={1}` : le cahier des charges impose que le titre
                 et le sous-titre du bouton SOS tiennent chacun sur une ligne. */}
-            <Text variant="heading" tone={labelTone} numberOfLines={1}>
+            <Text variant="btn" tone={labelTone} numberOfLines={1} ellipsizeMode="tail">
               {label}
             </Text>
             {sublabel ? (
