@@ -113,7 +113,7 @@ export function JobRow({ job, onPress }: JobRowProps) {
             )}
           </View>
 
-          <Text variant="h1" numberOfLines={1}>
+          <Text variant="h1b" numberOfLines={1}>
             {PROBLEM_LABELS[job.problemType][locale]}
           </Text>
 

@@ -143,7 +143,7 @@ function EmptyQueue() {
       }}
     >
       <BlinkingDot size={10} color={theme.colors.success} />
-      <Text variant="h1" style={{ textAlign: 'center' }}>
+      <Text variant="h1b" style={{ textAlign: 'center' }}>
         {t('jobs.emptyTitle')}
       </Text>
       <Text variant="txt" tone="secondary" style={{ textAlign: 'center' }}>

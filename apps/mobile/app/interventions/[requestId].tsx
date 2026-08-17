@@ -217,7 +217,7 @@ export default function JobDetailScreen() {
               </Text>
             </View>
 
-            <Text variant="d1">{PROBLEM_LABELS[job.problemType][locale]}</Text>
+            <Text variant="d1b">{PROBLEM_LABELS[job.problemType][locale]}</Text>
 
             <View
               style={{
@@ -308,13 +308,13 @@ export default function JobDetailScreen() {
                   justifyContent: 'center',
                 }}
               >
-                <Text variant="h1" tone="primary">
+                <Text variant="h1b" tone="primary">
                   {job.client.initials}
                 </Text>
               </View>
 
               <View style={{ flex: 1, gap: 2 }}>
-                <Text variant="h2" numberOfLines={1}>
+                <Text variant="h2b" numberOfLines={1}>
                   {job.client.fullName}
                 </Text>
                 {job.client.phone ? (
@@ -428,7 +428,7 @@ function Cell({
 
   return (
     <View style={{ flex: 1, padding: theme.space.md, gap: theme.space.xs }}>
-      <Text variant="lbl" tone="muted">
+      <Text variant="lblb" tone="muted">
         {label}
       </Text>
       {node ?? <Text variant="num">{value}</Text>}
@@ -474,7 +474,7 @@ function Constraint({
     >
       <View style={{ paddingTop: 2 }}>{Icon({ color: tone, size: 18 })}</View>
       <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="h2" style={{ color: tone }}>
+        <Text variant="h2b" style={{ color: tone }}>
           {title}
         </Text>
         <Text variant="txt" tone="secondary">

@@ -216,7 +216,7 @@ export default function HistoriqueScreen() {
 
             {history.isError ? (
               <View style={{ paddingHorizontal: theme.space.xl, gap: theme.space.md }}>
-                <Text variant="h2" tone="primary">
+                <Text variant="h2b" tone="primary">
                   {t('history.failed')}
                 </Text>
                 <Button
@@ -303,7 +303,7 @@ function OngoingCard({ request, onPress }: { request: HistoryRequest; onPress: (
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
           <BlinkingDot size={8} color={statusColor(request.status, theme.colors)} />
-          <Text variant="h2" style={{ flex: 1 }} numberOfLines={1}>
+          <Text variant="h2b" style={{ flex: 1 }} numberOfLines={1}>
             {REQUEST_STATUS_LABELS[request.status][locale]}
           </Text>
           {/* Ancienneté en mono : c'est une mesure, et elle se lit d'un coup. */}
@@ -339,7 +339,7 @@ function OngoingCard({ request, onPress }: { request: HistoryRequest; onPress: (
               paddingRight: theme.space.xxl,
             }}
           >
-            <Text variant="h2" tone="inverse">
+            <Text variant="btn" tone="inverse">
               {t('history.resume')}
             </Text>
             <ChevronRightSmallIcon color="#FFFFFF" size={16} />
@@ -392,7 +392,7 @@ function EmptyHistory({
       */}
       <View style={{ width: 1, height: 46, backgroundColor: theme.colors.rule }} />
 
-      <Text variant="h1" style={{ textAlign: 'center' }}>
+      <Text variant="h1b" style={{ textAlign: 'center' }}>
         {t('history.emptyTitle')}
       </Text>
 

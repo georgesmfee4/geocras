@@ -84,7 +84,7 @@ export function ServiceTile({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
             {Icon({ color: enabled ? theme.colors.primary : theme.colors.muted, size: 20 })}
 
-            <Text variant="lbl" style={{ color: enabled ? theme.colors.surface : theme.colors.muted }}>
+            <Text variant="lblb" style={{ color: enabled ? theme.colors.surface : theme.colors.muted }}>
               {title}
             </Text>
 
@@ -101,7 +101,7 @@ export function ServiceTile({
                   paddingVertical: 2,
                 }}
               >
-                <Text variant="lbl" tone="muted">
+                <Text variant="lblb" tone="muted">
                   {badge}
                 </Text>
               </View>

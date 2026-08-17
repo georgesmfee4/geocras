@@ -183,7 +183,7 @@ export function RequestCard({
         })}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-          <Text variant="h2" numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1 }}>
+          <Text variant="h2b" numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1 }}>
             {PROBLEM_LABELS[request.problemType][locale]}
           </Text>
 
@@ -264,7 +264,7 @@ export function RequestCard({
             })}
           >
             <StarIcon color={theme.colors.userPositionDeep} size={13} />
-            <Text variant="smallStrong">{t('history.rate')}</Text>
+            <Text variant="btnSm">{t('history.rate')}</Text>
           </Pressable>
         ) : null}
       </Pressable>
@@ -316,7 +316,7 @@ function StatusBadge({
         paddingVertical: 2,
       }}
     >
-      <Text variant="lbl" style={{ color }}>
+      <Text variant="lblb" style={{ color }}>
         {label}
       </Text>
     </View>

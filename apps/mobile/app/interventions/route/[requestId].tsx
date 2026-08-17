@@ -213,7 +213,7 @@ export default function JobRouteScreen() {
               paddingVertical: theme.space.sm,
             }}
           >
-            <Text variant="h2" numberOfLines={1}>
+            <Text variant="h2b" numberOfLines={1}>
               {job.client.fullName}
             </Text>
             <Text variant="txt" tone="secondary" numberOfLines={1}>
@@ -274,7 +274,7 @@ export default function JobRouteScreen() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: theme.space.lg }}>
             <View style={{ gap: 2 }}>
-              <Text variant="lbl" style={{ color: 'rgba(255,255,255,0.55)' }}>
+              <Text variant="lblb" style={{ color: 'rgba(255,255,255,0.55)' }}>
                 {t('jobs.timeToArrive')}
               </Text>
               {/*
@@ -376,7 +376,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-      <Text variant="lbl" style={{ color: 'rgba(255,255,255,0.55)', width: 74 }}>
+      <Text variant="lblb" style={{ color: 'rgba(255,255,255,0.55)', width: 74 }}>
         {label}
       </Text>
       <Text variant="num" style={{ color: theme.colors.surface }}>

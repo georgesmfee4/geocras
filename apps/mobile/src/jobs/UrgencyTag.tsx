@@ -63,7 +63,7 @@ export function UrgencyTag({ urgency, variant = 'outline' }: UrgencyTagProps) {
       {urgency === 'danger' ? (
         <AlertIcon color={solid ? onSolid : color} size={12} />
       ) : null}
-      <Text variant="lbl" style={{ color: solid ? onSolid : color }}>
+      <Text variant="lblb" style={{ color: solid ? onSolid : color }}>
         {URGENCY_LABELS[urgency][locale]}
       </Text>
     </View>
