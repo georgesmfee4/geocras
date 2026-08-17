@@ -428,7 +428,8 @@ function Cell({
 
   return (
     <View style={{ flex: 1, padding: theme.space.md, gap: theme.space.xs }}>
-      <Text variant="lblb" tone="muted">
+      {/* 2,45:1 en Bebas 11 px sur fond clair : on remonte d'un cran. */}
+      <Text variant="lblb" tone="secondary">
         {label}
       </Text>
       {node ?? <Text variant="num">{value}</Text>}

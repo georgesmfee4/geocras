@@ -101,7 +101,14 @@ export function ServiceTile({
                   paddingVertical: 2,
                 }}
               >
-                <Text variant="lblb" tone="muted">
+                {/*
+                  « secondary » et non « muted » : en Bebas, ce badge est un
+                  libellé de 11 px d'une police d'affichage à graisse unique.
+                  Le gris discret y tombait à 2,45:1 sur fond clair. On remonte
+                  la couleur d'un cran — 4,9:1 — plutôt que la graisse, il n'y
+                  en a qu'une.
+                */}
+                <Text variant="lblb" tone="secondary">
                   {badge}
                 </Text>
               </View>
