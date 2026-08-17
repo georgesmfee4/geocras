@@ -167,3 +167,59 @@ export const typeBebas = {
 export type BebasVariant = keyof typeof typeBebas;
 
 export const BEBAS_VARIANTS: ReadonlySet<string> = new Set(Object.keys(typeBebas));
+
+/**
+ * Hauteur d'encre réelle de Bebas Neue sur le jeu français, en em.
+ *
+ * Relevée dans le binaire embarqué, pas estimée : la capitale accentuée la
+ * plus haute (É) culmine à 862/1000 et la cédille du Ç descend à −147, soit
+ * 1009 unités d'encre pour 1000 d'em. Une variante dont le `lineHeight` passe
+ * sous `fontSize × cette valeur` fait une ligne plus courte que sa police, et
+ * Android rogne les accents par le haut.
+ *
+ * C'est la raison du seul écart avec les valeurs d'origine de la refonte :
+ * `d1b` était donné à 37/37, il est ici à 37/40.
+ */
+export const BEBAS_INK_HEIGHT_EM = 1.009;
+
+/**
+ * Compensation du crénage sur un texte Bebas centré.
+ *
+ * `letterSpacing` pose son espace après chaque lettre, la dernière comprise :
+ * la boîte mesure l'encre plus un crénage, et la centrer décale donc l'encre
+ * d'un demi-crénage vers la gauche. Élargir la boîte du côté opposé de la même
+ * quantité ramène l'encre au centre — l'écart au centre vaut
+ * `(paddingLeft − letterSpacing) / 2`, nul quand les deux sont égaux.
+ *
+ * Renvoie `null` quand il n'y a rien à corriger, pour que l'appelant n'ajoute
+ * aucun style inutile. Un `paddingLeft` déjà posé par l'appelant s'ajoute à la
+ * correction plutôt que d'être écrasé par elle.
+ *
+ * Les entrées sont typées `unknown` et non `number` : côté React Native,
+ * `paddingLeft` est un `DimensionValue`, qui accepte aussi un pourcentage,
+ * `'auto'` et `null`. Les accepter ici évite d'importer des types de rendu
+ * dans un fichier de jetons, et les gardes `typeof` font le tri.
+ *
+ * Un padding non numérique fait renoncer à la correction plutôt que la forcer :
+ * remplacer un `'10%'` par deux points casserait une mise en page pour
+ * rattraper un demi-pixel. Le texte reste alors très légèrement décentré, ce
+ * qui est le moindre des deux défauts.
+ *
+ * Fonction pure et sans dépendance à React : c'est ce qui la rend testable
+ * dans un projet qui ne monte volontairement aucun composant.
+ */
+export function centeredBebasPadding(style: {
+  textAlign?: unknown;
+  letterSpacing?: unknown;
+  paddingLeft?: unknown;
+}): number | null {
+  if (style.textAlign !== 'center') return null;
+
+  const spacing = typeof style.letterSpacing === 'number' ? style.letterSpacing : 0;
+  if (spacing <= 0) return null;
+
+  const already = style.paddingLeft;
+  if (already !== undefined && typeof already !== 'number') return null;
+
+  return (already ?? 0) + spacing;
+}
