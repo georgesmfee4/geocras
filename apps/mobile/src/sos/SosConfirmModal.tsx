@@ -221,7 +221,7 @@ function ConfirmSheet({
           </View>
 
           <View style={{ flex: 1, gap: 4 }}>
-            <Text variant="h2" numberOfLines={1}>
+            <Text variant="h2b" numberOfLines={1}>
               {garage.name}
             </Text>
             <Text variant="mono" tone="secondary" numberOfLines={1}>
@@ -312,7 +312,7 @@ function ConfirmSheet({
           >
             <AlertIcon color={theme.colors.primary} size={18} />
             <View style={{ flex: 1, gap: 4 }}>
-              <Text variant="h2" tone="primary">
+              <Text variant="h2b" tone="primary">
                 {t('confirm.irreversible')}
               </Text>
               <Text variant="txt" tone="secondary">
@@ -392,7 +392,7 @@ function VisibilityCell({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         {icon}
         <Text
-          variant="lbl"
+          variant="lblb"
           numberOfLines={1}
           style={{ color: theme.colors.sectionLabel, flexShrink: 1 }}
         >

@@ -123,7 +123,7 @@ export function AwaitingGarage({
           <WaitingRadar certified={garage?.certified ?? false} animated={!reducedMotion} />
 
           <View style={{ alignItems: 'center', gap: theme.space.sm }}>
-            <Text variant="display" style={{ textAlign: 'center' }}>
+            <Text variant="h1b" style={{ textAlign: 'center' }}>
               {t('awaiting.title')}
             </Text>
             <Text variant="txt" tone="secondary" style={{ textAlign: 'center' }}>
@@ -147,7 +147,7 @@ export function AwaitingGarage({
             <GarageThumb uri={garage.photos[0]} name={garage.name} size={52} />
 
             <View style={{ flex: 1, gap: 4 }}>
-              <Text variant="h2" numberOfLines={1}>
+              <Text variant="h2b" numberOfLines={1}>
                 {garage.name}
               </Text>
               <Text variant="mono" tone="secondary" numberOfLines={1}>
@@ -234,7 +234,7 @@ export function AwaitingGarage({
               opacity: cancelling ? 0.5 : pressed ? 0.6 : 1,
             })}
           >
-            <Text variant="h2" tone="primary">
+            <Text variant="btn" tone="primary">
               {t('results.cancelRequest')}
             </Text>
           </Pressable>

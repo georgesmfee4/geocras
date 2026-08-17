@@ -507,7 +507,7 @@ export default function ResultatsScreen() {
           >
             <View style={{ flex: 1, gap: 4 }}>
               <SectionLabel>{t('results.routeShown')}</SectionLabel>
-              <Text variant="h2" numberOfLines={1}>
+              <Text variant="h2b" numberOfLines={1}>
                 {routeGarage.name}
               </Text>
               <Text variant="mono">
@@ -552,7 +552,7 @@ export default function ResultatsScreen() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.md }}>
               <ActivityIndicator color={theme.colors.primary} />
-              <Text variant="h2" style={{ flex: 1 }}>
+              <Text variant="h2b" style={{ flex: 1 }}>
                 {t('results.searching')}
               </Text>
             </View>

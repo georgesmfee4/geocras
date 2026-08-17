@@ -61,12 +61,17 @@ export function PinnedGarageNotice({ pointing, onDismiss }: PinnedGarageNoticePr
       >
         <View style={{ flex: 1, gap: 3 }}>
           <Text
-            variant="lbl"
+            variant="lblb"
             style={{ color: theme.colors.onHighlight, opacity: 0.7 }}
           >
             {t('results.pinnedLabel')}
           </Text>
-          <Text variant="h2" style={{ color: theme.colors.onHighlight }}>
+          {/*
+          Deux phrases complètes de treize mots : reste en Plex Sans. Bebas est
+          une police d'affichage, illisible en paragraphe, et le contrôle final
+          de la refonte proscrit les capitales condensées au-delà de cinq mots.
+        */}
+        <Text variant="h2" style={{ color: theme.colors.onHighlight }}>
             {pointing ? t('results.pinnedLead') : t('results.pinnedMissing')}
           </Text>
         </View>

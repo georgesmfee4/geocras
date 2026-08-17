@@ -42,10 +42,11 @@ export function DeclinedNotice({ onDismiss }: { onDismiss: () => void }) {
       }}
     >
       <View style={{ flex: 1, gap: 4 }}>
-        <Text variant="lbl" style={{ color: theme.colors.onHighlight, opacity: 0.7 }}>
+        <Text variant="lblb" style={{ color: theme.colors.onHighlight, opacity: 0.7 }}>
           {t('results.declinedLabel')}
         </Text>
-        <Text variant="h2" style={{ color: theme.colors.onHighlight }}>
+        {/* « Ce garage ne peut pas intervenir » : phrase, pas intitulé. */}
+      <Text variant="h2" style={{ color: theme.colors.onHighlight }}>
           {t('results.declinedTitle')}
         </Text>
         <Text variant="txt" style={{ color: theme.colors.onHighlight, opacity: 0.85 }}>

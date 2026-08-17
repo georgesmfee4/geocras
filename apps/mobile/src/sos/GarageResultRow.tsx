@@ -121,7 +121,7 @@ export function GarageResultRow({
         </View>
 
         <View style={{ flex: 1, gap: 5 }}>
-          <Text variant="h2" numberOfLines={1} ellipsizeMode="tail">
+          <Text variant="h2b" numberOfLines={1} ellipsizeMode="tail">
             {garage.name}
           </Text>
 
@@ -203,7 +203,7 @@ export function GarageResultRow({
               paddingHorizontal: theme.space.md,
             }}
           >
-            <Text variant="h2" tone="inverse" numberOfLines={1}>
+            <Text variant="btn" tone="inverse" numberOfLines={1}>
               {t('garage.sendSos')}
             </Text>
           </ChamferView>
@@ -253,7 +253,7 @@ function QuietAction({
         <ChevronRightIcon color={active ? theme.colors.primary : theme.colors.ink} size={14} />
       ) : null}
       <Text
-        variant="smallStrong"
+        variant="btnSm"
         tone={active ? 'primary' : 'ink'}
         numberOfLines={1}
         style={{ flexShrink: 1 }}
