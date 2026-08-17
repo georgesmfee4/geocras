@@ -123,7 +123,7 @@ export default function FideliteScreen() {
 
           {loyalty.isError ? (
             <View style={{ padding: theme.space.xl, gap: theme.space.md }}>
-              <Text variant="h2" tone="primary">
+              <Text variant="h2b" tone="primary">
                 {t('loyalty.failed')}
               </Text>
               <Button
@@ -310,7 +310,7 @@ function Balance({ summary }: { summary: LoyaltySummary }) {
         </ChamferView>
 
         <View style={{ flex: 1 }}>
-          <Text variant="h2">{definition.label[locale]}</Text>
+          <Text variant="h2b">{definition.label[locale]}</Text>
           {/* Le compteur qui décide du grade, dit en toutes lettres. */}
           <Text variant="numSm" tone="muted">
             {summary.completedRepairs}{' '}
@@ -344,7 +344,7 @@ function NextTierCard({ summary }: { summary: LoyaltySummary }) {
         style={{ backgroundColor: theme.colors.ink, padding: theme.space.lg, gap: theme.space.md }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.md }}>
-          <Text variant="heading" tone="inverse" style={{ flex: 1 }}>
+          <Text variant="h2b" tone="inverse" style={{ flex: 1 }}>
             {next ? t('loyalty.nextTier') : t('loyalty.maxTier')}
           </Text>
 
@@ -551,7 +551,7 @@ function BadgeTile({ badge }: { badge: Badge }) {
       </ChamferView>
 
       <Text
-        variant="smallStrong"
+        variant="btnSm"
         tone={badge.unlocked ? 'ink' : 'muted'}
         numberOfLines={2}
         style={{ textAlign: 'center' }}

@@ -169,7 +169,7 @@ function SheetBody({
       >
         <View style={{ gap: theme.space.md }}>
           <SectionLabel>{t('review.label')}</SectionLabel>
-          <Text variant="display">{t('review.title')}</Text>
+          <Text variant="h1b">{t('review.title')}</Text>
           <Text variant="h2" tone="secondary" numberOfLines={2}>
             {garageName}
           </Text>

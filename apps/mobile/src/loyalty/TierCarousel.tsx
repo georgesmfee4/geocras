@@ -199,7 +199,7 @@ function TierCard({
         </ChamferView>
 
         <View style={{ flex: 1 }}>
-          <Text variant="heading" numberOfLines={1}>
+          <Text variant="h2b" numberOfLines={1}>
             {tier.label[locale]}
           </Text>
           <Text variant="numSm" tone="muted">

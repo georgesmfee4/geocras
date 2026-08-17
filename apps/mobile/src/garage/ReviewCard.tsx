@@ -62,7 +62,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
         </ChamferView>
 
         <View style={{ flex: 1, gap: 3 }}>
-          <Text variant="h2" numberOfLines={1} ellipsizeMode="tail">
+          <Text variant="h2b" numberOfLines={1} ellipsizeMode="tail">
             {review.authorName}
           </Text>
           <Stars value={review.rating} size={12} />

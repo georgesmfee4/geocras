@@ -155,7 +155,7 @@ export default function GarageDetailScreen() {
         </Text>
         <Button label={t('common.retry')} variant="outline" onPress={() => void detail.refetch()} />
         <Pressable onPress={() => router.back()} accessibilityRole="button" hitSlop={10}>
-          <Text variant="h2" tone="primary">
+          <Text variant="btn" tone="primary">
             {t('sos.back')}
           </Text>
         </Pressable>
@@ -190,7 +190,7 @@ export default function GarageDetailScreen() {
         >
           <View style={{ gap: theme.space.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: theme.space.md }}>
-              <Text variant="h1" style={{ flex: 1 }}>
+              <Text variant="h1b" style={{ flex: 1 }}>
                 {garage.name}
               </Text>
 
@@ -412,7 +412,7 @@ function ServiceTag({ service, locale }: { service: Service; locale: 'fr' | 'en'
         paddingVertical: theme.space.sm,
       }}
     >
-      <Text variant="smallStrong" tone="secondary">
+      <Text variant="btnSm" tone="secondary">
         {SERVICE_LABELS[service][locale]}
       </Text>
     </View>

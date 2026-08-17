@@ -102,7 +102,7 @@ export function OpeningHoursField({
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-                <Text variant="h2" numberOfLines={1} style={{ width: 80 }}>
+                <Text variant="h2b" numberOfLines={1} style={{ width: 80 }}>
                   {t(`day.${day}`)}
                 </Text>
 
@@ -241,7 +241,7 @@ function ModeSwitch({
               « inverse » y rendrait du blanc sur blanc.
             */}
             <Text
-              variant="smallStrong"
+              variant="btnSm"
               numberOfLines={1}
               style={{ color: active ? theme.colors.surface : theme.colors.inkSecondary }}
             >
