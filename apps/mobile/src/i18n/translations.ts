@@ -32,9 +32,6 @@ export const translations = {
     'drawer.notSignedIn': 'non connecté',
     'drawer.hello': 'Bonjour',
     'drawer.manageAccount': 'Gérer mon compte GEOCRAS',
-    'drawer.changeVehicle': 'Changer de véhicule',
-    'drawer.noVehicle': 'Aucun véhicule enregistré',
-    'drawer.addVehicle': 'En ajouter un',
     'drawer.more': 'Plus dans GeoCras',
     'drawer.startDriving': 'Activer le mode conduite',
     'drawer.beta': 'Bêta',
@@ -206,18 +203,31 @@ export const translations = {
 
     'auth.loginTitle': 'Connexion',
     'auth.signupTitle': 'Créer un compte',
-    'auth.loginLead': 'Votre numéro sert à vous identifier et à vous joindre pendant une intervention.',
-    'auth.signupLead': 'Un compte est nécessaire pour lancer un SOS : le garagiste doit pouvoir vous rappeler.',
+    // Une ligne, pas une phrase : ces deux libellés vivent sous le titre du
+    // bandeau, en capitales mono. Ce qu'ils disaient en long — pourquoi le
+    // compte est exigé avant un SOS — est déjà dit par 'auth.requiredLead',
+    // sur l'écran qui renvoie ici.
+    'auth.loginLead': 'Votre numéro vous identifie',
+    'auth.signupLead': 'Nécessaire pour lancer un SOS',
     'auth.fullName': 'Nom complet',
-    'auth.fullNamePlaceholder': 'Jean Dupont',
+    'auth.fullNamePlaceholder': 'Jean Djomo',
     'auth.phone': 'Numéro de téléphone',
     'auth.password': 'Mot de passe',
     'auth.passwordPlaceholder': '••••••••',
-    'auth.passwordHint': 'Au moins 8 caractères.',
+    // Sans point final : l'aide sous le champ est rendue en capitales, où la
+    // ponctuation de fin ne se lit plus comme une phrase mais comme une tache.
+    'auth.passwordHint': '8 caractères minimum',
     'auth.login': 'Se connecter',
     'auth.signup': 'Créer mon compte',
-    'auth.switchToSignup': 'Pas encore de compte ? En créer un',
-    'auth.switchToLogin': 'Déjà un compte ? Se connecter',
+    // La question et l'action sont séparées : la première est du texte discret,
+    // la seconde le lien rouge sur lequel on appuie. Une seule chaîne les
+    // condamnerait à la même couleur.
+    'auth.noAccount': 'Pas encore de compte ?',
+    'auth.hasAccount': 'Déjà inscrit ?',
+    'auth.legalPrefix': 'En continuant, vous acceptez les',
+    'auth.legalTerms': 'conditions d’utilisation',
+    'auth.showPassword': 'Afficher le mot de passe',
+    'auth.hidePassword': 'Masquer le mot de passe',
     'auth.required': 'Connexion requise',
     'auth.requiredLead':
       'Le SOS engage un garagiste qui se déplace vers vous. Il doit pouvoir vous identifier et vous rappeler — un compte est donc nécessaire.',
@@ -684,7 +694,39 @@ export const translations = {
     'tracking.degraded': 'Connexion instable',
     'tracking.offline': 'Hors ligne',
 
+    // — États de chargement —
+    // Génériques et courts : ce sont les seuls messages d'état qui ne
+    // s'attachent à aucun écran. Tout ce qui peut être dit précisément l'est
+    // par l'écran lui-même, avec ses mots à lui.
+    'state.loading': 'Chargement…',
+    'state.initializing': 'Démarrage…',
+    'state.retrying': 'Nouvelle tentative…',
+    'state.retry': 'Réessayer',
+    'state.offlineTitle': 'Serveur injoignable',
+    'state.offlineBody':
+      'Votre téléphone n’arrive pas à joindre GeoCras. Vérifiez votre connexion, puis réessayez.',
+    'state.errorTitle': 'Quelque chose a cassé',
+    'state.errorBody': 'Le serveur a répondu de travers. Ce n’est pas de votre fait.',
+    'state.notFoundTitle': 'Introuvable',
+    'state.notFoundBody': 'Cette page n’existe pas, ou n’existe plus.',
+    'state.deniedTitle': 'Compte requis',
+    'state.deniedBody': 'Connectez-vous pour accéder à cette page.',
+    // Bandeau global, affiché dès que le serveur cesse de répondre.
+    'state.offlineBanner': 'Hors ligne — les données affichées peuvent dater',
+
+    // Annulation d'un SOS. Les deux messages d'échec disent **la même chose en
+    // premier** : la demande est toujours active. C'est la seule information
+    // qui compte — croire avoir annulé alors qu'un garagiste est en route est
+    // le pire malentendu possible sur ce produit.
+    'results.cancelling': 'Annulation en cours…',
+    'results.cancelOffline': 'Demande toujours active : le serveur est injoignable.',
+    'results.cancelFailed': 'Demande toujours active : l’annulation n’a pas abouti.',
+
     'driving.ready': 'Prêt à conduire ?',
+    // Ce que le mode surveille, dans l'ordre de gravité. La phrase tient en
+    // deux lignes sur la maquette : ne pas l'allonger.
+    'driving.readyLead':
+      'Alertes en temps réel : feux, obstacles, angle mort et chocs latéraux.',
     'driving.mode': 'Mode conduite',
     'driving.start': 'Démarrer',
     'driving.pause': 'Pause',
@@ -697,11 +739,16 @@ export const translations = {
     'driving.score': 'Score',
     'driving.soundAlerts': 'Alertes sonores',
     'driving.blindSpot': "Détection d'angle mort",
+    // Unité de la vitesse. Traduite comme le reste : l'anglais l'écrit sans
+    // changer, mais un dictionnaire à trous se découvre en production.
+    'driving.kmh': 'km/h',
+    // Ce que la pile d'alertes dit quand elle est vide — c'est-à-dire au
+    // meilleur moment du trajet, pas à un moment d'échec.
+    'driving.watching': 'La route est surveillée',
 
     'settings.title': 'Paramètres',
 
     'settings.appearance': 'Apparence',
-    'settings.appearanceHint': 'Auto suit le réglage de votre téléphone.',
     'settings.light': 'Clair',
     'settings.dark': 'Sombre',
     'settings.auto': 'Auto',
@@ -711,11 +758,8 @@ export const translations = {
     'settings.languageEn': 'English',
 
     'settings.search': 'Recherche sur la carte',
-    'settings.searchRadiusHint':
-      'En ville, un petit rayon rend la carte lisible. Sur la route, un grand rayon montre le garage le plus proche même s’il est loin. Le SOS, lui, cherche toujours au plus large.',
 
     'settings.vehicles': 'Mes véhicules',
-    'settings.vehiclesHint': 'Préremplit vos demandes de dépannage',
     'settings.vehiclesNone': 'Aucun véhicule enregistré',
     'settings.vehiclesTitle': 'Mes véhicules',
     'settings.vehiclesLead':
@@ -744,15 +788,8 @@ export const translations = {
     'settings.vehicleMax': 'Cinq véhicules au maximum.',
 
     'settings.notifications': 'Notifications',
-    'settings.notificationsHint':
-      'Pour être prévenu quand un garagiste accepte votre demande, même écran éteint.',
     'settings.notificationsSystem': 'Alertes du téléphone',
-    'settings.notificationsOn': 'Autorisées par le téléphone.',
     'settings.haptics': 'Vibration',
-    'settings.hapticsHint': 'Quand un garagiste accepte votre demande.',
-    'settings.radiusNear': 'Un quartier — la carte reste lisible en ville.',
-    'settings.radiusCity': 'Une ville — le réglage par défaut.',
-    'settings.radiusRoad': 'La route — pour voir loin quand tout est loin.',
     'settings.notificationsDeniedHint':
       'Vous les avez refusées. Le téléphone ne redemandera plus : il faut passer par ses réglages.',
     'settings.notificationsPending': 'Les alertes d’intervention arriveront dans une prochaine version.',
@@ -898,9 +935,6 @@ export const translations = {
     'drawer.notSignedIn': 'not signed in',
     'drawer.hello': 'Hello',
     'drawer.manageAccount': 'Manage my GEOCRAS account',
-    'drawer.changeVehicle': 'Change vehicle',
-    'drawer.noVehicle': 'No vehicle saved',
-    'drawer.addVehicle': 'Add one',
     'drawer.more': 'More in GeoCras',
     'drawer.startDriving': 'Start driving mode',
     'drawer.beta': 'Beta',
@@ -1058,19 +1092,22 @@ export const translations = {
 
     'auth.loginTitle': 'Sign in',
     'auth.signupTitle': 'Create an account',
-    'auth.loginLead': 'Your number identifies you and lets the mechanic reach you during a job.',
-    'auth.signupLead':
-      'An account is required to raise an SOS: the mechanic must be able to call you back.',
+    'auth.loginLead': 'Your number identifies you',
+    'auth.signupLead': 'Required to raise an SOS',
     'auth.fullName': 'Full name',
-    'auth.fullNamePlaceholder': 'Jean Dupont',
+    'auth.fullNamePlaceholder': 'Jean Djomo',
     'auth.phone': 'Phone number',
     'auth.password': 'Password',
     'auth.passwordPlaceholder': '••••••••',
-    'auth.passwordHint': 'At least 8 characters.',
+    'auth.passwordHint': '8 characters minimum',
     'auth.login': 'Sign in',
     'auth.signup': 'Create my account',
-    'auth.switchToSignup': 'No account yet? Create one',
-    'auth.switchToLogin': 'Already have an account? Sign in',
+    'auth.noAccount': 'No account yet?',
+    'auth.hasAccount': 'Already registered?',
+    'auth.legalPrefix': 'By continuing, you accept the',
+    'auth.legalTerms': 'terms of use',
+    'auth.showPassword': 'Show password',
+    'auth.hidePassword': 'Hide password',
     'auth.required': 'Sign-in required',
     'auth.requiredLead':
       'An SOS commits a mechanic to travel to you. They must be able to identify and call you — so an account is required.',
@@ -1528,7 +1565,27 @@ export const translations = {
     'tracking.degraded': 'Unstable connection',
     'tracking.offline': 'Offline',
 
+    'state.loading': 'Loading…',
+    'state.initializing': 'Starting…',
+    'state.retrying': 'Trying again…',
+    'state.retry': 'Try again',
+    'state.offlineTitle': 'Server unreachable',
+    'state.offlineBody':
+      'Your phone cannot reach GeoCras. Check your connection, then try again.',
+    'state.errorTitle': 'Something broke',
+    'state.errorBody': 'The server answered badly. This is not your fault.',
+    'state.notFoundTitle': 'Not found',
+    'state.notFoundBody': 'This page does not exist, or no longer does.',
+    'state.deniedTitle': 'Account required',
+    'state.deniedBody': 'Sign in to open this page.',
+    'state.offlineBanner': 'Offline — what you see may be out of date',
+
+    'results.cancelling': 'Cancelling…',
+    'results.cancelOffline': 'Request still active: the server is unreachable.',
+    'results.cancelFailed': 'Request still active: the cancellation did not go through.',
+
     'driving.ready': 'Ready to drive?',
+    'driving.readyLead': 'Real-time alerts: lights, obstacles, blind spots and side impacts.',
     'driving.mode': 'Driving mode',
     'driving.start': 'Start',
     'driving.pause': 'Pause',
@@ -1541,11 +1598,12 @@ export const translations = {
     'driving.score': 'Score',
     'driving.soundAlerts': 'Sound alerts',
     'driving.blindSpot': 'Blind spot detection',
+    'driving.kmh': 'km/h',
+    'driving.watching': 'The road is being watched',
 
     'settings.title': 'Settings',
 
     'settings.appearance': 'Appearance',
-    'settings.appearanceHint': 'Auto follows your phone setting.',
     'settings.light': 'Light',
     'settings.dark': 'Dark',
     'settings.auto': 'Auto',
@@ -1555,11 +1613,8 @@ export const translations = {
     'settings.languageEn': 'English',
 
     'settings.search': 'Map search',
-    'settings.searchRadiusHint':
-      'In town, a small radius keeps the map readable. On the road, a wide one shows the nearest garage even when it is far. The SOS search always looks as wide as it needs to.',
 
     'settings.vehicles': 'My vehicles',
-    'settings.vehiclesHint': 'Pre-fills your assistance requests',
     'settings.vehiclesNone': 'No vehicle saved',
     'settings.vehiclesTitle': 'My vehicles',
     'settings.vehiclesLead':
@@ -1588,15 +1643,8 @@ export const translations = {
     'settings.vehicleMax': 'Five vehicles at most.',
 
     'settings.notifications': 'Notifications',
-    'settings.notificationsHint':
-      'To be told when a mechanic accepts your request, even with the screen off.',
     'settings.notificationsSystem': 'Phone alerts',
-    'settings.notificationsOn': 'Allowed by the phone.',
     'settings.haptics': 'Vibration',
-    'settings.hapticsHint': 'When a mechanic accepts your request.',
-    'settings.radiusNear': 'A neighbourhood — keeps the map readable in town.',
-    'settings.radiusCity': 'A city — the default setting.',
-    'settings.radiusRoad': 'The road — to see far when everything is far.',
     'settings.notificationsDeniedHint':
       'You blocked them. The phone will not ask again: it has to be changed in its settings.',
     'settings.notificationsPending': 'Job alerts will arrive in a coming version.',

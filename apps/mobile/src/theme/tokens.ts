@@ -107,6 +107,33 @@ const lightColors = {
   plateInk: '#1C1A17',
   tierBronze: '#B06B3A',
   highlightTint: '#FBF0D8',
+  /**
+   * Bandeau sombre des écrans d'authentification.
+   *
+   * Sombre dans les **deux** thèmes, et c'est tout le sujet du jeton : on
+   * arrive sur `/connexion` juste après le splash, ou depuis un SOS interrompu
+   * par l'absence de compte. Retrouver le même noir chaud dit qu'on est encore
+   * dans le même geste — un bandeau qui blanchirait en thème clair couperait
+   * ce fil.
+   *
+   * Il ne peut valoir ni `ink` ni `surface` : les deux changent de camp d'un
+   * thème à l'autre (`ink` devient blanc en sombre, `surface` est blanche en
+   * clair). La seule contrainte tenue ici est qu'il **se détache du fond de
+   * page** — plus sombre que lui en clair, un cran plus clair que lui en
+   * sombre. C'est cet écart, et non une couleur absolue, qui fait exister le
+   * filet rouge en diagonale posé entre les deux.
+   */
+  hero: '#1C1A17',
+  /** Encre posée sur le bandeau. Blanche dans les deux thèmes, comme lui. */
+  onHero: '#FFFFFF',
+  /**
+   * Second niveau sur le bandeau : sous-titre, chevron de retour.
+   *
+   * Un gris chaud plein plutôt qu'un blanc translucide — l'alpha se recompose
+   * différemment sur les deux valeurs de `hero`, et le sous-titre changerait
+   * de densité en basculant de thème alors qu'il ne le devrait pas.
+   */
+  onHeroMuted: '#A8A196',
   shadow: '#1C1A17',
 };
 
@@ -150,6 +177,12 @@ const darkColors: Colors = {
   plateInk: '#1C1A17',
   tierBronze: '#C98450',
   highlightTint: '#2A2113',
+  // Un cran **au-dessus** du fond (`#121110`) et non en dessous : en sombre on
+  // ne peut plus assombrir, la hiérarchie s'inverse donc. L'écart reste faible,
+  // trois points de luminance — le filet rouge fait le reste du travail.
+  hero: '#1F1C19',
+  onHero: '#FFFFFF',
+  onHeroMuted: '#A8A196',
   shadow: '#000000',
 };
 
@@ -217,6 +250,24 @@ export const chamfer = {
   standard: { x: 0.74, y: 0.74 },
   /** Coupe plus douce sur un bouton large : 100% 72%, 94% 100% */
   wide: { x: 0.94, y: 0.72 },
+  /**
+   * Coupe réduite — blocs de menu, boutons de largeur intermédiaire.
+   *
+   * Les deux variantes ci-dessus sont calées sur des boîtes carrées ou
+   * presque. Posées sur un bandeau de 330 × 58, leur ratio horizontal emporte
+   * quatre-vingts points de large : l'angle coupé cesse d'être une signature
+   * et devient une facette, qui mange le libellé et tire l'œil vers le vide.
+   *
+   * Celle-ci vise l'inverse — une dizaine de points sur les deux axes, quelle
+   * que soit la longueur du bloc.
+   *
+   * Rappel de géométrie : le tracé est étiré (`preserveAspectRatio="none"`), la
+   * coupe n'est donc à 45° que sur une boîte carrée. Ces valeurs sont réglées
+   * pour les deux gabarits qui l'emploient — 48 et 58 points de haut, pleine
+   * largeur ou presque — où elles tombent toutes deux autour de dix à quinze
+   * points.
+   */
+  subtle: { x: 0.95, y: 0.78 },
 } as const;
 
 /**

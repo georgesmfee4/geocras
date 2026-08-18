@@ -1,39 +1,44 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { setStatusBarStyle } from 'expo-status-bar';
 import { useCallback, useMemo, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../src/auth/AuthProvider';
 import { useI18n } from '../src/i18n/I18nProvider';
 import { useTheme } from '../src/theme/ThemeProvider';
 import { MIN_TOUCH_TARGET } from '../src/theme/tokens';
+import { AuthHero } from '../src/ui/AuthHero';
 import { Button } from '../src/ui/Button';
-import { ChevronLeftIcon } from '../src/ui/icons';
-import { SectionLabel } from '../src/ui/SectionLabel';
-import { Text, Wordmark } from '../src/ui/Text';
+import { Callout } from '../src/ui/Callout';
+import { FloatingField } from '../src/ui/FloatingField';
+import { DIAL_PREFIX, LOCAL_DIGITS, PHONE_EXAMPLE, toE164 } from '../src/ui/PhoneField';
+import { RevealToggle } from '../src/ui/RevealToggle';
+import { Text } from '../src/ui/Text';
 
 type Mode = 'login' | 'signup';
-
-/**
- * Préfixe imposé.
- *
- * `phoneSchema` n'accepte que `+237` suivi d'un opérateur valide. Plutôt que
- * de laisser saisir un numéro libre et de refuser après coup, on fige le
- * préfixe à l'écran : l'utilisateur ne tape que les neuf chiffres, et la seule
- * erreur possible devient une faute de frappe sur son propre numéro.
- */
-const DIAL_PREFIX = '+237';
-const LOCAL_DIGITS = 9;
 
 /** Longueur minimale imposée par `passwordSchema`. */
 const PASSWORD_MIN = 8;
 
+/**
+ * Connexion et inscription.
+ *
+ * **Un seul écran pour les deux.** Le formulaire ne diffère que d'un champ, et
+ * on passe d'un mode à l'autre sans quitter la page ni perdre ce qui est déjà
+ * tapé — quelqu'un qui se trompe de mode retrouve son numéro là où il l'avait
+ * laissé. Le bandeau, lui, se resserre à l'inscription : trois champs, une
+ * mention légale et un renvoi tiennent en dessous.
+ *
+ * Les champs sont à **libellé flottant** (`<FloatingField>`) : l'intitulé tient
+ * lieu d'invite tant que le champ est vide, puis remonte se poser sur le filet
+ * du haut. Sur un écran qui n'est que formulaire, cela vaut trois lignes
+ * gagnées et, surtout, un intitulé qui ne disparaît plus à la première frappe.
+ *
+ * **Pas de « mot de passe oublié »**, contrairement à la maquette : aucune
+ * route de réinitialisation n'existe côté serveur (`/auth` n'expose que
+ * `signup`, `login`, `refresh` et `logout`). Un lien qui ne mène nulle part au
+ * moment où l'on est bloqué dehors est pire que son absence.
+ */
 export default function ConnexionScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -41,30 +46,72 @@ export default function ConnexionScreen() {
   const { login, signup } = useAuth();
 
   /**
-   * D'où vient l'utilisateur.
+   * D'où vient l'utilisateur, et dans quel mode il arrive.
    *
    * Le parcours SOS renvoie ici quand il découvre qu'il n'y a pas de session.
    * On y retourne après connexion plutôt que sur l'accueil : quelqu'un en
    * panne qui vient d'être interrompu par un formulaire ne doit pas avoir à
    * retrouver son chemin.
    */
-  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
+  const { redirect, mode: requestedMode } = useLocalSearchParams<{
+    redirect?: string;
+    mode?: string;
+  }>();
 
-  const [mode, setMode] = useState<Mode>('login');
+  const [mode, setMode] = useState<Mode>(requestedMode === 'signup' ? 'signup' : 'login');
   const [fullName, setFullName] = useState('');
   const [localPhone, setLocalPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [revealed, setRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const phone = `${DIAL_PREFIX}${localPhone}`;
+  /**
+   * Compteur d'échecs, et non le seul message d'erreur.
+   *
+   * C'est lui qui secoue la marque. Deux refus identiques d'affilée — le même
+   * mot de passe retapé de la même façon — doivent se voir tous les deux ;
+   * avec la chaîne pour signal, le second ne changerait rien et l'écran
+   * paraîtrait ne pas avoir répondu.
+   */
+  const [failures, setFailures] = useState(0);
 
-  const canSubmit = useMemo(() => {
-    if (localPhone.length !== LOCAL_DIGITS) return false;
-    if (password.length < PASSWORD_MIN) return false;
-    if (mode === 'signup' && fullName.trim().length < 2) return false;
-    return true;
-  }, [localPhone, password, mode, fullName]);
+  /**
+   * Barre d'état claire tant que le bandeau sombre est à l'écran.
+   *
+   * `useFocusEffect` et non `useEffect` : depuis l'inscription on peut ouvrir
+   * les conditions d'utilisation, qui s'empilent par-dessus sans démonter cet
+   * écran. Sans le retour au réglage du thème à la perte du focus, l'heure et
+   * la batterie resteraient blanches sur le fond clair de l'écran suivant.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      setStatusBarStyle('light');
+      return () => setStatusBarStyle(theme.scheme === 'dark' ? 'light' : 'dark');
+    }, [theme.scheme]),
+  );
+
+  const phone = toE164(localPhone);
+  const isSignup = mode === 'signup';
+
+  /**
+   * Avancement du formulaire, de 0 à 1.
+   *
+   * Pas un ornement : c'est lui qui resserre la visée de la marque à mesure
+   * qu'on remplit, et `canSubmit` en est **déduit** plutôt que calculé à côté.
+   * Deux définitions du même « c'est complet » finissent toujours par
+   * diverger, et celle qui se voit à l'écran ne serait pas forcément celle qui
+   * autorise l'envoi.
+   */
+  const { progress, canSubmit } = useMemo(() => {
+    const checks = [
+      localPhone.length === LOCAL_DIGITS,
+      password.length >= PASSWORD_MIN,
+      ...(isSignup ? [fullName.trim().length >= 2] : []),
+    ];
+    const done = checks.filter(Boolean).length;
+    return { progress: done / checks.length, canSubmit: done === checks.length };
+  }, [localPhone, password, isSignup, fullName]);
 
   const submit = useCallback(async () => {
     if (!canSubmit || busy) return;
@@ -72,9 +119,7 @@ export default function ConnexionScreen() {
     setError(null);
 
     try {
-      if (mode === 'login') {
-        await login({ phone, password });
-      } else {
+      if (isSignup) {
         await signup({
           fullName: fullName.trim(),
           phone,
@@ -85,6 +130,8 @@ export default function ConnexionScreen() {
           vehicle: null,
           referredByCode: null,
         });
+      } else {
+        await login({ phone, password });
       }
 
       // `replace` et non `push` : une fois connecté, revenir en arrière ne doit
@@ -93,13 +140,14 @@ export default function ConnexionScreen() {
       else router.back();
     } catch (cause) {
       setError(translateError(cause));
+      setFailures((count) => count + 1);
     } finally {
       setBusy(false);
     }
   }, [
     canSubmit,
     busy,
-    mode,
+    isSignup,
     login,
     signup,
     phone,
@@ -111,184 +159,153 @@ export default function ConnexionScreen() {
     translateError,
   ]);
 
-  const inputStyle = {
-    height: 52,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.rule,
-    borderRadius: theme.radius.field,
-    paddingHorizontal: theme.space.md,
-    fontFamily: theme.type.body.fontFamily,
-    fontSize: theme.type.body.fontSize,
-    color: theme.colors.ink,
-  } as const;
+  const switchMode = useCallback(() => {
+    // Les valeurs déjà saisies survivent au changement de mode ; seule l'erreur
+    // est effacée, puisqu'elle portait sur l'autre geste.
+    setMode((current) => (current === 'login' ? 'signup' : 'login'));
+    setError(null);
+  }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.hero }} edges={['top']}>
+      {/*
+        Le fond de la zone sûre est celui du bandeau, celui du défilement celui
+        de la page : la barre d'état prolonge le noir sans que le bas de l'écran
+        le suive.
+      */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: theme.space.sm,
-            height: 56,
-          }}
-        >
-          <Pressable
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.close')}
-            hitSlop={10}
-            style={{
-              width: MIN_TOUCH_TARGET,
-              height: MIN_TOUCH_TARGET,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ChevronLeftIcon color={theme.colors.ink} />
-          </Pressable>
-
-          <View style={{ flex: 1, alignItems: 'center', paddingRight: MIN_TOUCH_TARGET }}>
-            <Wordmark size={15} />
-          </View>
-        </View>
-
         <ScrollView
-          contentContainerStyle={{
-            paddingHorizontal: theme.space.xl,
-            paddingBottom: theme.space.xxxl,
-            gap: theme.space.xl,
-          }}
+          style={{ backgroundColor: theme.colors.background }}
+          contentContainerStyle={{ paddingBottom: theme.space.xxxl }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={{ gap: theme.space.sm }}>
-            <SectionLabel>
-              {t(mode === 'login' ? 'auth.loginTitle' : 'auth.signupTitle')}
-            </SectionLabel>
-            <Text variant="txt" tone="secondary">
-              {t(mode === 'login' ? 'auth.loginLead' : 'auth.signupLead')}
-            </Text>
-          </View>
-
-          {mode === 'signup' ? (
-            <View style={{ gap: theme.space.sm }}>
-              <Text variant="h2b">{t('auth.fullName')}</Text>
-              <TextInput
-                allowFontScaling={false}
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder={t('auth.fullNamePlaceholder')}
-                placeholderTextColor={theme.colors.muted}
-                autoCapitalize="words"
-                autoCorrect={false}
-                style={inputStyle}
-              />
-            </View>
-          ) : null}
-
-          <View style={{ gap: theme.space.sm }}>
-            <Text variant="h2b">{t('auth.phone')}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
-              {/*
-                Préfixe non éditable. Le seul format accepté par le serveur est
-                `+237` : le rendre saisissable n'ouvrirait que la porte aux
-                erreurs, sans offrir de choix réel.
-              */}
-              <View
-                style={{
-                  height: 52,
-                  justifyContent: 'center',
-                  paddingHorizontal: theme.space.md,
-                  backgroundColor: theme.colors.rule,
-                  borderRadius: theme.radius.field,
-                }}
-              >
-                <Text variant="monoStrong">{DIAL_PREFIX}</Text>
-              </View>
-
-              <TextInput
-                allowFontScaling={false}
-                value={localPhone}
-                // On retire tout ce qui n'est pas un chiffre : les numéros se
-                // dictent avec des espaces, et se collent avec des indicatifs.
-                onChangeText={(value) =>
-                  setLocalPhone(value.replace(/\D/g, '').slice(0, LOCAL_DIGITS))
-                }
-                placeholder="670123456"
-                placeholderTextColor={theme.colors.muted}
-                keyboardType="phone-pad"
-                style={[
-                  inputStyle,
-                  {
-                    flex: 1,
-                    fontFamily: theme.type.mono.fontFamily,
-                    letterSpacing: 1,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-
-          <View style={{ gap: theme.space.sm }}>
-            <Text variant="h2b">{t('auth.password')}</Text>
-            <TextInput
-              allowFontScaling={false}
-              value={password}
-              onChangeText={setPassword}
-              placeholder={t('auth.passwordPlaceholder')}
-              placeholderTextColor={theme.colors.muted}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={inputStyle}
-            />
-            {mode === 'signup' ? (
-              <Text variant="txt" tone="muted">
-                {t('auth.passwordHint')}
-              </Text>
-            ) : null}
-          </View>
-
-          {error ? (
-            <View
-              style={{
-                backgroundColor: theme.colors.primaryTint,
-                padding: theme.space.md,
-                borderLeftWidth: 3,
-                borderLeftColor: theme.colors.primary,
-              }}
-            >
-              <Text variant="txt" tone="primary">
-                {error}
-              </Text>
-            </View>
-          ) : null}
-
-          <Button
-            label={t(mode === 'login' ? 'auth.login' : 'auth.signup')}
-            onPress={() => void submit()}
-            disabled={!canSubmit}
-            loading={busy}
-            fullWidth
+          <AuthHero
+            title={t(isSignup ? 'auth.signupTitle' : 'auth.loginTitle')}
+            tagline={t(isSignup ? 'auth.signupLead' : 'auth.loginLead')}
+            compact={isSignup}
+            onBack={() => router.back()}
+            progress={progress}
+            busy={busy}
+            failures={failures}
           />
 
-          <Pressable
-            onPress={() => {
-              setMode((current) => (current === 'login' ? 'signup' : 'login'));
-              setError(null);
+          <View
+            style={{
+              paddingHorizontal: theme.space.xl,
+              paddingTop: theme.space.xl,
+              gap: theme.space.lg,
             }}
-            accessibilityRole="button"
-            hitSlop={8}
-            style={{ alignItems: 'center', paddingVertical: theme.space.sm }}
           >
-            <Text variant="txt" tone="primary">
-              {t(mode === 'login' ? 'auth.switchToSignup' : 'auth.switchToLogin')}
-            </Text>
-          </Pressable>
+            {isSignup ? (
+              <FloatingField
+                label={t('auth.fullName')}
+                example={t('auth.fullNamePlaceholder')}
+                value={fullName}
+                onChangeText={setFullName}
+                autoCapitalize="words"
+                autoComplete="name"
+                autoCorrect={false}
+                returnKeyType="next"
+              />
+            ) : null}
+
+            {/*
+              Le préfixe est figé et n'apparaît qu'avec le libellé remonté.
+              `phoneSchema` n'accepte que `+237` suivi d'un opérateur valide :
+              le rendre saisissable n'ouvrirait que la porte aux erreurs, sans
+              offrir de choix réel.
+            */}
+            <FloatingField
+              label={t('auth.phone')}
+              example={PHONE_EXAMPLE}
+              prefix={DIAL_PREFIX}
+              mono
+              value={localPhone}
+              // On retire tout ce qui n'est pas un chiffre : les numéros se
+              // dictent avec des espaces, et se collent avec des indicatifs.
+              onChangeText={(value) =>
+                setLocalPhone(value.replace(/\D/g, '').slice(0, LOCAL_DIGITS))
+              }
+              keyboardType="phone-pad"
+              autoComplete="tel"
+              returnKeyType="next"
+            />
+
+            <FloatingField
+              label={t('auth.password')}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!revealed}
+              autoCapitalize="none"
+              autoComplete={isSignup ? 'new-password' : 'current-password'}
+              autoCorrect={false}
+              hint={isSignup ? t('auth.passwordHint') : undefined}
+              returnKeyType="go"
+              onSubmitEditing={() => void submit()}
+              trailing={
+                <RevealToggle
+                  revealed={revealed}
+                  onToggle={() => setRevealed((current) => !current)}
+                  label={t(revealed ? 'auth.hidePassword' : 'auth.showPassword')}
+                />
+              }
+            />
+
+            {error ? <Callout tone="danger">{error}</Callout> : null}
+
+            <Button
+              label={t(isSignup ? 'auth.signup' : 'auth.login')}
+              onPress={() => void submit()}
+              disabled={!canSubmit}
+              loading={busy}
+              fullWidth
+              style={{ marginTop: theme.space.xs }}
+            />
+
+            {isSignup ? (
+              <Text variant="txt" tone="muted" style={{ textAlign: 'center' }}>
+                {t('auth.legalPrefix')}{' '}
+                <Text
+                  variant="txt"
+                  tone="secondary"
+                  accessibilityRole="link"
+                  onPress={() => router.push('/conditions' as never)}
+                  style={{ textDecorationLine: 'underline' }}
+                >
+                  {t('auth.legalTerms')}
+                </Text>
+              </Text>
+            ) : null}
+
+            {/*
+              La question en discret, l'action en rouge : c'est le seul lien de
+              l'écran, il doit se voir sans concurrencer le bouton plein qui est
+              juste au-dessus.
+            */}
+            <Pressable
+              onPress={switchMode}
+              accessibilityRole="button"
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: theme.space.sm,
+                minHeight: MIN_TOUCH_TARGET,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Text variant="txt" tone="secondary">
+                {t(isSignup ? 'auth.hasAccount' : 'auth.noAccount')}
+              </Text>
+              <Text variant="btnSm" tone="primary">
+                {t(isSignup ? 'auth.login' : 'auth.signupTitle')}
+              </Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

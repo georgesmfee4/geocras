@@ -1,6 +1,10 @@
-import type { ErrorCode, ErrorResponse } from '@geocras/shared';
+import type { ErrorResponse } from '@geocras/shared';
+export { ApiError } from './ApiError';
+import { ApiError } from './ApiError';
 import { env } from '../config/env';
 import { noteServerDate } from '../time/clock';
+import { throughGate } from './gate';
+import { circuitIsOpen, noteReachable, noteUnreachable } from './reachability';
 import {
   clearTokens,
   getCachedAccessToken,
@@ -9,30 +13,8 @@ import {
   saveAccessToken,
 } from './tokens';
 
-/** Erreur porteuse du code serveur — le mobile traduit sur le code. */
-export class ApiError extends Error {
-  readonly status: number;
-  readonly code: ErrorCode | 'NETWORK_ERROR';
-  readonly fields: Record<string, string> | undefined;
-
-  constructor(
-    status: number,
-    code: ErrorCode | 'NETWORK_ERROR',
-    message: string,
-    fields?: Record<string, string>,
-  ) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.code = code;
-    this.fields = fields;
-  }
-
-  /** Une erreur réseau se réessaie ; une erreur métier, non. */
-  get isRetryable(): boolean {
-    return this.code === 'NETWORK_ERROR' || this.status >= 500;
-  }
-}
+export const TIMEOUTS = { instant: 6_000, normal: 12_000, heavy: 25_000 } as const;
+export type RequestSpeed = keyof typeof TIMEOUTS;
 
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -41,13 +23,9 @@ type RequestOptions = {
   /** Certaines routes sont publiques : ne pas exiger de jeton. */
   auth?: boolean;
   signal?: AbortSignal;
-  /**
-   * Plafond d'attente propre à cet appel.
-   *
-   * Le défaut de 20 s convient à une action que l'utilisateur attend. Il est
-   * beaucoup trop long pour un appel **facultatif** : sur un réseau muet, il
-   * fait patienter vingt secondes pour un service dont on peut se passer.
-   */
+  /** Classe d'attente. `normal` par défaut — voir {@link TIMEOUTS}. */
+  speed?: RequestSpeed;
+  /** Plafond explicite, quand aucune des trois classes ne convient. */
   timeoutMs?: number;
 };
 
@@ -127,7 +105,26 @@ async function toApiError(response: Response): Promise<ApiError> {
  * la forme des erreurs et le délai d'expiration.
  */
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, query, auth = true, signal, timeoutMs = 20_000 } = options;
+  const {
+    method = 'GET',
+    body,
+    query,
+    auth = true,
+    signal,
+    speed = 'normal',
+    timeoutMs = TIMEOUTS[speed],
+  } = options;
+
+  /**
+   * Échec immédiat quand le serveur est déjà connu injoignable.
+   *
+   * Aucune socket n'est ouverte : l'écran reçoit son erreur dans la frame
+   * courante et affiche « hors ligne » au lieu de faire tourner une roue. C'est
+   * ce qui empêche le deuxième écran de repayer l'attente du premier.
+   */
+  if (circuitIsOpen()) {
+    throw new ApiError(0, 'NETWORK_ERROR', 'Serveur injoignable');
+  }
 
   const execute = async (token: string | null): Promise<Response> => {
     const headers: Record<string, string> = { Accept: 'application/json' };
@@ -139,8 +136,12 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     const timeout = new AbortController();
     const timer = setTimeout(() => timeout.abort(), timeoutMs);
 
-    // On combine l'annulation de l'appelant et celle du délai.
-    signal?.addEventListener('abort', () => timeout.abort(), { once: true });
+    // On combine l'annulation de l'appelant et celle du délai. L'écouteur est
+    // **retiré au retour** : sans cela, chaque tentative en ajoutait un de plus
+    // sur le signal de l'appelant, et un écran qui remonte souvent finissait
+    // par en accumuler des dizaines sur un signal qu'il garde en vie.
+    const relay = () => timeout.abort();
+    signal?.addEventListener('abort', relay, { once: true });
 
     try {
       return await fetch(buildUrl(path, query), {
@@ -151,6 +152,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
       });
     } finally {
       clearTimeout(timer);
+      signal?.removeEventListener('abort', relay);
     }
   };
 
@@ -158,20 +160,32 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   let response: Response;
   try {
-    response = await execute(token);
+    // Le créneau est pris ici, et non autour de tout l'appel : la lecture du
+    // jeton touche le stockage sécurisé, pas le réseau, et n'a rien à faire
+    // dans la file.
+    response = await throughGate(() => execute(token));
   } catch (error) {
+    // L'annulation demandée par l'appelant — écran démonté, requête remplacée —
+    // n'est pas une panne de réseau et ne doit surtout pas ouvrir le circuit.
+    if (signal?.aborted) throw new ApiError(0, 'NETWORK_ERROR', 'Requête annulée');
+
+    noteUnreachable();
     if ((error as Error).name === 'AbortError') {
       throw new ApiError(0, 'NETWORK_ERROR', 'Délai dépassé, réseau trop lent');
     }
     throw new ApiError(0, 'NETWORK_ERROR', 'Connexion impossible');
   }
 
+  // Le serveur a répondu : le réseau fonctionne, quel que soit le code renvoyé.
+  noteReachable();
+
   if (response.status === 401 && auth) {
     token = await refreshAccessToken();
     if (token) {
       try {
-        response = await execute(token);
+        response = await throughGate(() => execute(token));
       } catch {
+        noteUnreachable();
         throw new ApiError(0, 'NETWORK_ERROR', 'Connexion impossible');
       }
     }

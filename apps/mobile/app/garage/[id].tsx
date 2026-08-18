@@ -10,6 +10,7 @@ import {
   usePublishReview,
   useReviewEligibility,
 } from '../../src/api/hooks';
+import { forceProbe } from '../../src/api/reachability';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { OpeningHoursTable, StatStrip } from '../../src/garage/GarageStats';
 import { PhotoCarousel } from '../../src/garage/PhotoCarousel';
@@ -27,7 +28,9 @@ import { Button } from '../../src/ui/Button';
 import { CheckIcon, ChevronLeftIcon, StarIcon } from '../../src/ui/icons';
 import { SectionLabel } from '../../src/ui/SectionLabel';
 import { Skeleton } from '../../src/ui/Skeleton';
+import { resolveLoadState } from '../../src/ui/loadState';
 import { Stars } from '../../src/ui/Stars';
+import { StateView } from '../../src/ui/StateView';
 import { Text } from '../../src/ui/Text';
 
 /**
@@ -136,25 +139,49 @@ export default function GarageDetailScreen() {
     [publish, translateError, eligibility.data?.requestId],
   );
 
-  if (detail.isLoading && !garage) return <DetailSkeleton />;
+  /**
+   * L'état de la fiche.
+   *
+   * Le défaut qu'il corrige est net : la page affichait le **message traduit de
+   * l'erreur** — donc « Connexion impossible » — au milieu d'un écran vide, et
+   * proposait « Réessayer » sans savoir si l'échec valait une seconde tentative.
+   * Un garage supprimé et un serveur arrêté donnaient la même page. Ils
+   * donnent maintenant deux écrans distincts, avec deux dessins et deux
+   * conduites à tenir.
+   */
+  const detailState = resolveLoadState({
+    pending: detail.isPending,
+    fetching: detail.isFetching,
+    error: detail.error,
+    failureCount: detail.failureCount,
+    hasData: garage != null,
+  });
 
   if (!garage) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: theme.colors.background,
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: theme.space.xl,
-          gap: theme.space.lg,
-        }}
-      >
-        <Text variant="heading" style={{ textAlign: 'center' }}>
-          {detail.isError ? translateError(detail.error) : t('garage.notFound')}
-        </Text>
-        <Button label={t('common.retry')} variant="outline" onPress={() => void detail.refetch()} />
-        <Pressable onPress={() => router.back()} accessibilityRole="button" hitSlop={10}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <StateView
+          state={detailState}
+          title={detailState === 'not_found' ? t('garage.notFound') : undefined}
+          actionLabel={t('state.retry')}
+          onAction={() => {
+            forceProbe();
+            void detail.refetch();
+          }}
+          skeleton={<DetailSkeleton />}
+        />
+
+        {/*
+          Le retour reste accessible dans tous les cas. C'est la seule action
+          qui marche à coup sûr quand rien d'autre ne marche, et on n'enferme
+          personne dans une page vide.
+        */}
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          hitSlop={10}
+          style={{ alignSelf: 'center', padding: theme.space.lg }}
+        >
           <Text variant="btn" tone="primary">
             {t('sos.back')}
           </Text>

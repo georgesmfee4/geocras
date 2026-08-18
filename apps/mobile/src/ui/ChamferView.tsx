@@ -1,12 +1,23 @@
 import { StyleSheet, View, type StyleProp, type ViewProps, type ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../theme/ThemeProvider';
+import type { chamfer } from '../theme/tokens';
 import { chamferPath, type ChamferRatios } from './shapes';
 
-export type ChamferVariant = 'standard' | 'wide';
+/**
+ * Dérivé des jetons, et non recopié.
+ *
+ * Une union écrite à la main ici resterait à deux valeurs le jour où une
+ * troisième coupe entre dans `tokens.ts`, et l'écran qui la demanderait aurait
+ * une erreur de type sans que rien n'indique où l'ajouter.
+ */
+export type ChamferVariant = keyof typeof chamfer;
 
 export type ChamferViewProps = ViewProps & {
-  /** `wide` adoucit la coupe — à utiliser sur les boutons pleine largeur. */
+  /**
+   * `wide` adoucit la coupe sur les boutons pleine largeur, `subtle` la
+   * réduit à une signature sur les blocs longs et peu hauts.
+   */
   variant?: ChamferVariant;
   /** Remplissage. Par défaut : la surface du thème. */
   fill?: string;

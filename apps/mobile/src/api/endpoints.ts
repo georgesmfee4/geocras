@@ -84,16 +84,29 @@ export const api = {
         auth: false,
         query: { page, pageSize },
       }),
+    /*
+      Éligibilité à un avis : la fiche s'affiche entièrement sans elle — elle ne
+      décide que de la présence d'un bouton. Classée `instant` : personne ne
+      doit regarder une fiche chargée en attendant un bouton facultatif.
+    */
     reviewEligibility: (id: string) =>
-      apiFetch<ReviewEligibility>(`/garages/${id}/review-eligibility`),
+      apiFetch<ReviewEligibility>(`/garages/${id}/review-eligibility`, { speed: 'instant' }),
   },
 
   requests: {
+    // Un SOS ne se recommence pas d'un geste : il a droit au budget long.
     create: (body: CreateRequestBody) =>
-      apiFetch<CreateRequestResponse>('/requests', { method: 'POST', body }),
+      apiFetch<CreateRequestResponse>('/requests', { method: 'POST', body, speed: 'heavy' }),
     detail: (id: string) => apiFetch<RequestDetail>(`/requests/${id}`),
-    /** Demande en cours du client, ou `{ request: null }`. */
-    active: () => apiFetch<ActiveRequestResponse>('/requests/active'),
+    /**
+     * Demande en cours du client, ou `{ request: null }`.
+     *
+     * `instant` : c'est un **contrôle préalable**, interrogé avant d'ouvrir la
+     * déclaration de panne et au montage de la carte. Il ne porte aucun contenu
+     * que l'utilisateur soit venu chercher, et sa lenteur retardait l'ouverture
+     * de l'écran le plus important du produit.
+     */
+    active: () => apiFetch<ActiveRequestResponse>('/requests/active', { speed: 'instant' }),
     mine: (page = 1, pageSize = 20) =>
       apiFetch<RequestHistoryResponse>('/requests/mine', { query: { page, pageSize } }),
     /**

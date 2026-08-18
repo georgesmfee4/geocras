@@ -24,6 +24,7 @@ import {
   useRequestDetail,
   useSelectGarage,
 } from '../../src/api/hooks';
+import { forceProbe } from '../../src/api/reachability';
 import { env } from '../../src/config/env';
 import { useI18n } from '../../src/i18n/I18nProvider';
 import { GarageMarkers } from '../../src/map/GarageMarkers';
@@ -46,6 +47,8 @@ import { Chip } from '../../src/ui/Chip';
 import { CloseIcon } from '../../src/ui/icons';
 import { SectionLabel } from '../../src/ui/SectionLabel';
 import { Skeleton } from '../../src/ui/Skeleton';
+import { stateForError } from '../../src/ui/loadState';
+import { ProcessingOverlay } from '../../src/ui/ProcessingOverlay';
 import { Text } from '../../src/ui/Text';
 import { MIN_TOUCH_TARGET } from '../../src/theme/tokens';
 
@@ -149,18 +152,38 @@ export default function ResultatsScreen() {
         style: 'destructive',
         onPress: () => {
           void (async () => {
+            setError(null);
+            // Le circuit peut être ouvert d'un échec précédent : sans cette
+            // réouverture, l'annulation serait refusée sur-le-champ sans même
+            // être tentée, et l'utilisateur croirait l'app cassée.
+            forceProbe();
+
             try {
               await cancelRequest.mutateAsync('abandon depuis les résultats');
               void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               router.replace('/(drawer)/(tabs)/carte');
             } catch (cause) {
-              setError(translateError(cause));
+              /**
+               * **Ce que dit l'échec, et dans quel ordre.**
+               *
+               * La version précédente affichait le message traduit de
+               * l'erreur — « Connexion impossible » — ce qui décrit le réseau
+               * et tait la seule chose qui compte : la demande n'est **pas**
+               * annulée, et un garagiste peut être en route. Les deux messages
+               * commencent donc par là, et la cause vient après.
+               */
+              setError(
+                stateForError(cause) === 'offline'
+                  ? t('results.cancelOffline')
+                  : t('results.cancelFailed'),
+              );
+              void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             }
           })();
         },
       },
     ]);
-  }, [requestId, cancelRequest, router, t, translateError]);
+  }, [requestId, cancelRequest, router, t]);
 
   /**
    * Sortir de cet écran, c'est renoncer à la demande.
@@ -615,6 +638,19 @@ export default function ResultatsScreen() {
         }}
         onConfirm={(garage) => void sendSos(garage)}
       />
+
+      {/*
+        Le voile d'annulation, **déclaré en dernier** : rien ne se peint
+        par-dessus lui, ni la feuille de résultats, ni les bandeaux. Placé plus
+        haut dans l'arbre, la feuille lui serait passée devant et il n'aurait
+        couvert que la carte.
+
+        C'était le défaut signalé : l'appui n'était rendu que par la roue d'un
+        bouton — souvent hors champ une fois la feuille remontée — et l'écran
+        paraissait ne rien faire pendant les secondes où il faisait précisément
+        quelque chose d'irréversible.
+      */}
+      {cancelRequest.isPending ? <ProcessingOverlay label={t('results.cancelling')} /> : null}
     </View>
   );
 }

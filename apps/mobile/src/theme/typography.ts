@@ -1,7 +1,7 @@
 /**
  * Échelle typographique IBM Plex.
  *
- * Neuf niveaux qui remplaceront progressivement les dix-huit variantes Inter
+ * Dix niveaux qui remplaceront progressivement les dix-huit variantes Inter
  * de `tokens.ts`. Ils sont fusionnés dans le même objet `type` — c'est lui que
  * `<Text variant>` interroge — mais vivent dans ce fichier pour que la
  * bascule se lise d'un coup d'œil, et se retire d'un seul `git revert` si elle
@@ -69,6 +69,21 @@ export const plexType = {
   /** NUM petit — méta de carte : ★4,6 · 1,2 km. */
   numSm: { fontFamily: plexMono.medium, fontSize: 10, lineHeight: 14, letterSpacing: 0.1 },
 
+  /**
+   * NUM grand — compteurs de session du mode conduite.
+   *
+   * Dixième niveau, ajouté pour un trou réel de l'échelle et non par confort :
+   * entre `num` (16) et `numXl` (52) il n'y avait rien, et la rangée ALERTES ·
+   * DISTANCE · SCORE tombe exactement au milieu. En `num` elle se lit assise à
+   * un bureau, pas au volant ; en `numXl` les trois colonnes ne tiennent plus
+   * côte à côte sur un petit Android.
+   *
+   * Réservé aux **données mesurées d'affichage** — un chiffre qu'on lit d'un
+   * coup d'œil sans le viser. Une valeur qu'on lit dans une ligne de liste
+   * reste en `num`.
+   */
+  numLg: { fontFamily: plexMono.semibold, fontSize: 30, lineHeight: 34, letterSpacing: -0.9 },
+
   /** NUM géant — compteur du mode conduite. */
   numXl: { fontFamily: plexMono.semibold, fontSize: 52, lineHeight: 52, letterSpacing: -1.6 },
 
@@ -92,8 +107,8 @@ export type PlexVariant = keyof typeof plexType;
  * nom de garage isolé est un titre ; le même nom dans « 3 garages trouvés »
  * est une phrase et reste en Plex Sans.
  *
- * Les données mesurées ne basculent jamais : `num`, `numSm`, `numXl` gardent
- * Plex Mono. Les chiffres de Bebas sont condensés et sans chasse fixe — une
+ * Les données mesurées ne basculent jamais : `num`, `numSm`, `numLg`, `numXl`
+ * gardent Plex Mono. Les chiffres de Bebas sont condensés et sans chasse fixe — une
  * colonne d'ETA y deviendrait irrégulière à chaque rafraîchissement.
  *
  * ---

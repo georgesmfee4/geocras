@@ -8,9 +8,11 @@ import { JobRow } from '../../src/jobs/JobRow';
 import { useJobFeedStore } from '../../src/realtime/useJobFeed';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { BlinkingDot } from '../../src/ui/BlinkingDot';
-import { Callout } from '../../src/ui/Callout';
+import { forceProbe } from '../../src/api/reachability';
 import { ScreenHeader } from '../../src/ui/ScreenHeader';
 import { SectionLabel } from '../../src/ui/SectionLabel';
+import { isTerminal, resolveLoadState } from '../../src/ui/loadState';
+import { StateView } from '../../src/ui/StateView';
 import { Text } from '../../src/ui/Text';
 
 /**
@@ -28,7 +30,7 @@ import { Text } from '../../src/ui/Text';
 export default function SosListScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { t, translateError } = useI18n();
+  const { t } = useI18n();
 
   const jobs = useGarageJobs();
   const connection = useJobFeedStore((state) => state.connection);
@@ -40,6 +42,15 @@ export default function SosListScreen() {
   }, [jobs]);
 
   const data = jobs.data;
+
+  /** L'état de la file de travail — voir `src/ui/loadState.ts`. */
+  const jobsState = resolveLoadState({
+    pending: jobs.isPending,
+    fetching: jobs.isFetching,
+    error: jobs.error,
+    failureCount: jobs.failureCount,
+    hasData: data != null,
+  });
   const incoming = data?.incoming ?? [];
   const active = data?.active ?? [];
 
@@ -83,10 +94,20 @@ export default function SosListScreen() {
           </View>
         ) : null}
 
-        {jobs.isError && !data ? (
-          <Callout tone="danger" title={t('common.error')}>
-            {translateError(jobs.error)}
-          </Callout>
+        {/*
+          L'encart rouge disait « Connexion impossible » sur une seule ligne,
+          sans distinguer un serveur arrêté d'une erreur métier. Le dessin
+          d'état le fait, et propose la seule action qui vaille selon le cas.
+        */}
+        {isTerminal(jobsState) ? (
+          <StateView
+            state={jobsState}
+            actionLabel={t('state.retry')}
+            onAction={() => {
+              forceProbe();
+              void jobs.refetch();
+            }}
+          />
         ) : null}
 
         {incoming.length > 0 ? (

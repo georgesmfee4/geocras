@@ -10,6 +10,7 @@ import {
   type LoyaltyEntry,
   type LoyaltySummary,
 } from '@geocras/shared';
+import { forceProbe } from '../src/api/reachability';
 import { useLoyalty, useLoyaltyHistory } from '../src/api/hooks';
 import { useAuth } from '../src/auth/AuthProvider';
 import { LoyaltySkeleton } from '../src/loyalty/LoyaltySkeleton';
@@ -22,6 +23,8 @@ import { ChamferView } from '../src/ui/ChamferView';
 import { CheckIcon, LoyaltyIcon, StarIcon } from '../src/ui/icons';
 import { ScreenHeader } from '../src/ui/ScreenHeader';
 import { SectionLabel } from '../src/ui/SectionLabel';
+import { resolveLoadState } from '../src/ui/loadState';
+import { StateView } from '../src/ui/StateView';
 import { Text } from '../src/ui/Text';
 import { useScreenReady } from '../src/ui/useScreenReady';
 
@@ -80,6 +83,16 @@ export default function FideliteScreen() {
 
   const summary = loyalty.data ?? null;
 
+  /** L'état de la fidélité, résolu une fois — voir `src/ui/loadState.ts`. */
+  const loyaltyState = resolveLoadState({
+    enabled: user !== null,
+    pending: loyalty.isPending,
+    fetching: loyalty.isFetching,
+    error: loyalty.error,
+    failureCount: loyalty.failureCount,
+    hasData: summary != null,
+  });
+
   if (status !== 'loading' && !user) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
@@ -118,29 +131,38 @@ export default function FideliteScreen() {
           contentContainerStyle={{ paddingBottom: theme.space.xxxl }}
           showsVerticalScrollIndicator={false}
         >
-          {/* La transition est passée : l'ondulation peut reprendre son rôle. */}
-          {loyalty.isPending ? <LoyaltySkeleton /> : null}
+          {/*
+            **Une seule chose à l'écran à la fois.**
 
-          {loyalty.isError ? (
-            <View style={{ padding: theme.space.xl, gap: theme.space.md }}>
-              <Text variant="h2b" tone="primary">
-                {t('loyalty.failed')}
-              </Text>
-              <Button
-                label={t('common.retry')}
-                variant="outline"
-                onPress={() => void loyalty.refetch()}
+            La version précédente empilait trois conditions indépendantes —
+            squelette si `isPending`, dessin si l'état est terminal, contenu si
+            les données sont là — et rien ne garantissait qu'elles s'excluent.
+            Hors ligne, on voyait donc l'ondulation du squelette *et* le dessin
+            de panne, l'un sous l'autre : l'écran promettait un chargement en
+            cours au moment même où il annonçait qu'il avait renoncé.
+
+            `<StateView>` arbitre maintenant seul. Il rend le squelette pendant
+            l'attente, le dessin sur un état terminal, et le contenu — passé en
+            enfant — uniquement quand il y a quelque chose à montrer.
+          */}
+          <StateView
+            state={loyaltyState}
+            title={loyaltyState === 'error' ? t('loyalty.failed') : undefined}
+            actionLabel={t('state.retry')}
+            onAction={() => {
+              forceProbe();
+              void loyalty.refetch();
+            }}
+            skeleton={<LoyaltySkeleton />}
+          >
+            {summary ? (
+              <LoyaltyContent
+                summary={summary}
+                history={history}
+                onHistoryToggle={setHistoryOpen}
               />
-            </View>
-          ) : null}
-
-          {summary ? (
-            <LoyaltyContent
-              summary={summary}
-              history={history}
-              onHistoryToggle={setHistoryOpen}
-            />
-          ) : null}
+            ) : null}
+          </StateView>
         </ScrollView>
       )}
     </SafeAreaView>

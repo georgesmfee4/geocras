@@ -401,6 +401,41 @@ export function CheckIcon({ color, size = 16 }: IconProps) {
   );
 }
 
+/**
+ * Œil du mot de passe.
+ *
+ * **Sans la barre qui le raye** : elle n'est pas dessinée ici parce qu'elle
+ * s'anime — elle se trace d'un bord à l'autre au moment où l'on révèle la
+ * saisie, et un tracé SVG ne se transforme pas sur le fil natif. Elle vit donc
+ * dans `<RevealToggle>`, posée par-dessus cette icône, qui ne bouge jamais :
+ * l'amande et la pupille restent exactement où elles étaient d'un état à
+ * l'autre, seule la barre apparaît.
+ *
+ * Le trait est plus fin que la moyenne du jeu (1,7) : l'icône vit dans un
+ * champ de saisie, à côté d'un texte de 14 px, et un 2 y pèserait plus lourd
+ * que la valeur qu'elle protège.
+ *
+ * Le rapport entre la barre et la boîte est figé par `EYE_STRIKE_RATIO`, que
+ * `<RevealToggle>` lit pour dimensionner la sienne : les deux tracés doivent
+ * rester d'aplomb quelle que soit la taille demandée.
+ */
+export const EYE_STRIKE_RATIO = 21.2 / 24;
+
+export function EyeIcon({ color, size = 20 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M2.5 12S6.4 5.8 12 5.8 21.5 12 21.5 12 17.6 18.2 12 18.2 2.5 12 2.5 12z"
+        fill="none"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+      <Circle cx={12} cy={12} r={3.1} fill="none" stroke={color} strokeWidth={1.7} />
+    </Svg>
+  );
+}
+
 /** Confidentialité : cadenas sur écusson. */
 export function ShieldLockIcon({ color, size = 20 }: IconProps) {
   return (

@@ -15,8 +15,9 @@ import {
 import { useNotificationPermission } from '../../src/settings/useNotificationPermission';
 import { useTheme, type ThemePreference } from '../../src/theme/ThemeProvider';
 import { PlateTag } from '../../src/ui/PlateTag';
+import { RadiusPicker } from '../../src/ui/RadiusPicker';
 import { Segmented } from '../../src/ui/Segmented';
-import { LinkRow, OptionRow, SettingsCard, SwitchRow } from '../../src/ui/SettingsCard';
+import { LinkRow, SettingsCard, SwitchRow } from '../../src/ui/SettingsCard';
 import { ScreenHeader } from '../../src/ui/ScreenHeader';
 import { SectionLabel } from '../../src/ui/SectionLabel';
 import { Text } from '../../src/ui/Text';
@@ -25,24 +26,36 @@ import type { Locale } from '@geocras/shared';
 /**
  * Paramètres.
  *
- * Repris de la maquette 10, dont le vocabulaire tient en trois briques et rien
- * d'autre :
+ * Trois formes, et chacune dit ce qu'elle est :
  *
- *  - un **sélecteur segmenté** pour les choix exclusifs et courts — le thème ;
+ *  - un **sélecteur segmenté** pour un choix exclusif dont les options tiennent
+ *    en un mot — le thème, la langue ;
+ *  - des **tuiles dessinées** pour le rayon de recherche, seul réglage de la
+ *    page qui décrive quelque chose de l'espace ;
  *  - des **cartes à filets** pour tout le reste, intitulé de section au-dessus
- *    avec son trait rouge ;
- *  - des **interrupteurs rectangulaires**, pas des pilules.
+ *    avec son trait rouge.
  *
- * Ce que la version précédente faisait de travers : elle empilait des puces de
- * filtre pour représenter des choix exclusifs. Une puce dit « je peux en
- * cocher plusieurs », un segment dit « une seule à la fois » — et une page
- * entière de puces, c'est exactement l'écran de réglages générique qu'on trouve
- * dans n'importe quelle application.
+ * ---
  *
- * L'ordre des sections suit la fréquence d'usage réelle : on vient ici pour son
- * véhicule bien plus souvent que pour son thème. Tous les réglages
- * s'appliquent à l'appui — un réglage dont on voit le résultat immédiatement n'a
- * pas besoin d'être validé.
+ * **La page a été vidée de son texte, et c'est le sujet de cette révision.**
+ *
+ * Elle portait six phrases d'explication et deux paragraphes pour douze
+ * réglages : « Auto suit le réglage de votre téléphone » sous une pastille
+ * déjà coupée en deux pour le dire, « Un quartier — la carte reste lisible en
+ * ville » sous une option qui s'appelle 5 km, un paragraphe entier sur le
+ * rayon, un autre sur les notifications. Une page de réglages se parcourt des
+ * yeux pour trouver un interrupteur ; chaque phrase qu'on y ajoute éloigne
+ * celui d'après.
+ *
+ * Ce qui reste de texte est ce qu'aucun dessin ne peut porter : l'autorisation
+ * refusée qu'il faut aller rouvrir dans les réglages du téléphone, et le fait
+ * que les alertes d'intervention ne partent pas encore. Les deux sont des
+ * informations, pas des commentaires.
+ *
+ * L'ordre alterne les formes — barre, ligne, dessins, interrupteurs, barre,
+ * lignes — pour qu'on repère sa section à sa silhouette avant de lire son
+ * intitulé. Tous les réglages s'appliquent à l'appui : un réglage dont on voit
+ * le résultat immédiatement n'a pas besoin d'être validé.
  */
 export default function ParametresScreen() {
   const theme = useTheme();
@@ -75,6 +88,22 @@ export default function ParametresScreen() {
     notifications.openSettings();
   };
 
+  /**
+   * Une seule ligne d'aide sous l'interrupteur, et seulement quand elle apprend
+   * quelque chose.
+   *
+   * Autorisées, il reste à dire que rien ne part encore — sans quoi on attend
+   * une alerte qui ne viendra pas. Refusées définitivement, il faut dire que
+   * l'interrupteur ne peut plus rien et où aller. Entre les deux, l'intitulé et
+   * l'interrupteur se suffisent.
+   */
+  const notificationsHint =
+    notifications.granted === true
+      ? t('settings.notificationsPending')
+      : notifications.canAskAgain
+        ? undefined
+        : t('settings.notificationsDeniedHint');
+
   const defaultVehicle =
     vehicles.data?.find((vehicle) => vehicle.isDefault) ?? vehicles.data?.[0] ?? null;
 
@@ -98,7 +127,7 @@ export default function ParametresScreen() {
       >
         {/* ------------------------------------------------------- apparence */}
         <Section label={t('settings.appearance')} first>
-          <View style={{ paddingHorizontal: theme.space.lg, gap: theme.space.sm }}>
+          <View style={{ paddingHorizontal: theme.space.lg }}>
             <Segmented<ThemePreference>
               value={theme.preference}
               onChange={theme.setPreference}
@@ -120,10 +149,6 @@ export default function ParametresScreen() {
                 },
               ]}
             />
-
-            <Text variant="txt" tone="muted">
-              {t('settings.appearanceHint')}
-            </Text>
           </View>
         </Section>
 
@@ -132,13 +157,24 @@ export default function ParametresScreen() {
           <SettingsCard>
             <LinkRow
               label={vehicleTitle}
-              hint={t('settings.vehiclesHint')}
               // La plaque, dessinée comme telle : c'est ce qu'on vient
-              // vérifier d'un coup d'œil avant de partir.
+              // vérifier d'un coup d'œil avant de partir, et elle remplace à
+              // elle seule la phrase qui expliquait à quoi sert la ligne.
               value={defaultVehicle?.plate ? <PlateTag plate={defaultVehicle.plate} /> : undefined}
               onPress={() => router.push('/parametres/vehicules' as never)}
             />
           </SettingsCard>
+        </Section>
+
+        {/* ---------------------------------------------- rayon de recherche */}
+        <Section label={t('settings.search')}>
+          <View style={{ paddingHorizontal: theme.space.lg }}>
+            <RadiusPicker<SearchRadiusKm>
+              options={SEARCH_RADIUS_OPTIONS}
+              value={searchRadiusKm}
+              onChange={setSearchRadiusKm}
+            />
+          </View>
         </Section>
 
         {/* ---------------------------------------------------- notifications */}
@@ -146,83 +182,36 @@ export default function ParametresScreen() {
           <SettingsCard>
             <SwitchRow
               label={t('settings.notificationsSystem')}
-              hint={
-                notifications.granted === true
-                  ? t('settings.notificationsOn')
-                  : notifications.canAskAgain
-                    ? t('settings.notificationsHint')
-                    : t('settings.notificationsDeniedHint')
-              }
+              hint={notificationsHint}
               value={notifications.granted === true}
               onValueChange={toggleNotifications}
             />
 
             <SwitchRow
               label={t('settings.haptics')}
-              hint={t('settings.hapticsHint')}
               value={haptics}
               onValueChange={setHaptics}
             />
           </SettingsCard>
-
-          {/*
-            Dit tel quel : l'autorisation se demande maintenant — au calme, pas
-            au moment d'une panne — mais l'envoi des alertes n'est pas encore en
-            place. Laisser croire le contraire coûterait une attente déçue le
-            jour où elle compte.
-          */}
-          {notifications.granted === true ? (
-            <Text
-              variant="txt"
-              tone="muted"
-              style={{ paddingHorizontal: theme.space.xl, paddingTop: theme.space.sm }}
-            >
-              {t('settings.notificationsPending')}
-            </Text>
-          ) : null}
-        </Section>
-
-        {/* ---------------------------------------------- rayon de recherche */}
-        <Section label={t('settings.search')}>
-          <SettingsCard>
-            {SEARCH_RADIUS_OPTIONS.map((option: SearchRadiusKm) => (
-              <OptionRow
-                key={option}
-                label={`${option} km`}
-                hint={t(
-                  option === 5
-                    ? 'settings.radiusNear'
-                    : option === 15
-                      ? 'settings.radiusCity'
-                      : 'settings.radiusRoad',
-                )}
-                selected={searchRadiusKm === option}
-                onPress={() => setSearchRadiusKm(option)}
-              />
-            ))}
-          </SettingsCard>
-
-          <Text
-            variant="txt"
-            tone="muted"
-            style={{ paddingHorizontal: theme.space.xl, paddingTop: theme.space.sm }}
-          >
-            {t('settings.searchRadiusHint')}
-          </Text>
         </Section>
 
         {/* ---------------------------------------------------------- langue */}
         <Section label={t('settings.language')}>
-          <SettingsCard>
-            {(['fr', 'en'] as Locale[]).map((option) => (
-              <OptionRow
-                key={option}
-                label={t(option === 'fr' ? 'settings.languageFr' : 'settings.languageEn')}
-                selected={locale === option}
-                onPress={() => setLocale(option)}
-              />
-            ))}
-          </SettingsCard>
+          <View style={{ paddingHorizontal: theme.space.lg }}>
+            {/*
+              Segmenté comme le thème, et non plus deux lignes cochables : deux
+              options d'un mot chacune, exclusives, sans rien à expliquer —
+              c'est la définition même de ce contrôle.
+            */}
+            <Segmented<Locale>
+              value={locale}
+              onChange={setLocale}
+              options={[
+                { value: 'fr', label: t('settings.languageFr') },
+                { value: 'en', label: t('settings.languageEn') },
+              ]}
+            />
+          </View>
         </Section>
 
         {/* -------------------------------------------------------- à propos */}
@@ -300,9 +289,9 @@ function Section({
  *
  * Un disque plein pour les deux modes explicites, **coupé en deux** pour
  * l'automatique : la moitié ambrée du jour, la moitié encre de la nuit. C'est
- * le seul dessin de l'écran, et il dit en un coup d'œil ce qu'« Auto »
- * signifie — un mot que personne ne lit deux fois mais que tout le monde
- * interprète mal la première.
+ * lui qui a permis de retirer la phrase « Auto suit le réglage de votre
+ * téléphone » — il dit la même chose sans occuper de ligne, et il la dit au
+ * moment où l'œil est sur l'option plutôt qu'en dessous.
  *
  * Sur le segment actif, tout passe en blanc : l'ambre sur le rouge tomberait
  * sous le seuil de lisibilité, exactement comme le jaune de position sur fond

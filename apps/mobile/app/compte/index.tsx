@@ -11,12 +11,18 @@ import { Button } from '../../src/ui/Button';
 import { Callout } from '../../src/ui/Callout';
 import { TowTruckIcon, TrashIcon } from '../../src/ui/icons';
 import { MenuRow } from '../../src/ui/MenuRow';
-import { PhoneField, LOCAL_DIGITS, toE164, toLocalDigits } from '../../src/ui/PhoneField';
+import { FloatingField } from '../../src/ui/FloatingField';
+import {
+  DIAL_PREFIX,
+  LOCAL_DIGITS,
+  PHONE_EXAMPLE,
+  toE164,
+  toLocalDigits,
+} from '../../src/ui/PhoneField';
 import { SaveChip, type SaveState } from '../../src/ui/SaveChip';
 import { ScreenHeader } from '../../src/ui/ScreenHeader';
 import { SectionLabel } from '../../src/ui/SectionLabel';
 import { Text } from '../../src/ui/Text';
-import { TextField } from '../../src/ui/TextField';
 
 /**
  * Validation d'e-mail, volontairement grossière.
@@ -256,7 +262,14 @@ export default function CompteScreen() {
           >
             <SectionLabel>{t('account.identity')}</SectionLabel>
 
-            <TextField
+            {/*
+              Champs à libellé flottant, comme à la connexion : l'intitulé tient
+              lieu d'invite tant que le champ est vide, puis remonte se poser sur
+              le filet du haut. Sur une fiche pré-remplie, il est **déjà en
+              haut** au premier rendu — le champ s'ouvre donc dans son état de
+              lecture, et rien ne s'anime tant qu'on n'y touche pas.
+            */}
+            <FloatingField
               label={t('account.fullName')}
               value={fullName}
               onChangeText={(value) => {
@@ -264,30 +277,40 @@ export default function CompteScreen() {
                 touch();
               }}
               autoCapitalize="words"
+              autoComplete="name"
               autoCorrect={false}
             />
 
-            <TextField
+            <FloatingField
               label={t('account.email')}
+              example={t('account.emailPlaceholder')}
               value={email}
               onChangeText={(value) => {
                 setEmail(value);
                 touch();
               }}
-              placeholder={t('account.emailPlaceholder')}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
               autoCorrect={false}
               error={emailInvalid ? t('account.emailInvalid') : null}
             />
 
-            <PhoneField
+            <FloatingField
               label={t('account.phone')}
+              example={PHONE_EXAMPLE}
+              prefix={DIAL_PREFIX}
+              mono
               value={phone}
-              onChangeText={(digits) => {
-                setPhone(digits);
+              // Le filtrage vivait dans `<PhoneField>` ; il revient ici avec la
+              // saisie, pour la même raison qu'à la connexion : les numéros se
+              // dictent avec des espaces et se collent avec des indicatifs.
+              onChangeText={(value) => {
+                setPhone(value.replace(/D/g, '').slice(0, LOCAL_DIGITS));
                 touch();
               }}
+              keyboardType="phone-pad"
+              autoComplete="tel"
               hint={t('account.phoneHint')}
               error={phoneInvalid && phone.length > 0 ? t('account.phoneIncomplete') : null}
             />

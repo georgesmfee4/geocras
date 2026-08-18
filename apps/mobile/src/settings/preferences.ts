@@ -23,10 +23,20 @@ export const DEFAULT_SEARCH_RADIUS_KM: SearchRadiusKm = 15;
  * Un seul enregistrement pour tous les réglages : deux clés séparées auraient
  * fini par diverger le jour où l'une est écrite et l'autre pas.
  */
-function persist(state: { searchRadiusKm: SearchRadiusKm; haptics: boolean }): void {
+function persist(state: {
+  searchRadiusKm: SearchRadiusKm;
+  haptics: boolean;
+  drivingSound: boolean;
+  drivingBlindSpot: boolean;
+}): void {
   void AsyncStorage.setItem(
     STORAGE_KEY,
-    JSON.stringify({ searchRadiusKm: state.searchRadiusKm, haptics: state.haptics }),
+    JSON.stringify({
+      searchRadiusKm: state.searchRadiusKm,
+      haptics: state.haptics,
+      drivingSound: state.drivingSound,
+      drivingBlindSpot: state.drivingBlindSpot,
+    }),
   );
 }
 
@@ -44,10 +54,36 @@ type PreferencesState = {
    * poche.
    */
   haptics: boolean;
+  /**
+   * Signal d'alerte du mode conduite — l'interrupteur « Alertes sonores ».
+   *
+   * Il gouverne **le retour perçu au moment de l'alerte** : aujourd'hui la
+   * vibration, demain le son court qui l'accompagnera. Un seul réglage pour les
+   * deux, parce que c'est un seul geste dans la tête du conducteur — « préviens
+   * -moi » ou « laisse-moi conduire ». Le couper ne supprime pas l'alerte, qui
+   * reste à l'écran et dans la session : il la rend silencieuse.
+   *
+   * Séparé de `haptics`, qui concerne les moments de l'app où l'on regarde son
+   * téléphone. Au volant on ne le regarde pas, et quelqu'un peut vouloir tout
+   * sentir en conduisant et rien sentir le reste du temps.
+   */
+  drivingSound: boolean;
+  /**
+   * Détection d'angle mort.
+   *
+   * Le seul réglage qui **retire des alertes du flux** plutôt que d'en changer
+   * la forme : les alertes d'angle mort sont les plus fréquentes et les moins
+   * graves, et sur un véhicule déjà équipé de rétroviseurs bien réglés elles
+   * deviennent du bruit. Coupées, elles ne sont ni affichées, ni comptées, ni
+   * pénalisées au score — sinon le réglage punirait celui qui l'utilise.
+   */
+  drivingBlindSpot: boolean;
   /** `false` tant que le stockage n'a pas été relu au démarrage. */
   hydrated: boolean;
   setSearchRadiusKm: (value: SearchRadiusKm) => void;
   setHaptics: (value: boolean) => void;
+  setDrivingSound: (value: boolean) => void;
+  setDrivingBlindSpot: (value: boolean) => void;
   hydrate: () => Promise<void>;
 };
 
@@ -65,6 +101,10 @@ type PreferencesState = {
 export const usePreferences = create<PreferencesState>((set, get) => ({
   searchRadiusKm: DEFAULT_SEARCH_RADIUS_KM,
   haptics: true,
+  // Les deux aides de conduite sont actives par défaut : quelqu'un qui ouvre le
+  // mode conduite vient chercher des alertes, pas un compteur de vitesse.
+  drivingSound: true,
+  drivingBlindSpot: true,
   hydrated: false,
 
   setSearchRadiusKm: (value) => {
@@ -77,6 +117,16 @@ export const usePreferences = create<PreferencesState>((set, get) => ({
     persist(get());
   },
 
+  setDrivingSound: (value) => {
+    set({ drivingSound: value });
+    persist(get());
+  },
+
+  setDrivingBlindSpot: (value) => {
+    set({ drivingBlindSpot: value });
+    persist(get());
+  },
+
   hydrate: async () => {
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
@@ -85,15 +135,24 @@ export const usePreferences = create<PreferencesState>((set, get) => ({
       const record = (parsed !== null && typeof parsed === 'object' ? parsed : {}) as {
         searchRadiusKm?: number;
         haptics?: boolean;
+        drivingSound?: boolean;
+        drivingBlindSpot?: boolean;
       };
 
       const radius = SEARCH_RADIUS_OPTIONS.includes(record.searchRadiusKm as SearchRadiusKm)
         ? (record.searchRadiusKm as SearchRadiusKm)
         : DEFAULT_SEARCH_RADIUS_KM;
 
+      // Une clé absente vaut « actif » et non « faux » : c'est le cas d'un
+      // enregistrement écrit avant que ces deux réglages n'existent, et l'app
+      // ne doit pas se réveiller muette après une mise à jour.
+      const flag = (value: unknown): boolean => (typeof value === 'boolean' ? value : true);
+
       set({
         searchRadiusKm: radius,
-        haptics: typeof record.haptics === 'boolean' ? record.haptics : true,
+        haptics: flag(record.haptics),
+        drivingSound: flag(record.drivingSound),
+        drivingBlindSpot: flag(record.drivingBlindSpot),
         hydrated: true,
       });
     } catch {

@@ -19,6 +19,14 @@ export function toE164(localDigits: string): string {
   return `${DIAL_PREFIX}${localDigits}`;
 }
 
+/**
+ * Exemple de numéro, pour les champs qui en montrent un.
+ *
+ * Espacé alors que la saisie ne l'est pas : c'est un exemple qu'on lit, pas une
+ * valeur qu'on recopie — les champs ne gardent de toute façon que les chiffres.
+ */
+export const PHONE_EXAMPLE = '670 12 34 56';
+
 /** Extrait les neuf chiffres d'un numéro déjà enregistré. */
 export function toLocalDigits(phone: string | null | undefined): string {
   if (!phone) return '';

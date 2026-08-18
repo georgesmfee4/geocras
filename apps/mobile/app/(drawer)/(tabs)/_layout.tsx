@@ -6,6 +6,7 @@ import { useMyGarage } from '../../../src/api/hooks';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { useI18n } from '../../../src/i18n/I18nProvider';
 import { useJobFeed } from '../../../src/realtime/useJobFeed';
+import { useDrivingStore } from '../../../src/stores/driving';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { tabBarHeight, tabIndicator, MIN_TOUCH_TARGET } from '../../../src/theme/tokens';
 import {
@@ -81,9 +82,28 @@ export default function TabsLayout() {
   const jobs = useJobFeed(verifiedOwner);
   const waiting = jobs.data?.incoming.length ?? 0;
 
+  /**
+   * Session de conduite en cours : la barre d'onglets se retire.
+   *
+   * Le cahier de reprise l'impose en une phrase — « rien de tapotable pendant
+   * la conduite sauf Pause et Stop » — et la maquette de l'état actif ne montre
+   * effectivement aucune barre : sa place est prise par les contrôles de
+   * session. Trois cibles de navigation posées sous le pouce, à portée d'un
+   * geste réflexe, sont exactement ce qu'on ne veut pas à 60 km/h.
+   *
+   * La pause ne la ramène pas non plus. Une barre qui réapparaît fait remonter
+   * tout l'écran de quatre-vingts points au moment précis où le conducteur
+   * s'arrête à un feu et cherche son bouton Stop du regard. Le mode conduite se
+   * quitte par Stop, et par lui seul : c'est un mode, pas un onglet parmi
+   * d'autres, tant qu'il tourne.
+   */
+  const driving = useDrivingStore((state) => state.phase !== 'idle');
+
   return (
     <Tabs
-      tabBar={(props) => <GeoCrasTabBar {...props} badges={{ interventions: waiting }} />}
+      tabBar={(props) =>
+        driving ? null : <GeoCrasTabBar {...props} badges={{ interventions: waiting }} />
+      }
       screenOptions={{ headerShown: false }}
     >
       <Tabs.Screen name="carte" />

@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { size } from '../theme/sizes';
 import { MIN_TOUCH_TARGET } from '../theme/tokens';
-import { CheckIcon, ChevronRightSmallIcon } from './icons';
+import { ChevronRightSmallIcon } from './icons';
 import { Switch } from './Switch';
 import { Text } from './Text';
 
@@ -60,11 +60,12 @@ export function SettingsCard({ children }: { children: ReactNode }) {
  * au total, cinq points de marge.
  *
  * **Avec phrase d'aide** — le produit en a ajouté une là où la maquette n'en
- * montrait pas, et elle porte de l'information réelle (« l'autorisation est
- * refusée, passez par les réglages »). Le compte y devient 12 + 19 + 2 + 20 +
- * 12, soit 65 points : figer ces lignes à 48 les rognerait. Elles gardent donc
- * leur `minHeight` d'origine en attendant que le gabarit à deux lignes soit
- * relevé sur maquette — l'inventer ici reviendrait à décider du dessin.
+ * montrait pas, et elle porte de l'information réelle — « l'autorisation est
+ * refusée, passez par les réglages », le seul cas qui en garde une depuis que
+ * la page a été allégée. Le compte y devient 12 + 19 + 2 + 20 + 12, soit 65
+ * points : figer ces lignes à 48 les rognerait. Elles gardent donc leur
+ * `minHeight` d'origine en attendant que le gabarit à deux lignes soit relevé
+ * sur maquette — l'inventer ici reviendrait à décider du dessin.
  */
 const ROW_HEIGHT = MIN_TOUCH_TARGET + 14;
 
@@ -73,70 +74,6 @@ const singleLine = { height: size.rowH } as const;
 
 /** Ligne à deux lignes : hauteur encore déduite du contenu, cf. ci-dessus. */
 const withHint = { minHeight: ROW_HEIGHT } as const;
-
-/**
- * Ligne à choix unique, cochée quand elle est retenue.
- *
- * La coche rouge en bout de ligne, et le libellé qui s'éteint quand l'option ne
- * l'est pas : c'est la façon dont la maquette 10 traite la langue, et elle vaut
- * pour tout choix dont les options méritent une phrase d'explication — ce qu'une
- * puce ne peut pas porter.
- */
-export function OptionRow({
-  label,
-  hint,
-  selected,
-  onPress,
-}: {
-  label: string;
-  hint?: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      accessibilityLabel={hint ? `${label}. ${hint}` : label}
-      style={({ pressed }) => ({
-        ...(hint ? withHint : singleLine),
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.space.md,
-        paddingHorizontal: theme.space.lg,
-        paddingVertical: theme.space.md,
-        backgroundColor: pressed ? theme.colors.primaryTint : 'transparent',
-      })}
-    >
-      <View style={{ flex: 1, gap: 2 }}>
-        {/*
-          `h2` retenu, `txt` non : le contraste de graisse — 600 contre 400 —
-          reste le premier signal de l'option choisie, avant la coche rouge et
-          avant l'encre pleine. Le libellé tient sur une ligne dans un gabarit
-          à hauteur contrainte, donc il se tronque plutôt que de repousser.
-        */}
-        <Text
-          variant={selected ? 'h2' : 'txt'}
-          tone={selected ? 'ink' : 'secondary'}
-          numberOfLines={1}
-          ellipsizeMode="tail"
-        >
-          {label}
-        </Text>
-        {hint ? (
-          <Text variant="txt" tone="muted">
-            {hint}
-          </Text>
-        ) : null}
-      </View>
-
-      {selected ? <CheckIcon color={theme.colors.primary} size={18} /> : null}
-    </Pressable>
-  );
-}
 
 /**
  * Ligne portant un interrupteur.

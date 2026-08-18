@@ -1,12 +1,22 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
+import { size } from '../theme/sizes';
 import { useReducedMotion } from './useReducedMotion';
 
-/** Gabarit repris de la maquette 10 : piste 46 × 26, pavé 18. */
-const TRACK_WIDTH = 46;
-const TRACK_HEIGHT = 26;
-const KNOB = 18;
+/**
+ * Gabarit pris dans les jetons : piste 42 × 24, pavé 18, donc 3 points de jeu
+ * de chaque côté.
+ *
+ * Il valait 46 × 26 en dur ici, relevé sur la maquette 10, pendant que
+ * `sizes.ts` donnait 42 × 24 — l'écart y était noté comme une divergence à
+ * trancher. Le cahier de reprise du mode conduite donne les mêmes 42 × 24 / 18
+ * à trois points du bord : c'est la deuxième source qui converge, la question
+ * est tranchée dans ce sens.
+ */
+const TRACK_WIDTH = size.toggleW;
+const TRACK_HEIGHT = size.toggleH;
+const KNOB = size.toggleKnob;
 const INSET = (TRACK_HEIGHT - KNOB) / 2;
 
 export type SwitchProps = {

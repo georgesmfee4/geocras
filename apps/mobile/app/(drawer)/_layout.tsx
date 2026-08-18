@@ -5,8 +5,7 @@ import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { VEHICLE_LABELS } from '@geocras/shared';
-import { useLoyalty, useMyRequests, useVehicles } from '../../src/api/hooks';
+import { useLoyalty, useMyRequests } from '../../src/api/hooks';
 import { registerDrawerCloser } from '../../src/navigation/drawerControl';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { env } from '../../src/config/env';
@@ -17,20 +16,15 @@ import { Button } from '../../src/ui/Button';
 import { ChamferView } from '../../src/ui/ChamferView';
 import {
   AccountGearIcon,
-  CarIcon,
-  ChevronRightSmallIcon,
   CloseIcon,
   DrivingTabIcon,
   LoyaltyIcon,
-  MotoIcon,
   PhoneIcon,
   SettingsIcon,
   ShieldLockIcon,
   TrackHistoryIcon,
-  TruckIcon,
 } from '../../src/ui/icons';
 import { MenuRow } from '../../src/ui/MenuRow';
-import { PlateTag } from '../../src/ui/PlateTag';
 import { SectionLabel } from '../../src/ui/SectionLabel';
 import { Text } from '../../src/ui/Text';
 
@@ -66,13 +60,18 @@ export default function DrawerLayout() {
  * s'organise en trois strates :
  *
  *  1. **qui vous êtes** — avatar, nom, accès au compte ;
- *  2. **avec quoi vous roulez** — le véhicule par défaut, changeable ;
- *  3. **ce que l'app sait faire de plus** — le reste, sous un intitulé de
+ *  2. **ce que l'app sait faire de plus** — le reste, sous un intitulé de
  *     section.
+ *
+ * Le véhicule par défaut avait sa carte entre les deux ; elle a été retirée.
+ * Ce menu s'ouvre pour aller quelque part, et cette carte était la seule chose
+ * qui s'y consultait sans y conduire — elle repoussait toutes les entrées d'un
+ * écran vers le bas pour afficher une plaque qu'on ne relit pas. Les véhicules
+ * restent à un appui, sous Paramètres, où ils se modifient vraiment.
  *
  * Le menu a **deux états**, et non un seul avec des lignes grisées :
  *
- *  - **connecté** — client comme garagiste, les trois strates au complet ;
+ *  - **connecté** — client comme garagiste, les deux strates au complet ;
  *  - **invité** — la première strate dit en toutes lettres qu'on navigue sans
  *    compte et propose la connexion, puis il ne reste que l'assistance. Les
  *    autres entrées mènent à des écrans qui n'existent que pour une session :
@@ -94,7 +93,7 @@ export default function DrawerLayout() {
  */
 function DrawerContent({ navigation }: DrawerContentComponentProps) {
   const theme = useTheme();
-  const { t, locale, formatNumber } = useI18n();
+  const { t, formatNumber } = useI18n();
   const router = useRouter();
   const { status, user, logout } = useAuth();
 
@@ -103,10 +102,9 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
   /** Version réelle du bundle : le numéro de build inventé n'a jamais rien voulu dire. */
   const version = Constants.expoConfig?.version ?? '1.0.0';
 
-  // Aucune de ces trois requêtes n'a de sens sans session — cf. `enabled` dans
+  // Ni l'une ni l'autre n'a de sens sans session — cf. `enabled` dans
   // `src/api/hooks.ts`.
   const loyalty = useLoyalty(signedIn);
-  const vehicles = useVehicles(signedIn);
   const history = useMyRequests(1, signedIn);
 
   /**
@@ -190,16 +188,6 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
 
   /** Prénom seul dans la salutation : « Bonjour Jean Baptiste Djomo ! » sonne administratif. */
   const firstName = user?.fullName.trim().split(/\s+/)[0] ?? null;
-
-  const defaultVehicle =
-    vehicles.data?.find((vehicle) => vehicle.isDefault) ?? vehicles.data?.[0] ?? null;
-
-  const VehicleIcon =
-    defaultVehicle?.type === 'moto'
-      ? MotoIcon
-      : defaultVehicle?.type === 'truck'
-        ? TruckIcon
-        : CarIcon;
 
   /**
    * L'assistance est la seule entrée commune aux deux états : elle compose un
@@ -318,13 +306,28 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
           */}
           {status === 'loading' ? null : signedIn ? (
             <>
-              <Text variant="h1b">
+              {/*
+                Plex Sans et non Bebas, contrairement à tous les autres titres
+                du produit — c'est la règle de la famille, pas une exception :
+                **si c'est une phrase, ce n'est pas Bebas.** « Bonjour Jean ! »
+                en est une, et Bebas n'a pas de bas-de-casse : elle la
+                rendrait « BONJOUR JEAN ! », c'est-à-dire criée, avec un prénom
+                qui perd sa majuscule initiale au passage — un nom propre écrit
+                tout en capitales n'est plus un nom propre.
+
+                « Mode invité » juste en dessous reste en Bebas : c'est une
+                étiquette d'état, pas une adresse à quelqu'un.
+              */}
+              <Text variant="h1">
                 {firstName ? `${t('drawer.hello')} ${firstName} !` : t('drawer.account')}
               </Text>
 
               <Button
                 label={t('drawer.manageAccount')}
                 variant="outline"
+                // Coupe réduite : ce bouton n'est ni court ni pleine largeur, et
+                // `standard` y emportait un quart de sa longueur.
+                chamfer="subtle"
                 onPress={() => go('/compte')}
               />
             </>
@@ -345,66 +348,6 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
             </>
           )}
         </View>
-
-        {/*
-          Véhicule par défaut. Il a sa propre carte, au-dessus de la liste :
-          c'est la donnée qu'on vient vérifier ou changer le plus souvent avant
-          de déclarer une panne, et la noyer dans les rubriques la rendrait
-          aussi difficile à trouver que « Paramètres ».
-        */}
-        {signedIn ? (
-          <Pressable
-            onPress={() => go('/parametres/vehicules')}
-            accessibilityRole="button"
-            style={({ pressed }) => ({
-              marginHorizontal: theme.space.lg,
-              backgroundColor: theme.colors.surface,
-              borderWidth: 1,
-              borderColor: theme.colors.rule,
-              padding: theme.space.lg,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: theme.space.md,
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <VehicleIcon color={theme.colors.ink} size={26} />
-
-            <View style={{ flex: 1, gap: 4 }}>
-              {defaultVehicle ? (
-                <>
-                  <Text variant="h2b" numberOfLines={1}>
-                    {[defaultVehicle.brand, defaultVehicle.model]
-                      .filter(Boolean)
-                      .join(' ') || VEHICLE_LABELS[defaultVehicle.type][locale]}
-                  </Text>
-
-                  {/*
-                    La plaque est dessinée comme une plaque, ici comme dans
-                    l'écran des véhicules : c'est le même objet, il doit se
-                    reconnaître au même coup d'œil.
-                  */}
-                  {defaultVehicle.plate ? (
-                    <PlateTag plate={defaultVehicle.plate} />
-                  ) : (
-                    <Text variant="numSm" tone="muted">
-                      {t('drawer.changeVehicle')}
-                    </Text>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Text variant="h2b">{t('drawer.noVehicle')}</Text>
-                  <Text variant="numSm" tone="muted">
-                    {t('drawer.addVehicle')}
-                  </Text>
-                </>
-              )}
-            </View>
-
-            <ChevronRightSmallIcon color={theme.colors.muted} />
-          </Pressable>
-        ) : null}
 
         {signedIn ? (
           <>
@@ -438,6 +381,7 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
               })}
             >
               <ChamferView
+                variant="subtle"
                 fill={theme.colors.ink}
                 style={{ minHeight: 58 }}
                 contentStyle={{

@@ -17,13 +17,38 @@ export const queryClient = new QueryClient({
       refetchOnMount: true,
       refetchOnReconnect: true,
       refetchOnWindowFocus: false,
+      /**
+       * **C'est ici que se jouaient les « chargements de plusieurs minutes ».**
+       *
+       * L'ancienne règle réessayait trois fois toute erreur réseau, avec un
+       * délai croissant, sur un plafond d'attente de vingt secondes. Serveur
+       * arrêté, le compte était le suivant :
+       *
+       *     20 s + 1 s + 20 s + 2 s + 20 s + 4 s + 20 s  ≈  87 secondes
+       *
+       * Quatre-vingt-sept secondes de squelette avant « Erreur de réseau » —
+       * et autant sur chaque écran ouvert, chacun refaisant la découverte pour
+       * son propre compte. L'information, elle, était acquise au bout de la
+       * première tentative.
+       *
+       * La règle tient maintenant en une phrase : **on ne rejoue que ce qui a
+       * atteint le serveur.** Une 5xx est un accident, elle mérite une seconde
+       * chance ; un délai dépassé est un constat, le répéter ne le change pas.
+       * Le coupe-circuit prend le relais pour les échecs réseau, et le bouton
+       * « Réessayer » rend la main à l'utilisateur — qui sait souvent avant
+       * nous que la connexion est revenue.
+       *
+       * Budget maximal désormais : 12 s sur le premier écran, puis un échec
+       * immédiat partout ailleurs tant que le circuit est ouvert.
+       */
       retry: (failureCount, error) => {
-        // Réessayer un 403 ou un 404 est une perte de données mobiles : seule
-        // une panne réseau ou serveur mérite une seconde chance.
-        if (error instanceof ApiError && !error.isRetryable) return false;
-        return failureCount < 3;
+        if (!(error instanceof ApiError)) return false;
+        if (!error.isRetryable) return false;
+        return failureCount < 2;
       },
-      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 15_000),
+      // Court et borné : au-delà de trois secondes, l'utilisateur a déjà quitté
+      // l'écran ou appuyé lui-même sur « Réessayer ».
+      retryDelay: (attempt) => Math.min(700 * 2 ** attempt, 3_000),
     },
     mutations: {
       // Une mutation rejouée peut créer un doublon. Les seules routes

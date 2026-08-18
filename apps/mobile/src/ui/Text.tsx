@@ -46,6 +46,7 @@ const MONO_VARIANTS: ReadonlySet<TextVariant> = new Set<TextVariant>([
   // Nouvelle échelle : mêmes chiffres, même exigence de colonne alignée.
   'num',
   'numSm',
+  'numLg',
   'numXl',
 ]);
 

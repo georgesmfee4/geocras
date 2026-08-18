@@ -13,6 +13,7 @@ import { useJobFeedStore } from '../../../src/realtime/useJobFeed';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { MIN_TOUCH_TARGET } from '../../../src/theme/tokens';
 import { BlinkingDot } from '../../../src/ui/BlinkingDot';
+import { forceProbe } from '../../../src/api/reachability';
 import { Callout } from '../../../src/ui/Callout';
 import {
   AlertIcon,
@@ -21,6 +22,8 @@ import {
   ShieldCheckIcon,
 } from '../../../src/ui/icons';
 import { SectionLabel } from '../../../src/ui/SectionLabel';
+import { isTerminal, resolveLoadState } from '../../../src/ui/loadState';
+import { StateView } from '../../../src/ui/StateView';
 import { Text } from '../../../src/ui/Text';
 
 /**
@@ -47,7 +50,7 @@ import { Text } from '../../../src/ui/Text';
 export default function InterventionsScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { t, translateError } = useI18n();
+  const { t } = useI18n();
 
   const jobs = useGarageJobs();
   const connection = useJobFeedStore((state) => state.connection);
@@ -59,6 +62,15 @@ export default function InterventionsScreen() {
   }, [jobs]);
 
   const data = jobs.data;
+
+  /** L'état du poste garagiste — voir `src/ui/loadState.ts`. */
+  const jobsState = resolveLoadState({
+    pending: jobs.isPending,
+    fetching: jobs.isFetching,
+    error: jobs.error,
+    failureCount: jobs.failureCount,
+    hasData: data != null,
+  });
   const waiting = data?.incoming.length ?? 0;
   const active = data?.active ?? [];
   const live = connection === 'live';
@@ -121,12 +133,25 @@ export default function InterventionsScreen() {
           />
         }
       >
-        {jobs.isError && !data ? (
+        {/*
+          Un garage absent du compte n'est pas une panne : c'est un état du
+          dossier, qui appelle une explication et non un dessin d'erreur. Il
+          garde donc son encart. Tout le reste — serveur injoignable, 5xx —
+          passe par le dessin d'état commun.
+        */}
+        {jobs.error instanceof ApiError && jobs.error.code === 'GARAGE_NOT_FOUND' ? (
           <Callout tone="danger" title={t('common.error')}>
-            {jobs.error instanceof ApiError && jobs.error.code === 'GARAGE_NOT_FOUND'
-              ? t('jobs.noGarage')
-              : translateError(jobs.error)}
+            {t('jobs.noGarage')}
           </Callout>
+        ) : isTerminal(jobsState) ? (
+          <StateView
+            state={jobsState}
+            actionLabel={t('state.retry')}
+            onAction={() => {
+              forceProbe();
+              void jobs.refetch();
+            }}
+          />
         ) : null}
 
         {data && !data.garage.isActive ? (

@@ -4,6 +4,7 @@ import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { isRequestOngoing, PROBLEM_LABELS, REQUEST_STATUS_LABELS } from '@geocras/shared';
 import { useMyGarage, useMyRequestPages } from '../src/api/hooks';
+import { forceProbe } from '../src/api/reachability';
 import { cameroonDateParts } from '../src/time/clock';
 import { useAuth } from '../src/auth/AuthProvider';
 import { RequestCard, RAIL_WIDTH, statusColor, type HistoryRequest } from '../src/history/RequestCard';
@@ -16,6 +17,8 @@ import { ChevronRightSmallIcon } from '../src/ui/icons';
 import { ScreenHeader } from '../src/ui/ScreenHeader';
 import { SectionLabel } from '../src/ui/SectionLabel';
 import { Skeleton } from '../src/ui/Skeleton';
+import { resolveLoadState } from '../src/ui/loadState';
+import { StateView } from '../src/ui/StateView';
 import { Text } from '../src/ui/Text';
 
 /** Identifiant de groupe — « 2026-8 », en heure du Cameroun comme le libellé. */
@@ -161,6 +164,22 @@ export default function HistoriqueScreen() {
 
   const listEmpty = !history.isPending && all.length === 0;
 
+  /**
+   * L'état de l'historique, résolu une fois.
+   *
+   * `empty` est laissé de côté volontairement : la liste a déjà son propre vide
+   * — `<EmptyHistory>` — qui sait dire s'il s'adresse à un invité, à un client
+   * sans demande ou à un garagiste. Le remplacer par le vide générique serait
+   * un recul.
+   */
+  const historyState = resolveLoadState({
+    pending: history.isPending,
+    fetching: history.isFetching,
+    error: history.error,
+    failureCount: history.failureCount,
+    hasData: all.length > 0,
+  });
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: theme.colors.background }}
@@ -205,27 +224,33 @@ export default function HistoriqueScreen() {
               <OngoingCard request={ongoing} onPress={() => router.push(`/suivi/${ongoing.id}` as never)} />
             ) : null}
 
-            {history.isPending ? (
-              <View style={{ paddingHorizontal: theme.space.xl, gap: theme.space.md }}>
-                <Skeleton width="60%" height={14} />
-                <Skeleton width="100%" height={72} />
-                <Skeleton width="100%" height={72} />
-                <Skeleton width="100%" height={72} />
-              </View>
-            ) : null}
-
-            {history.isError ? (
-              <View style={{ paddingHorizontal: theme.space.xl, gap: theme.space.md }}>
-                <Text variant="h2b" tone="primary">
-                  {t('history.failed')}
-                </Text>
-                <Button
-                  label={t('common.retry')}
-                  variant="outline"
-                  onPress={() => void history.refetch()}
-                />
-              </View>
-            ) : null}
+            {/*
+              L'attente et l'échec passent par le même composant, et surtout par
+              le même **état** : c'est ce qui distingue enfin « le serveur est
+              arrêté » — où réessayer maintenant ne sert à rien — de « le
+              serveur a renvoyé une erreur », où réessayer a du sens. Les deux
+              affichaient « Historique indisponible » et le même bouton.
+            */}
+            <StateView
+              state={historyState}
+              title={historyState === 'error' ? t('history.failed') : undefined}
+              actionLabel={t('state.retry')}
+              onAction={() => {
+                // Rouvrir le circuit d'abord : sans cela, la requête relancée
+                // serait refusée sur-le-champ par le coupe-circuit, et le
+                // bouton paraîtrait sans effet.
+                forceProbe();
+                void history.refetch();
+              }}
+              skeleton={
+                <View style={{ paddingHorizontal: theme.space.xl, gap: theme.space.md }}>
+                  <Skeleton width="60%" height={14} />
+                  <Skeleton width="100%" height={72} />
+                  <Skeleton width="100%" height={72} />
+                  <Skeleton width="100%" height={72} />
+                </View>
+              }
+            />
           </View>
         }
         ListEmptyComponent={

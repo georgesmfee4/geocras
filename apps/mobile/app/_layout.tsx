@@ -14,6 +14,8 @@ import { I18nProvider } from '../src/i18n/I18nProvider';
 import { LocationProvider } from '../src/location/LocationProvider';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeProvider';
 import { useAppFonts } from '../src/theme/useAppFonts';
+import { useReachability } from '../src/api/reachability';
+import { OFFLINE_BANNER_HEIGHT, OfflineBanner } from '../src/ui/OfflineBanner';
 
 /**
  * Le splash natif reste affiché jusqu'à ce que nos polices soient prêtes.
@@ -68,6 +70,9 @@ function RootNavigator() {
   const theme = useTheme();
   const fontsReady = useAppFonts();
 
+  /** La bande hors ligne réserve sa place dans la pile — voir plus bas. */
+  const offline = useReachability() === 'offline';
+
   /**
    * Relecture des réglages d'appareil, une fois pour toute la session.
    *
@@ -104,7 +109,30 @@ function RootNavigator() {
   return (
     <>
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack
+
+      {/*
+        **La bande hors ligne pousse la pile, elle ne la recouvre pas.**
+
+        Trois tentatives ont été nécessaires, et les deux premières valent
+        d'être écrites parce qu'elles sont les pièges naturels :
+
+        1. Bande dans le flux, avec sa propre zone sûre : elle s'ajoutait à
+           celle de chaque écran, et toutes les pages descendaient d'une hauteur
+           d'encoche — même sans panne.
+        2. Bande en superposition : plus rien ne bougeait, mais elle se posait
+           sur les titres d'écran, et on lisait deux textes l'un sur l'autre.
+
+        La solution tient aux deux à la fois : la bande reste **superposée**,
+        donc elle ne peut rien décaler par accident, et la pile reçoit
+        exactement sa hauteur en rembourrage haut. Les deux se rejoignent au
+        point près — la bande occupe `[inset, inset + hauteur]`, l'écran
+        commence à `hauteur + inset` puisqu'il applique lui-même son encoche.
+
+        Le rembourrage n'existe que pendant la panne : hors ligne rétabli, il
+        retombe à zéro et rien ne subsiste.
+      */}
+      <View style={{ flex: 1, paddingTop: offline ? OFFLINE_BANNER_HEIGHT : 0 }}>
+        <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: theme.colors.background },
@@ -156,9 +184,18 @@ function RootNavigator() {
         <Stack.Screen name="securite/index" />
         <Stack.Screen name="securite/mot-de-passe" />
         {/* Mentions légales : ouvertes depuis le pied du tiroir, sans session. */}
-        <Stack.Screen name="confidentialite" />
-        <Stack.Screen name="conditions" />
-      </Stack>
+          <Stack.Screen name="confidentialite" />
+          <Stack.Screen name="conditions" />
+        </Stack>
+      </View>
+
+      {/*
+        La bande vit **au-dessus de la pile**, et non dans un écran : la panne
+        ne concerne pas une page, elle concerne l'application. Posée ici, elle
+        survit à la navigation — on ne perd pas l'information en changeant
+        d'écran, et aucune page n'a à la redire.
+      */}
+      <OfflineBanner />
     </>
   );
 }

@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET } from '../theme/tokens';
-import { ChamferView } from './ChamferView';
+import { ChamferView, type ChamferVariant } from './ChamferView';
 import { Text } from './Text';
 
 export type ButtonVariant = 'primary' | 'outline' | 'success' | 'danger';
@@ -22,6 +22,16 @@ export type ButtonProps = Omit<PressableProps, 'style' | 'children'> & {
   size?: ButtonSize;
   loading?: boolean;
   fullWidth?: boolean;
+  /**
+   * Force la variante de coupe.
+   *
+   * Par défaut elle se déduit de la largeur, ce qui suffit tant qu'un bouton
+   * est soit pleine largeur soit court. Entre les deux — un bouton de deux
+   * cents points posé au milieu d'une page — `standard` emporte un quart de sa
+   * longueur, et il faut pouvoir demander `subtle` sans passer par une
+   * exception dans le composant.
+   */
+  chamfer?: ChamferVariant;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -42,6 +52,7 @@ export function Button({
   size = 'regular',
   loading = false,
   fullWidth = false,
+  chamfer,
   disabled,
   style,
   ...rest
@@ -84,7 +95,7 @@ export function Button({
       {...rest}
     >
       <ChamferView
-        variant={fullWidth ? 'wide' : 'standard'}
+        variant={chamfer ?? (fullWidth ? 'wide' : 'standard')}
         fill={fills[variant]}
         borderColor={stroke}
         borderWidth={outlined ? 1.5 : 0}

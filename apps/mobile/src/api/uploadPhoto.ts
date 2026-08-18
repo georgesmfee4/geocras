@@ -1,6 +1,9 @@
 import type { UploadFolder } from '@geocras/shared';
-import { ApiError } from './client';
+import { ApiError, TIMEOUTS } from './client';
 import { api } from './endpoints';
+
+/** Même budget que les autres envois lourds — voir {@link TIMEOUTS}. */
+const UPLOAD_TIMEOUT_MS = TIMEOUTS.heavy;
 
 /**
  * Envoi d'une photo.
@@ -58,10 +61,26 @@ export async function uploadPhoto(
   form.append('folder', signature.folder);
   form.append('upload_preset', signature.uploadPreset);
 
+  /**
+   * L'envoi a un plafond, comme tout le reste.
+   *
+   * Il n'en avait aucun : ce `fetch` partait vers Cloudinary sans minuteur, et
+   * sur un lien mort il restait ouvert jusqu'à ce que le système d'exploitation
+   * s'en lasse — plusieurs minutes sur Android. C'est ce qui faisait attendre
+   * si longtemps avant « Impossible de joindre la photo ». Le message était
+   * juste ; c'est le délai pour l'obtenir qui ne l'était pas.
+   *
+   * Vingt-cinq secondes, et non douze comme un appel ordinaire : on pousse un
+   * binaire, pas du JSON, et sur un réseau lent une photo de deux mégaoctets
+   * prend légitimement ce temps-là.
+   */
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), UPLOAD_TIMEOUT_MS);
+
   try {
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`,
-      { method: 'POST', body: form },
+      { method: 'POST', body: form, signal: abort.signal },
     );
     if (!response.ok) return { url: null, skipped: true, reason: 'failed' };
 
@@ -71,5 +90,7 @@ export async function uploadPhoto(
     return { url: body.secure_url, skipped: false };
   } catch {
     return { url: null, skipped: true, reason: 'failed' };
+  } finally {
+    clearTimeout(timer);
   }
 }

@@ -1,10 +1,23 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef } from 'react';
-import { ALERT_SEVERITY_BY_TYPE } from '@geocras/shared';
+import { ALERT_SEVERITY_BY_TYPE, type AlertType } from '@geocras/shared';
 import { api } from '../api/endpoints';
+import { usePreferences } from '../settings/preferences';
 import { averageSpeedKmh, currentScore, useDrivingStore } from '../stores/driving';
 import type { AlertSource } from './AlertSource';
 import { SimulatedAlertSource } from './SimulatedAlertSource';
+
+/**
+ * Alertes que l'interrupteur « Détection d'angle mort » gouverne.
+ *
+ * Typé sur `AlertType` et non sur `string` : le jour où un type d'angle mort
+ * s'ajoute — un troisième rétroviseur, un capteur arrière — une faute de frappe
+ * ici serait une alerte qui ignore silencieusement le réglage.
+ */
+const BLIND_SPOT_TYPES: ReadonlySet<AlertType> = new Set<AlertType>([
+  'blind_spot_left',
+  'blind_spot_right',
+]);
 
 /**
  * Branche une source d'alertes sur le store de conduite.
@@ -20,23 +33,62 @@ export function useDrivingEngine(options: { createSource?: () => AlertSource } =
   const source = useRef<AlertSource | null>(null);
   const store = useDrivingStore;
 
+  /**
+   * On dépend de la fabrique, pas de l'objet qui la porte.
+   *
+   * `options` est un littéral : l'appelant qui écrit `useDrivingEngine()` en
+   * crée un nouveau à chaque rendu, et `start` changerait donc d'identité à
+   * chaque rendu — ce qui suffit à ré-armer tout `useEffect` qui l'écoute.
+   */
+  const createSource = options.createSource;
+
   const stopEngine = useCallback(() => {
     source.current?.stop();
     source.current = null;
   }, []);
 
-  useEffect(() => stopEngine, [stopEngine]);
+  /**
+   * Au démontage, la session passe en **pause** — elle ne reste pas « en
+   * cours ».
+   *
+   * Le moteur ne survit pas à l'écran qui le porte : sans cette bascule, le
+   * store garderait `phase: 'running'` avec plus rien pour l'alimenter, et un
+   * retour sur l'onglet afficherait un compteur figé au dernier chiffre reçu —
+   * la pire des lectures possibles sur un tableau de bord. En pause, le
+   * conducteur voit ce qui s'est réellement passé et reprend d'un appui.
+   */
+  useEffect(
+    () => () => {
+      stopEngine();
+      if (store.getState().phase === 'running') store.getState().pause();
+    },
+    [stopEngine, store],
+  );
 
   const start = useCallback(() => {
     stopEngine();
 
-    const instance = options.createSource?.() ?? new SimulatedAlertSource();
+    const instance = createSource?.() ?? new SimulatedAlertSource();
 
     instance.onSpeed((sample) => {
       store.getState().tick(sample);
     });
 
     instance.onAlert((alert) => {
+      /**
+       * Les réglages sont lus **à l'instant de l'alerte**, et non capturés au
+       * démarrage de la session.
+       *
+       * Ce rappel vit hors de React : une valeur figée à `start()` resterait
+       * celle d'il y a quarante minutes, et couper l'angle mort en cours de
+       * route n'aurait aucun effet avant le prochain trajet.
+       */
+      const { drivingBlindSpot, drivingSound } = usePreferences.getState();
+
+      // Écartée avant le store : une alerte que l'utilisateur a désactivée ne
+      // doit ni s'afficher, ni entrer dans le décompte, ni peser sur le score.
+      if (!drivingBlindSpot && BLIND_SPOT_TYPES.has(alert.type)) return;
+
       store.getState().pushAlert({
         type: alert.type,
         atSpeedKmh: alert.atSpeedKmh,
@@ -44,9 +96,20 @@ export function useDrivingEngine(options: { createSource?: () => AlertSource } =
         occurredAt: alert.occurredAt,
       });
 
-      // Retour haptique proportionné : une alerte critique doit se sentir sans
-      // quitter la route des yeux, une alerte d'angle mort ne doit pas faire
-      // sursauter.
+      /**
+       * Le signal qui traverse le pare-brise.
+       *
+       * Retour haptique proportionné : une alerte critique doit se sentir sans
+       * quitter la route des yeux, une alerte d'angle mort ne doit pas faire
+       * sursauter.
+       *
+       * TODO(son) : le bip court des alertes critiques attend `expo-audio` et
+       * son fichier son. L'interrupteur « Alertes sonores » gouverne déjà ce
+       * chemin — le jour où le son arrive, il se branche ici et le réglage n'a
+       * pas à bouger.
+       */
+      if (!drivingSound) return;
+
       const severity = ALERT_SEVERITY_BY_TYPE[alert.type];
       void Haptics.notificationAsync(
         severity === 'critical'
@@ -60,7 +123,7 @@ export function useDrivingEngine(options: { createSource?: () => AlertSource } =
     source.current = instance;
     store.getState().start();
     instance.start();
-  }, [options, stopEngine, store]);
+  }, [createSource, stopEngine, store]);
 
   const pause = useCallback(() => {
     source.current?.stop();
