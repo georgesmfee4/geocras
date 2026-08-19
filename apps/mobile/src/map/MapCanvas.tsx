@@ -13,6 +13,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { MAP_PITCH_3D } from '../theme/tokens';
 import { SectionLabel } from '../ui/SectionLabel';
 import { Text } from '../ui/Text';
+import { boundsOf, centerOf, isDegenerate } from './bounds';
 import { buildMapStyle, INITIAL_VIEW } from './style';
 
 export type MapCanvasRef = {
@@ -31,6 +32,16 @@ export type MapCanvasRef = {
   focus: (center: [number, number]) => void;
   /** Cadre deux points, par exemple l'utilisateur et le garage retenu. */
   fitTo: (a: [number, number], b: [number, number]) => void;
+  /**
+   * Cadre un **ensemble** de points — un tracé complet, virages compris.
+   *
+   * Distinct de `fitTo`, qui ne connaît que les deux extrémités : un itinéraire
+   * qui contourne un quartier sort largement du rectangle formé par son départ
+   * et son arrivée, et se retrouve coupé aux deux tiers. Passer la géométrie
+   * entière est la seule façon d'être sûr que la totalité du trait est à
+   * l'écran.
+   */
+  frame: (points: readonly (readonly [number, number])[]) => void;
   /** Bascule à plat (0°) ou inclinée. */
   setTilted: (tilted: boolean) => void;
 };
@@ -168,6 +179,36 @@ export const MapCanvas = forwardRef<MapCanvasRef, MapCanvasProps>(function MapCa
     left: 40,
   };
 
+  /**
+   * Cadrage d'un ensemble de points.
+   *
+   * Implémentation unique : `fitTo` n'est plus qu'un appel à deux éléments. Le
+   * cas dégénéré — départ et arrivée confondus, ce qui arrive dès que le
+   * dépanneur atteint la panne — ne passe pas par `fitBounds`, qui partirait en
+   * butée de zoom sur une boîte de côté nul. On recentre alors sur le milieu à
+   * une échelle de rue.
+   */
+  const frame = (points: readonly (readonly [number, number])[]): void => {
+    const bounds = boundsOf(points);
+    if (!bounds) return;
+
+    if (isDegenerate(bounds)) {
+      run(() =>
+        cameraRef.current?.flyTo({ center: centerOf(bounds), zoom: 16, padding, duration: 700 }),
+      );
+      return;
+    }
+
+    run(() =>
+      // `LngLatBounds` est plat, dans l'ordre ouest / sud / est / nord — celui
+      // que `boundsOf` produit déjà.
+      cameraRef.current?.fitBounds([...bounds], {
+        padding: { ...padding, bottom: paddingBottom + 60 },
+        duration: 700,
+      }),
+    );
+  };
+
   useImperativeHandle(ref, () => ({
     recenter: (center, zoom = 15) => {
       run(() => cameraRef.current?.flyTo({ center, zoom, padding, duration: 700 }));
@@ -183,20 +224,8 @@ export const MapCanvas = forwardRef<MapCanvasRef, MapCanvasProps>(function MapCa
       // quelques centaines de mètres qui séparent deux garages voisins.
       run(() => cameraRef.current?.easeTo({ center, padding, duration: 520 }));
     },
-    fitTo: (a, b) => {
-      // `LngLatBounds` est plat, dans l'ordre ouest / sud / est / nord.
-      run(() =>
-        cameraRef.current?.fitBounds(
-          [
-            Math.min(a[0], b[0]),
-            Math.min(a[1], b[1]),
-            Math.max(a[0], b[0]),
-            Math.max(a[1], b[1]),
-          ],
-          { padding: { ...padding, bottom: paddingBottom + 60 }, duration: 700 },
-        ),
-      );
-    },
+    fitTo: (a, b) => frame([a, b]),
+    frame,
     setTilted: (tilted) => {
       // `setStop` et non `easeTo` : les autres méthodes exigent un centre, or
       // basculer en 3D ne doit surtout pas déplacer la carte — l'utilisateur

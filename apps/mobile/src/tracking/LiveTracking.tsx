@@ -14,7 +14,9 @@ import { ActionBar } from '../ui/ActionBar';
 import { CheckIcon, ChevronLeftIcon, PhoneIcon } from '../ui/icons';
 import { Text } from '../ui/Text';
 import { LivePanel } from './LivePanel';
+import { ProximitySheet } from './ProximitySheet';
 import { TrackingMap } from './TrackingMap';
+import { useProximity } from './useProximity';
 
 /** Hauteur réservée au panneau pour le cadrage de la caméra. */
 const PANEL_PADDING = 330;
@@ -91,6 +93,46 @@ export function LiveTracking({
    */
   const canConfirm = status === 'en_route' || status === 'awaiting_confirmation';
   const waitingForMechanic = clientArrived && status === 'awaiting_confirmation';
+
+  /**
+   * Reconnaissance sur place, la moitié client.
+   *
+   * Elle lit **exactement le même champ** que l'écran du garagiste — la distance
+   * calculée par le serveur entre son dernier point et le lieu de la panne — et
+   * franchit donc le seuil au même instant de part et d'autre. C'est la
+   * condition pour que la question ait un sens : demander à quelqu'un « vous le
+   * voyez ? » n'aide que si l'autre se voit poser la même question au même
+   * moment.
+   */
+  const proximity = useProximity(toClient, canConfirm && !clientArrived);
+
+  const onCallMechanic = useCallback(() => {
+    if (mechanicPhone) void Linking.openURL(`tel:${mechanicPhone}`);
+  }, [mechanicPhone]);
+
+  /**
+   * La confirmation dépouillée de sa demande de confirmation.
+   *
+   * Le bouton de la barre d'action passe par une alerte, et il le doit : il est
+   * atteignable à tout moment, y compris par erreur, et il engage la clôture de
+   * l'intervention. La feuille de proximité, elle, **est** déjà la question —
+   * « vous le voyez ? ». Y répondre « oui » puis devoir confirmer qu'on a bien
+   * voulu répondre oui, c'est le clic de trop que cette feuille existe
+   * précisément pour supprimer.
+   */
+  const onConfirmSighting = useCallback(() => {
+    void (async () => {
+      setError(null);
+      try {
+        await confirmArrival.mutateAsync(fix ? { lat: fix.lat, lng: fix.lng } : null);
+        if (usePreferences.getState().haptics) {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      } catch (cause) {
+        setError(translateError(cause));
+      }
+    })();
+  }, [confirmArrival, fix, translateError]);
 
   const onConfirm = useCallback(() => {
     Alert.alert(t('live.confirmTitle'), t('live.confirmBody'), [
@@ -217,29 +259,51 @@ export function LiveTracking({
         />
 
         {/*
-          Deux actions, la même grammaire que côté garagiste : joindre à gauche,
-          l'engagement à droite. Une fois le client confirmé, le bouton devient
-          inerte et son libellé dit qui l'on attend — reproposer « confirmer »
-          ferait croire que l'envoi n'est pas passé, alors que la route est
-          idempotente et l'a déjà enregistré.
+          Le dépanneur est à portée de vue : la feuille de reconnaissance
+          **remplace** la barre d'action.
+
+          Le panneau au-dessus ne bouge pas — le client garde son ETA, le nom de
+          son garagiste et l'état de la liaison sous les yeux jusqu'au bout. Ce
+          n'est pas un détail de mise en page : c'est le moment où quelqu'un
+          debout au bord d'une route a le plus besoin de savoir que l'app suit
+          toujours ce qui se passe.
         */}
-        <ActionBar
-          busy={confirmArrival.isPending}
-          secondary={{
-            label: t('live.callMechanic'),
-            icon: PhoneIcon,
-            onPress: () => {
-              if (mechanicPhone) void Linking.openURL(`tel:${mechanicPhone}`);
-            },
-            disabled: !mechanicPhone,
-          }}
-          primary={{
-            label: waitingForMechanic ? t('live.confirmedWaiting') : t('live.confirmArrival'),
-            icon: CheckIcon,
-            onPress: onConfirm,
-            disabled: !canConfirm || clientArrived,
-          }}
-        />
+        {proximity.near ? (
+          <ProximitySheet
+            distanceM={proximity.distanceM}
+            otherName={detail?.mechanic?.fullName ?? detail?.garage?.name ?? null}
+            lead={t('proximity.clientLead')}
+            question={t('proximity.question')}
+            confirmLabel={t('proximity.confirm')}
+            onConfirm={onConfirmSighting}
+            onCall={mechanicPhone ? onCallMechanic : null}
+            onDismiss={proximity.dismiss}
+            busy={confirmArrival.isPending}
+          />
+        ) : (
+          /*
+            Deux actions, la même grammaire que côté garagiste : joindre à
+            gauche, l'engagement à droite. Une fois le client confirmé, le bouton
+            devient inerte et son libellé dit qui l'on attend — reproposer
+            « confirmer » ferait croire que l'envoi n'est pas passé, alors que la
+            route est idempotente et l'a déjà enregistré.
+          */
+          <ActionBar
+            busy={confirmArrival.isPending}
+            secondary={{
+              label: t('live.callMechanic'),
+              icon: PhoneIcon,
+              onPress: onCallMechanic,
+              disabled: !mechanicPhone,
+            }}
+            primary={{
+              label: waitingForMechanic ? t('live.confirmedWaiting') : t('live.confirmArrival'),
+              icon: CheckIcon,
+              onPress: onConfirm,
+              disabled: !canConfirm || clientArrived,
+            }}
+          />
+        )}
       </View>
     </View>
   );

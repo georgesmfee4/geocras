@@ -252,6 +252,23 @@ export const requestDetailSchema = assistanceRequestSchema.extend({
     /** Client → garage. */
     toGarage: trackingEtaSchema,
   }),
+  /**
+   * Type du dernier événement du journal, ou `null` sur une demande sans
+   * historique.
+   *
+   * Il est ici parce que **le statut ne suffit pas à expliquer une situation**,
+   * et `pending` en est la démonstration : un refus remet `garageId` et
+   * `selectedAt` à `null`, ce qui rend une demande refusée strictement
+   * indiscernable d'une demande à laquelle aucun garage n'a encore été soumis.
+   * L'app qui devait choisir entre les deux devinait — et annonçait un refus à
+   * des clients dont le SOS venait de partir.
+   *
+   * Le socket transportait déjà le journal (`missedEvents`), mais lui seul :
+   * en repli HTTP, l'information disparaissait et le même écran redevenait
+   * aveugle. Un fait dont dépend un message affiché doit voyager par les deux
+   * chemins, sinon le message dépend du transport.
+   */
+  lastEvent: z.enum(REQUEST_EVENT_TYPES).nullable(),
 });
 export type RequestDetail = z.infer<typeof requestDetailSchema>;
 

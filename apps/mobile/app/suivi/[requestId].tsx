@@ -39,6 +39,8 @@ export default function SuiviScreen() {
 
   const { detail, connection } = useTracking(requestId ?? null);
   const storeStatus = useTrackingStore((state) => state.status);
+  /** Dernier événement du journal — voir l'effet de retour à la liste. */
+  const lastEvent = useTrackingStore((state) => state.lastEvent);
   const toClient = useTrackingStore((state) => state.toClient);
   const lastPacketAt = useTrackingStore((state) => state.lastPacketAt);
   const cancelRequest = useCancelRequest(requestId ?? '');
@@ -135,20 +137,48 @@ export default function SuiviScreen() {
   }, [status]);
 
   /**
-   * Le garage a refusé : la demande est retombée en `pending`.
+   * La demande n'a plus de garage : on renvoie le client à la liste.
    *
-   * C'est le seul retour en arrière de la machine à états, et il ne doit pas
-   * laisser le client sur un écran de suivi qui ne suit plus rien. On le
-   * ramène là où il choisissait — sa demande est intacte, seul le garage a
-   * disparu — et `declined` fait afficher le mot d'explication sur place.
+   * `pending` est le seul retour en arrière de la machine à états, et il ne doit
+   * pas laisser le client sur un écran de suivi qui ne suit plus rien.
+   *
+   * **Mais `pending` ne veut pas dire « refusé ».** Il recouvre deux situations
+   * que rien ne distingue dans la demande elle-même, parce que le refus remet
+   * `garageId` et `selectedAt` à `null` — exactement l'état d'une demande à
+   * laquelle on n'a encore soumis aucun garage :
+   *
+   *  - un garage a refusé, et il faut le dire ;
+   *  - aucun garage n'a encore été choisi, et il n'y a rien à annoncer.
+   *
+   * L'écran affichait le mot d'explication dans les deux cas. Combiné à la
+   * fiche encore périmée au moment de la navigation — corrigée dans
+   * `useSelectGarage` — cela produisait le pire des messages possibles :
+   * « ce garage ne peut pas intervenir », affiché une seconde après l'envoi du
+   * SOS, alors que l'atelier n'avait rien répondu du tout.
+   *
+   * Le journal tranche, et lui seul : `declined` y est écrit par le serveur au
+   * moment du refus. Sans cet événement, on ramène le client à la liste sans
+   * rien lui raconter — un retour silencieux vaut mieux qu'une explication
+   * fausse.
    *
    * `replace` et non `push` : l'écran de suivi de cette demande-là n'a plus de
    * sens, et le laisser dans la pile ferait revenir dessus au premier retour.
    */
   useEffect(() => {
     if (status !== 'pending' || !requestId) return;
-    router.replace(`/sos/resultats?requestId=${requestId}&declined=1` as never);
-  }, [status, requestId, router]);
+
+    /*
+      Le journal du socket d'abord, la fiche ensuite. Les deux disent la même
+      chose ; le premier la dit plus tôt, le second continue de la dire quand le
+      socket est tombé. Sans ce repli, un refus survenu pendant que le client
+      avait fermé l'app se serait perdu au premier réseau capricieux — et le
+      client serait revenu à la liste sans comprendre pourquoi.
+    */
+    const declined = (lastEvent ?? detail?.lastEvent) === 'declined';
+    router.replace(
+      `/sos/resultats?requestId=${requestId}${declined ? '&declined=1' : ''}` as never,
+    );
+  }, [status, lastEvent, detail?.lastEvent, requestId, router]);
 
   const askCancel = useCallback(() => {
     if (!requestId) return;

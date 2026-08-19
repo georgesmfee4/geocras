@@ -28,6 +28,7 @@ import {
   appendEvent,
   findActiveRequestForClient,
   findGarageSummaryById,
+  findLatestEvent,
   findLatestPositions,
   findRequestById,
   insertPing,
@@ -619,12 +620,18 @@ export async function getRequestDetail(
       }
     : null;
 
+  // Le dernier fait consigné accompagne la fiche : le statut seul ne dit pas
+  // pourquoi une demande est `pending` — refus d'un garage, ou garage jamais
+  // choisi. Voir `lastEvent` dans le contrat.
+  const latestEvent = await findLatestEvent(db, requestId);
+
   return {
     ...toAssistanceRequest(request),
     garage: garageSummary,
     client: clientParty,
     mechanic: mechanicParty,
     tracking,
+    lastEvent: latestEvent?.type ?? null,
   };
 }
 

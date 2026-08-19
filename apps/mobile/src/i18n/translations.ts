@@ -816,13 +816,33 @@ export const translations = {
     // — Côté garagiste : le poste de travail ————————————————————————
     'jobs.deskLabel': 'Poste de travail',
     'jobs.listening': 'À L’ÉCOUTE',
+    'jobs.deskUnstable': 'LIAISON INSTABLE',
     'jobs.soon': 'BIENTÔT',
+    'jobs.detectionOpen': 'Détection ouverte',
 
-    'jobs.sosTile': 'SOS',
-    'jobs.sosTileWaiting': 'Des conducteurs attendent votre réponse.',
-    'jobs.sosTileIdle': 'Aucune demande en attente pour le moment.',
+    // L'ardoise SOS. Le libellé est un état, pas un nom de rubrique : « SOS »
+    // tout seul nommait un menu, « SOS en attente » dit ce que le chiffre à
+    // côté est en train de compter.
+    'jobs.queueLabel': 'SOS en attente',
+    'jobs.oldestWaiting': 'Attente la plus longue',
+    'jobs.firstToHandle': 'À prendre en premier',
+    'jobs.queueMix': 'Répartition par urgence',
+
+    'jobs.calmTitle': 'Personne n’attend',
+    'jobs.calmLead':
+      'Votre garage est visible sur la carte et écoute les SOS en direct. Le premier conducteur qui vous choisit s’affiche ici, et le téléphone sonne.',
+    'jobs.calmClosedLead':
+      'Votre garage n’apparaît dans aucune recherche : aucun SOS ne peut vous parvenir tant que la détection est fermée.',
+    'jobs.reopenDetection': 'Rouvrir depuis Mon garage',
+
+    'jobs.commitments': 'Vos engagements',
+    'jobs.commitmentsLead':
+      'Ce que vous avez accepté et pas encore terminé. Chacun attend votre prochain geste.',
+    'jobs.awaitingClientShort': 'En attente du client',
+
     'jobs.radarTile': 'Radar',
-    'jobs.radarTileLead': 'Surveillance des pannes autour de votre garage.',
+    'jobs.radarLead':
+      'Bientôt : les pannes déclarées autour de votre atelier, avant même qu’un conducteur vous choisisse.',
 
     'jobs.sosTitle': 'Demandes SOS',
     'jobs.incoming': 'À traiter',
@@ -881,6 +901,22 @@ export const translations = {
     'jobs.emptyTitle': 'Aucune demande',
     'jobs.emptyLead':
       'Votre garage est à l’écoute. Les SOS des conducteurs en panne autour de vous arriveront ici.',
+
+    // — Le dernier mètre : la reconnaissance mutuelle sur place ——————————
+    'proximity.label': 'À proximité',
+    // Court, et c'est une contrainte de gabarit autant que de style : le
+    // libellé est rendu en Bebas 17 avec deux points d'interlettrage, dans un
+    // bouton qui fait cent cinquante points sur un petit écran.
+    'proximity.question': 'Vous le voyez ?',
+    'proximity.confirm': 'Je le vois',
+    'proximity.call': 'Appeler',
+    'proximity.dismiss': 'Pas encore',
+
+    'proximity.garageLead':
+      'Vous êtes arrivé dans la zone de la panne. Regardez autour de vous : le véhicule devrait être en vue.',
+    'proximity.clientLead':
+      'Votre garagiste est tout près du lieu de la panne, et vous cherche peut-être déjà du regard.',
+
 
     // — Côté client : le suivi en direct ————————————————————————————
     'live.stepAccepted': 'Acceptée',
@@ -1671,13 +1707,30 @@ export const translations = {
     // — Mechanic side: the work desk ——————————————————————————————
     'jobs.deskLabel': 'Work desk',
     'jobs.listening': 'LISTENING',
+    'jobs.deskUnstable': 'LINK UNSTABLE',
     'jobs.soon': 'SOON',
+    'jobs.detectionOpen': 'Detection open',
 
-    'jobs.sosTile': 'SOS',
-    'jobs.sosTileWaiting': 'Drivers are waiting for your answer.',
-    'jobs.sosTileIdle': 'No request waiting right now.',
+    'jobs.queueLabel': 'SOS waiting',
+    'jobs.oldestWaiting': 'Longest wait',
+    'jobs.firstToHandle': 'Take this one first',
+    'jobs.queueMix': 'Split by urgency',
+
+    'jobs.calmTitle': 'Nobody waiting',
+    'jobs.calmLead':
+      'Your garage is on the map and listening for SOS calls. The first driver who picks you shows up here, and the phone rings.',
+    'jobs.calmClosedLead':
+      'Your garage shows up in no search: no SOS can reach you while detection is closed.',
+    'jobs.reopenDetection': 'Reopen from My garage',
+
+    'jobs.commitments': 'Your commitments',
+    'jobs.commitmentsLead':
+      'What you accepted and have not finished. Each one is waiting on your next move.',
+    'jobs.awaitingClientShort': 'Waiting for the client',
+
     'jobs.radarTile': 'Radar',
-    'jobs.radarTileLead': 'Watch for breakdowns around your garage.',
+    'jobs.radarLead':
+      'Coming soon: breakdowns reported around your workshop, before a driver even picks you.',
 
     'jobs.sosTitle': 'SOS requests',
     'jobs.incoming': 'To handle',
@@ -1738,6 +1791,18 @@ export const translations = {
       'Your garage is listening. SOS calls from stranded drivers around you will land here.',
 
     // — Client side: live tracking ————————————————————————————————
+    'proximity.label': 'Nearby',
+    'proximity.question': 'Can you see them?',
+    'proximity.confirm': 'I see them',
+    'proximity.call': 'Call',
+    'proximity.dismiss': 'Not yet',
+
+    'proximity.garageLead':
+      'You have reached the breakdown area. Look around — the vehicle should be in sight.',
+    'proximity.clientLead':
+      'Your mechanic is very close to the breakdown spot, and may already be looking for you.',
+
+
     'live.stepAccepted': 'Accepted',
     'live.stepEnRoute': 'On the way',
     'live.stepArrived': 'On site',

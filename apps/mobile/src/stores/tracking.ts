@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import { EMISSION, type RequestStatus, type TrackingEta } from '@geocras/shared';
+import {
+  EMISSION,
+  type RequestEvent,
+  type RequestEventType,
+  type RequestStatus,
+  type TrackingEta,
+} from '@geocras/shared';
 
 export type ConnectionState = 'connecting' | 'live' | 'degraded' | 'offline';
 
@@ -12,13 +18,53 @@ type TrackingState = {
   connection: ConnectionState;
   /** Horodatage local de la dernière donnée reçue — base du compteur « MAJ ». */
   lastPacketAt: number | null;
+  /**
+   * Type du dernier événement connu sur la demande.
+   *
+   * C'est la **seule** chose qui distingue une demande refusée d'une demande
+   * qui n'a simplement pas encore de garage. Les deux sont `pending`, sans
+   * `garageId` et sans `selectedAt` : le refus remet ces deux colonnes à zéro,
+   * exactement comme si le garage n'avait jamais été choisi. Sans le journal,
+   * l'app ne peut que deviner — et c'est en devinant qu'elle annonçait un refus
+   * à quelqu'un dont le SOS venait de partir.
+   *
+   * `null` tant qu'aucun événement n'a été reçu : on ne conclut rien d'un
+   * silence.
+   */
+  lastEvent: RequestEventType | null;
 
   start: (requestId: string) => void;
   stop: () => void;
   setConnection: (connection: ConnectionState) => void;
   applyTracking: (payload: { toClient: TrackingEta; toGarage: TrackingEta }) => void;
-  applyState: (payload: { status: RequestStatus; lastSeq: number }) => void;
+  applyState: (payload: {
+    status: RequestStatus;
+    lastSeq: number;
+    missedEvents?: readonly RequestEvent[];
+  }) => void;
 };
+
+/**
+ * Le type de l'événement le plus récent d'un lot, ou `null` s'il n'y en a pas.
+ *
+ * Les événements arrivent triés par `seq` croissant — à la reconnexion, le
+ * serveur rejoue tout l'historique dans cet ordre ; sur un changement d'état,
+ * il n'envoie que celui qui vient de se produire. Dans les deux cas, c'est le
+ * dernier de la liste qui décrit la situation courante.
+ *
+ * On ne se fie pas à l'ordre du tableau pour autant : `seq` est la source de
+ * vérité, et un lot arrivé dans le désordre après une coupure ferait conclure
+ * de travers.
+ */
+export function latestEventType(events: readonly RequestEvent[] | undefined): RequestEventType | null {
+  if (!events || events.length === 0) return null;
+
+  let latest = events[0]!;
+  for (const event of events) {
+    if (event.seq > latest.seq) latest = event;
+  }
+  return latest.type;
+}
 
 /**
  * État du suivi en direct.
@@ -38,6 +84,7 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
   toGarage: null,
   connection: 'connecting',
   lastPacketAt: null,
+  lastEvent: null,
 
   start: (requestId) => {
     // Changer de demande doit repartir d'un état vierge : sinon l'ancien ETA
@@ -50,6 +97,7 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
         toClient: null,
         toGarage: null,
         lastPacketAt: null,
+        lastEvent: null,
         connection: 'connecting',
       });
     }
@@ -63,6 +111,7 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
       toClient: null,
       toGarage: null,
       lastPacketAt: null,
+      lastEvent: null,
       connection: 'offline',
     }),
 
@@ -82,6 +131,10 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
       // reconnexion ne doit pas faire régresser le point de rattrapage.
       lastSeq: Math.max(current.lastSeq, payload.lastSeq),
       lastPacketAt: Date.now(),
+      // Un lot vide ne remet pas le compteur à zéro : le repli en sondage HTTP
+      // pousse un statut sans journal, et il n'a aucune raison d'effacer ce que
+      // le socket avait appris avant de tomber.
+      lastEvent: latestEventType(payload.missedEvents) ?? current.lastEvent,
     })),
 }));
 

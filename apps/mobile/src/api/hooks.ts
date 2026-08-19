@@ -403,6 +403,29 @@ export function useSelectGarage(requestId: string) {
        */
       rememberSentAt(requestId, request.selectedAt ?? new Date(serverNow()).toISOString());
 
+      /**
+       * Le nouveau statut est écrit dans le cache **avant** que quiconque
+       * navigue, et c'est la correction d'un vrai défaut.
+       *
+       * L'invalidation seule ne suffisait pas : elle marque la donnée périmée et
+       * déclenche un rechargement, mais elle ne change rien tout de suite. Or
+       * l'écran des résultats enchaîne sur `router.replace('/suivi/…')` dans la
+       * foulée. L'écran de suivi lisait donc la version d'avant l'envoi —
+       * `pending`, sans garage — et en concluait que la demande n'avait plus de
+       * garage, c'est-à-dire qu'elle venait d'être refusée. Le client voyait
+       * « ce garage ne peut pas intervenir » une seconde après avoir envoyé son
+       * SOS, alors que l'atelier n'avait strictement rien répondu.
+       *
+       * On fusionne plutôt que de remplacer : le serveur renvoie ici la demande
+       * seule, quand le cache contient un `RequestDetail` — garage, parties,
+       * suivi. Écraser la fiche par la demande nue ferait disparaître le nom du
+       * garage à l'écran le temps du rechargement, ce qui remplacerait un
+       * mensonge par un clignotement. L'invalidation qui suit ramène le tout.
+       */
+      client.setQueryData<RequestDetail>(queryKeys.requests.detail(requestId), (previous) =>
+        previous ? { ...previous, ...request } : previous,
+      );
+
       void client.invalidateQueries({ queryKey: queryKeys.requests.detail(requestId) });
     },
   });

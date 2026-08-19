@@ -227,6 +227,24 @@ export async function appendEvent(
 }
 
 /** Événements postérieurs à `afterSeq`, pour le rattrapage après coupure. */
+/**
+ * Le dernier fait consigné sur une demande.
+ *
+ * Trié sur `seq` et non sur `created_at` : deux événements écrits dans la même
+ * transaction peuvent porter le même horodatage à la milliseconde, et c'est
+ * `seq` qui fait foi partout ailleurs — dans le rattrapage socket comme dans le
+ * journal rejoué.
+ */
+export async function findLatestEvent(db: Db, requestId: string) {
+  return db
+    .selectFrom('request_events')
+    .select(['seq', 'type'])
+    .where('request_id', '=', requestId)
+    .orderBy('seq', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+}
+
 export async function findEventsAfter(db: Db, requestId: string, afterSeq: number) {
   return db
     .selectFrom('request_events')

@@ -55,6 +55,16 @@ export function useTracking(requestId: string | null) {
     // de nettoyage renvoyée depuis un `async` serait une promesse, que React
     // ignore — les écouteurs survivraient au démontage et s'accumuleraient à
     // chaque ouverture de l'écran de suivi.
+    /**
+     * Le journal voyage avec l'état, et il est retenu.
+     *
+     * `statePayloadSchema` porte `missedEvents` depuis le début — le serveur
+     * rejoue tout l'historique à la connexion, et pousse l'événement déclencheur
+     * à chaque transition — mais le store le jetait. C'est ce qui laissait
+     * l'app incapable de distinguer une demande refusée d'une demande sans
+     * garage : les deux sont `pending`, et seul le journal dit laquelle est
+     * laquelle.
+     */
     const onState = (raw: unknown): void => {
       const parsed = statePayloadSchema.safeParse(raw);
       if (parsed.success) useTrackingStore.getState().applyState(parsed.data);

@@ -102,10 +102,26 @@ export default function JobDetailScreen() {
     [buzz, translateError],
   );
 
+  /**
+   * Accepter, et se retrouver **devant l'itinéraire**.
+   *
+   * L'acceptation laissait le garagiste sur la fiche qu'il venait de lire, avec
+   * un bouton « Y aller » à presser pour obtenir la carte. Ce geste ne
+   * décidait rien : quelqu'un qui vient d'accepter un dépannage a déjà décidé
+   * d'y aller — c'est le sens du mot. Il ne servait qu'à faire réapparaître une
+   * information qu'on aurait pu lui donner tout de suite.
+   *
+   * `push` et non `replace` : la fiche garde sa place dans la pile. Les photos
+   * de la panne, la description du client et ses contraintes sont là-bas, et un
+   * dépanneur y revient en cours de route — un retour doit les retrouver.
+   */
   const onAccept = useCallback(() => {
     if (!job) return;
-    void run(() => act.mutateAsync({ requestId: job.id, action: 'accept' }));
-  }, [job, act, run]);
+    void run(
+      () => act.mutateAsync({ requestId: job.id, action: 'accept' }),
+      () => router.push(`/interventions/route/${job.id}` as never),
+    );
+  }, [job, act, router, run]);
 
   /**
    * Refus.
