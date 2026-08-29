@@ -1,84 +1,81 @@
-# Architecture GeoCras
+# Architecture
 
-Décisions actées. Ce document remplace `geocras-backend/docs/`, dont plusieurs choix ont
-été écartés (voir la table de correspondance dans `geocras-backend/CLAUDE.md`).
+Ce document explique comment le projet est construit et pourquoi. Ce sont des décisions
+prises, pas des pistes ouvertes : si on veut en changer une, il faut une raison, pas une
+préférence.
 
----
+## Le découpage
 
-## 1. Structure
-
-Monorepo npm workspaces. Trois choses ne doivent **jamais** diverger entre le mobile et le
-serveur : la taxonomie des pannes, la forme des réponses (surtout `rank`), et le barème de
-fidélité. `packages/shared` rend la divergence impossible à compiler.
+Le monorepo tient en trois workspaces.
 
 ```
 apps/mobile/src/
-├── theme/     tokens.ts (palette, type, chamfer), ThemeProvider, useAppFonts
-├── ui/        ChamferView, Text, Button, SectionLabel, Stars, GarageMarker
-├── screens/   un dossier par écran
-├── api/       client + hooks TanStack Query — aucun fetch ailleurs
-├── realtime/  socket, useTracking, mode dégradé
-├── driving/   AlertSource, SimulatedAlertSource
-├── stores/    zustand : tracking, driving
-└── location/  permissions, watcher, filtre EMA
+  theme/      tokens.ts (palette, typo, chamfer), ThemeProvider, useAppFonts
+  ui/         ChamferView, Text, Button, SectionLabel, Stars, GarageMarker
+  screens/    un dossier par écran
+  api/        client et hooks TanStack Query, aucun fetch ailleurs
+  realtime/   socket, useTracking, mode dégradé
+  driving/    AlertSource, SimulatedAlertSource
+  stores/     zustand : tracking, driving
+  location/   permissions, watcher, filtre EMA
 
 apps/api/
-├── migrations/           SQL pur, versionné, PostGIS natif
-├── src/modules/          découpage par DOMAINE, pas par couche
-│   ├── auth/  garages/  requests/  loyalty/  reviews/  driving/
-│   └── (.routes .service .repo par module)
-├── src/db/               client Kysely, types, geo.ts, migrate.ts
-├── src/middleware/       auth, validate, error
-└── src/seed/yaounde.ts
+  migrations/     SQL pur, versionné, PostGIS natif
+  src/modules/    auth, garages, requests, loyalty, reviews, driving
+  src/db/         client Kysely, types, geo.ts, migrate.ts
+  src/middleware/ auth, validate, error
+  src/seed/       yaounde.ts
 
 packages/shared/src/
-├── contracts/   schémas zod = source unique des types d'API
-├── taxonomy.ts  véhicule → pannes ordonnées
-├── loyalty.ts   paliers, barème, garde-fous anti-fraude
-└── geo.ts       haversine, ETA provisoire, lissage de vitesse
+  contracts/    schémas zod, source unique des types d'API
+  taxonomy.ts   véhicule vers pannes ordonnées
+  loyalty.ts    paliers, barème, garde-fous anti-fraude
+  geo.ts        haversine, ETA provisoire, lissage de vitesse
 ```
 
-**Par domaine, pas par couche.** Ajouter le niveau d'urgence au SOS touche
-`modules/requests/` seul, au lieu de quatre dossiers.
+Le serveur est découpé par domaine et non par couche. Concrètement, ajouter un niveau
+d'urgence au SOS se fait dans `modules/requests/` et nulle part ailleurs, là où un
+découpage en controllers / services / repos aurait fait toucher quatre dossiers pour un
+seul champ.
 
-### Kysely plutôt que Prisma
+## Kysely plutôt que Prisma
 
-Le pattern documenté dans l'ancien dossier — Prisma + `Unsupported()` + migrations
-générées puis éditées à la main — abandonnait la type-safety sur toute la moitié
-géospatiale, c'est-à-dire sur le cœur du produit.
+La moitié du produit est géospatiale, et Prisma ne sait pas typer PostGIS. Le pattern
+habituel consiste à déclarer les colonnes en `Unsupported()`, à passer par `$queryRaw`
+pour tout ce qui touche à la géométrie, et à éditer à la main les migrations générées.
+Ça revient à abandonner la type-safety exactement là où elle sert le plus.
 
-| | Prisma + `Unsupported()` | Kysely |
-|---|---|---|
-| Requête géo | `$queryRaw`, retour **non typé** | fragment `sql\`\``, résultat **typé** |
-| Migrations | générées puis **éditées à la main** | fichiers `.sql` écrits directement |
-| Dérive de schéma | invisible | erreur de compilation |
+Avec Kysely, une requête géo s'écrit dans un template `sql` tagué dont le résultat
+reste typé, les migrations sont des fichiers `.sql` qu'on écrit directement, et une dérive
+entre le schéma et le code devient une erreur de compilation au lieu d'une surprise à
+l'exécution.
 
-Le type `GeographyPoint` (`src/db/types.ts`) est volontairement hostile : en écriture il
-n'accepte qu'un fragment SQL, donc on passe forcément par `pointFromLatLng()` ; en lecture
-il rend une chaîne WKB inexploitable, ce qui force à projeter `ST_Y`/`ST_X` explicitement.
+Le type `GeographyPoint` dans `src/db/types.ts` est volontairement pénible à utiliser.
+En écriture il n'accepte qu'un fragment SQL, ce qui oblige à passer par
+`pointFromLatLng()`. En lecture il rend une chaîne WKB inexploitable, ce qui oblige à
+projeter `ST_Y` et `ST_X` explicitement. Dans les deux cas on ne peut pas se tromper
+par distraction.
 
----
+## Les données
 
-## 2. Données
+Les tables : `users`, `vehicles`, `garages`, `assistance_requests`, `request_events`,
+`position_pings`, `reviews`, `loyalty_ledger`, `badges` et `user_badges`,
+`driving_sessions` et `driving_alerts`, `refresh_tokens`.
 
-Tables : `users`, `vehicles`, `garages`, `assistance_requests`, `request_events`,
-`position_pings`, `reviews`, `loyalty_ledger`, `badges`/`user_badges`,
-`driving_sessions`/`driving_alerts`, `refresh_tokens`.
+Les règles métier importantes sont des contraintes SQL plutôt que des vérifications dans
+le code. Une vérification applicative s'oublie au prochain endpoint qu'on écrit ; une
+contrainte tient même quand le code se trompe.
 
-### Les règles métier sont des contraintes SQL
+`closed_requires_both_arrivals` interdit de clôturer une demande sans les deux
+confirmations d'arrivée, ce qui rend structurellement impossible de créditer des points
+sans elles. `reviews.request_id UNIQUE` fait qu'un avis suppose une intervention
+réellement terminée, tout en laissant un client qui revient trois fois noter trois fois.
+`loyalty_ledger.idempotency_key UNIQUE` empêche une requête rejouée de créditer deux
+fois. `vehicles_single_default_idx` garantit un seul véhicule par défaut, y compris en
+écriture concurrente. `requests_one_active_per_client_idx` évite les dix SOS ouverts en
+parallèle.
 
-Une vérification applicative s'oublie au prochain endpoint. Une contrainte tient même
-quand le code se trompe.
-
-| Contrainte | Ce qu'elle garantit |
-|---|---|
-| `closed_requires_both_arrivals` | une demande ne peut pas être clôturée sans les **deux** confirmations d'arrivée — donc aucun point ne peut être crédité sans elles |
-| `reviews.request_id UNIQUE` | un avis exige une intervention réellement clôturée ; et un client qui revient trois fois note trois fois |
-| `loyalty_ledger.idempotency_key UNIQUE` | une requête rejouée ne crédite jamais deux fois |
-| `vehicles_single_default_idx` | un seul véhicule par défaut, y compris en écriture concurrente |
-| `requests_one_active_per_client_idx` | pas dix SOS ouverts en parallèle |
-
-### Index
+Côté index :
 
 ```sql
 CREATE INDEX garages_location_idx ON garages USING GIST (location);
@@ -87,14 +84,17 @@ CREATE INDEX garages_certified_location_idx ON garages USING GIST (location)
 CREATE INDEX garages_services_idx ON garages USING GIN (services);
 ```
 
-### La requête de pertinence
+## La requête de pertinence
 
-Deux invariants, dans cet ordre :
+C'est la requête centrale du produit, celle qui remplit l'écran carte. Deux choses
+comptent, dans cet ordre.
 
-**a. `ST_DWithin` filtre avant le tri.** C'est ce qui consomme l'index GIST. Un
-`ORDER BY ST_Distance(...)` sans filtre préalable parcourt la table entière.
+D'abord `ST_DWithin` filtre avant qu'on trie. C'est ce qui fait consommer l'index GIST.
+Un `ORDER BY ST_Distance(...)` sans filtre préalable parcourt la table entière, et ça ne
+se voit pas tant que la base est petite.
 
-**b. `ROW_NUMBER()` calcule le rang en SQL.** Le mobile l'affiche sans jamais le recalculer.
+Ensuite le rang se calcule en SQL, avec `ROW_NUMBER()`. Le mobile l'affiche tel quel et
+ne le recalcule jamais.
 
 ```sql
 ROW_NUMBER() OVER (ORDER BY
@@ -105,170 +105,177 @@ ROW_NUMBER() OVER (ORDER BY
 )
 ```
 
-Dans la branche inactive, l'expression vaut `NULL` pour *toutes* les lignes : elle ne
-discrimine rien et le tri retombe sur la clé suivante. Un seul plan couvre les trois tris,
-sans concaténer de SQL — donc sans surface d'injection.
+L'astuce des `CASE` tient au fait que dans une branche inactive l'expression vaut `NULL`
+pour toutes les lignes : elle ne discrimine rien et le tri retombe sur la clé suivante.
+Un seul plan couvre donc les trois tris, sans concaténer de SQL, donc sans surface
+d'injection.
 
-`score_note` est une **note bayésienne** : un 5,0 avec deux avis complaisants ne doit pas
-devancer un 4,6 avec 128 avis.
+`score_note` est une note bayésienne, pas une moyenne. Un 5,0 obtenu sur deux avis
+complaisants ne doit pas passer devant un 4,6 obtenu sur cent vingt-huit.
 
 ```
 (n / (n + 20)) × note  +  (20 / (n + 20)) × 3,8
 ```
 
-**Repli.** Si le rayon ne rend rien, on remonte le garage le plus proche dans `fallback`
-avec `meta.widened = true`. Au bord de la route, un écran vide est un échec produit.
+Enfin, si le rayon ne rend rien, la réponse remonte quand même le garage le plus proche
+dans `fallback` avec `meta.widened = true`. Quelqu'un en panne au bord de la route à qui
+on affiche une liste vide n'a rien à faire de la rigueur du rayon de recherche.
 
----
+## L'API
 
-## 3. API
-
-Erreurs `{ error: { code, message, fields? } }` — le mobile traduit sur le **code**.
-Pagination enveloppée. Dates ISO 8601 UTC. Validation zod sur chaque entrée.
+Les erreurs ont toujours la forme `{ error: { code, message, fields? } }` et le mobile
+traduit sur le code, jamais sur le message. La pagination est enveloppée, les dates sont
+en ISO 8601 UTC, et chaque entrée passe par un schéma zod avant d'atteindre le controller.
 
 | Méthode | Route | Notes |
 |---|---|---|
 | POST | `/auth/signup` · `/login` · `/refresh` · `/logout` | rotation du refresh, jeton opaque haché en base |
-| GET | `/garages/nearby` | **public** · `lat,lng,radiusKm,sort,services,openNow,limit` |
+| GET | `/garages/nearby` | public · `lat,lng,radiusKm,sort,services,openNow,limit` |
 | GET | `/garages/:id` · `/:id/reviews` | |
-| POST | `/requests` | crée + renvoie les garages classés en **un seul aller-retour** |
+| POST | `/requests` | crée la demande et renvoie les garages classés en un seul aller-retour |
 | POST | `/requests/:id/select` · `/accept` · `/en-route` | |
-| POST | `/requests/:id/arrive` | **les deux parties**, idempotent |
+| POST | `/requests/:id/arrive` | appelé par les deux parties, idempotent |
 | POST | `/requests/:id/cancel` | |
-| GET | `/requests/:id` | état complet + `lastSeq` — route du **mode dégradé** |
-| POST | `/requests/:id/review` | clé sur la demande · `403` si non clôturée |
+| GET | `/requests/:id` | état complet et `lastSeq`, c'est la route du mode dégradé |
+| POST | `/requests/:id/review` | clé sur la demande, 403 si elle n'est pas clôturée |
 | GET | `/me/loyalty` · POST `/me/referral/claim` | |
-| POST | `/driving/sessions` | envoi **groupé en fin de session**, tolérant au hors-ligne |
+| POST | `/driving/sessions` | envoi groupé en fin de session, tolérant au hors-ligne |
 | POST | `/uploads/sign` | signature Cloudinary avec `upload_preset` contraint |
 
----
+## L'état côté mobile
 
-## 4. État mobile
+Ce qui décide de l'outil, c'est la fréquence à laquelle la donnée change.
 
-La **fréquence de changement** dicte l'outil.
+Le cache serveur passe par TanStack Query, pour le retry, le `staleTime` et la
+persistance hors-ligne, qui font toute la différence sur un réseau irrégulier. La session
+et les tokens vivent dans un Context adossé à `expo-secure-store` : c'est petit, ça change
+rarement, et ça doit survivre au redémarrage. Les préférences suivent le même schéma avec
+AsyncStorage.
 
-| Nature | Outil | Pourquoi |
-|---|---|---|
-| Cache serveur | TanStack Query | retry, `staleTime`, persistance hors-ligne — décisif sur réseau irrégulier |
-| Session & tokens | Context + `expo-secure-store` | petit, rare, doit survivre au redémarrage |
-| **Suivi temps réel** | Zustand | change 3–5 ×/s ; dans Query, on invaliderait le cache en boucle |
-| **Mode conduite** | Zustand + moteur hors React | l'`AlertSource` est un émetteur pur ; lecture par sélecteurs |
-| Préférences | Context + AsyncStorage | lu partout, change une fois par mois |
+Le suivi temps réel est dans Zustand, parce qu'il change trois à cinq fois par seconde et
+que le mettre dans Query reviendrait à invalider le cache en boucle. Le mode conduite
+aussi, avec le moteur d'alertes en dehors de React : l'`AlertSource` est un émetteur pur,
+et les écrans lisent par sélecteurs.
 
-Deux règles fermes : aucune position temps réel dans TanStack Query ; le thème en Context.
+Deux règles fermes en découlent : aucune position temps réel dans TanStack Query, et le
+thème reste dans un Context.
 
----
+## Le temps réel
 
-## 5. Temps réel
+C'est Socket.io. Le polling à quinze secondes rend un véhicule en mouvement inutilisable.
+Le SSE est unidirectionnel alors que le client doit émettre sa position. Et le WebSocket
+brut obligerait à réécrire toute la reconnexion tout en perdant le repli long-polling,
+qui est précisément ce qui sauve une session sur une 3G qui coupe.
 
-**Socket.io.** Le polling à 15 s rend un véhicule en mouvement inutilisable. Le SSE est
-unidirectionnel, or le client doit *émettre* sa position. Le WebSocket brut obligerait à
-réécrire la reconnexion et perdrait le repli long-polling — précisément ce qui sauve une
-session sur un réseau 3G qui coupe.
+Le fonctionnement tient en quelques points. Une room par `requestId`, rejointe après
+vérification du JWT et contrôle d'appartenance. L'ETA est calculé par le serveur, parce
+que les deux parties doivent voir le même chiffre et que cet ETA alimente la détection de
+fraude. L'émission est throttlée à quatre secondes avec un seuil de quinze mètres : un
+ping fait environ cent vingt octets, une intervention de vingt minutes revient donc à une
+trentaine de kilooctets, et au Cameroun les forfaits data se comptent. Les positions
+passent par un lissage EMA à α = 0,3, avec rejet des sauts qui impliqueraient plus de
+150 km/h.
 
-1. **Room par `requestId`**, rejointe après vérification JWT *et* contrôle d'appartenance.
-2. **L'ETA est calculé par le serveur.** Les deux parties doivent voir le même chiffre, et
-   cet ETA alimente la détection de fraude.
-3. **Émission throttlée à 4 s + seuil de 15 m.** Un ping ≈ 120 octets ; 20 min
-   d'intervention ≈ 36 Ko. Les forfaits data se comptent.
-4. **Lissage EMA** (α = 0,3) et rejet des sauts impliquant plus de 150 km/h.
-5. **Rattrapage** : à la reconnexion, le client envoie son `lastSeq`, le serveur rejoue les
-   `request_events` manquants.
-6. **Mode dégradé** : socket mort → polling 15 s + bandeau. Le compteur « MAJ 3s » affiche
-   `Date.now() − lastPacketAt`, la fraîcheur **réelle**.
+À la reconnexion, le client renvoie son `lastSeq` et le serveur rejoue les
+`request_events` manquants. Si le socket meurt pour de bon, on bascule sur du polling à
+quinze secondes avec un bandeau qui le dit. Le compteur « MAJ 3s » affiche
+`Date.now() − lastPacketAt`, c'est-à-dire la fraîcheur réelle de la donnée et pas une
+animation décorative.
 
----
+## La carte
 
-## 6. Cartographie
+MapLibre GL avec les tuiles MapTiler.
 
-**MapLibre GL + MapTiler.**
+Le critère qui a tranché, c'est la stylisation. Google Maps n'expose son style JSON que
+sur Android via `expo-maps`, et Apple Maps ne se style pratiquement pas. On se retrouverait
+avec deux apps qui ne se ressemblent pas selon la plateforme, ce qui est intenable quand
+l'identité visuelle est le principal facteur de différenciation. MapLibre rend le même
+style vectoriel au pixel près des deux côtés.
 
-Le critère décisif est la stylisation. Google Maps n'expose son style JSON que sur Android
-via `expo-maps`, et Apple Maps ne se style quasiment pas : l'app ne ressemblerait pas à la
-même app sur iOS, ce qui est inacceptable pour une identité déclarée non négociable.
-MapLibre rend un style vectoriel **identique au pixel** sur les deux plateformes.
+Sur la donnée routière, OSM, qui est le socle de MapTiler comme de Mapbox, tient très bien
+à Yaoundé grâce au travail de cartographie humanitaire, et il est meilleur que Google sur
+les voies non bitumées. Google ne garde l'avantage que sur les POI commerciaux, c'est-à-dire
+exactement la donnée que GeoCras apporte lui-même.
 
-Sur la donnée routière, OSM — socle de MapTiler comme de Mapbox — est compétitif à Yaoundé
-grâce à la cartographie humanitaire, et **meilleur sur les voies non bitumées**. Google ne
-garde l'avantage que sur les POI commerciaux, ce que GeoCras apporte lui-même.
+Sur le coût, MapTiler facture à l'usage avec cent mille chargements gratuits par mois, là
+où Mapbox facture au MAU. Si ça devient cher, la porte de sortie est un PMTiles
+auto-hébergé, ce qui ne change qu'une URL. Quant à `expo-maps`, il est encore en alpha en
+SDK 54, donc écarté.
 
-Coût : MapTiler facture à l'**usage** (100 k chargements/mois gratuits), Mapbox au **MAU**.
-Porte de sortie : PMTiles auto-hébergé, un changement d'URL.
+Pour l'itinéraire, la cible est un OSRM auto-hébergé sur l'extrait OSM du Cameroun. Un
+deep link vers Google Maps aurait été plus simple mais est incompatible avec le produit :
+il sort l'utilisateur de l'app, donc plus de suivi, donc plus de double confirmation, donc
+plus de preuve anti-fraude. En attendant OSRM, l'ETA est approximé dans `shared/geo.ts` et
+marqué comme provisoire dans l'interface.
 
-`expo-maps` est en **alpha** en SDK 54 — écarté.
+## Où en est la construction
 
-**Itinéraire : OSRM auto-hébergé** sur l'extrait OSM Cameroun. Le deep link sortant de
-l'ancien dossier est incompatible avec le produit — il sort l'utilisateur de l'app, donc
-plus de suivi, donc plus de double confirmation, donc plus de preuve anti-fraude.
-En attendant, l'ETA est approximé (`shared/geo.ts`) et **marqué comme provisoire**.
-
----
-
-## 7. Ordre de construction
-
-**L'ossature complète est en place.** Ce qui reste est l'habillage des écrans à
-partir des maquettes — la plomberie sous chacun est écrite et testée.
+L'ossature est en place. Ce qui reste, pour l'essentiel, c'est d'habiller les écrans à
+partir des maquettes ; la plomberie sous chacun est écrite et testée.
 
 | # | Phase | Validation | État |
 |---|---|---|---|
-| 0a | **Spike MapLibre** — dev build, carte stylée, iOS + Android | bloquant | **à faire en premier** |
+| 0a | Spike MapLibre : dev build, carte stylée, iOS et Android | bloquant | à faire en premier |
 | 0b | Monorepo, `shared`, thème, primitives, écran de démo | revue visuelle deux thèmes | fait |
-| 1 | Migrations, seed Yaoundé, requête `nearby` | `EXPLAIN` montre l'Index Scan GIST | fait — 19 tests en attente de base |
-| 2 | Auth + routes garages | tests d'intégration HTTP | fait |
-| 3 | Splash (GPS réel), navigation, écran Carte | sur appareil | plomberie faite, **rendu carte à faire** |
-| 4 | Flux SOS → résultats | changer de tri renumérote les marqueurs | API faite, **écrans à faire** |
-| 5 | Fiche garage + lecture des avis | | API faite, **écrans à faire** |
-| 6 | Rôle garagiste : 3ᵉ onglet, accepter / en route / arrivé | deux comptes, deux appareils | API + onglet faits, **écran à faire** |
-| 7 | Temps réel, double ETA, mode dégradé | couper le socket en pleine session | fait de bout en bout, **à éprouver sur appareil** |
-| 8 | Double confirmation → crédit fidélité | double confirmation ne crédite qu'une fois | fait — contrainte SQL + ledger idempotent |
-| 9 | Publication d'avis verrouillée | bouton désactivé avec explication | API faite, **écran à faire** |
-| 10 | Mode conduite + `SimulatedAlertSource` | courbe de vitesse plausible | moteur fait et testé, **écran à faire** |
-| 11 | Profil, drawer, paramètres, i18n | | drawer + i18n faits, **écrans à faire** |
-| 12 | Push + deep links | notification ouvre le bon écran | routes prêtes, **branchement à faire** |
-| 13 | Écran Sécurité | à soumettre avant codage | à faire |
+| 1 | Migrations, seed Yaoundé, requête `nearby` | `EXPLAIN` montre l'Index Scan GIST | fait, 19 tests en attente de base |
+| 2 | Auth et routes garages | tests d'intégration HTTP | fait |
+| 3 | Splash avec GPS réel, navigation, écran Carte | sur appareil | plomberie faite, rendu carte à faire |
+| 4 | Flux SOS vers résultats | changer de tri renumérote les marqueurs | API faite, écrans à faire |
+| 5 | Fiche garage et lecture des avis | | API faite, écrans à faire |
+| 6 | Rôle garagiste : 3ᵉ onglet, accepter / en route / arrivé | deux comptes, deux appareils | API et onglet faits, écran à faire |
+| 7 | Temps réel, double ETA, mode dégradé | couper le socket en pleine session | fait de bout en bout, à éprouver sur appareil |
+| 8 | Double confirmation et crédit fidélité | une double confirmation ne crédite qu'une fois | fait, contrainte SQL et ledger idempotent |
+| 9 | Publication d'avis verrouillée | bouton désactivé avec explication | API faite, écran à faire |
+| 10 | Mode conduite et `SimulatedAlertSource` | courbe de vitesse plausible | moteur fait et testé, écran à faire |
+| 11 | Profil, tiroir, paramètres, i18n | | tiroir et i18n faits, écrans à faire |
+| 12 | Push et deep links | la notification ouvre le bon écran | routes prêtes, branchement à faire |
+| 13 | Écran Sécurité | à cadrer avant codage | à faire |
 
----
+## Ce qui peut mal tourner
 
-## 8. Les trois risques
+### La chaîne de confiance de la fidélité
 
-### Risque 1 — La chaîne de confiance de la fidélité *(le plus grave)*
+C'est le risque le plus sérieux, parce que les points ont vocation à devenir du Mobile
+Money, donc des espèces. La double confirmation prouve que deux personnes se sont mises
+d'accord, pas qu'une intervention a eu lieu. Deux comptes complices qui se confirment
+mutuellement suffisent à faire imprimer de l'argent au système.
 
-Les points deviennent du Mobile Money : ce sont des espèces. La double confirmation prouve
-que deux personnes se sont mises d'accord — pas qu'une intervention a eu lieu. **Deux
-comptes complices se confirment mutuellement** et le système imprime de l'argent.
+Le traitement, par ordre d'efficacité décroissante. La preuve de mouvement d'abord :
+`position_pings` doit montrer deux parties d'abord éloignées puis convergentes, ce qui
+casse la collusion statique, celle qui ne coûte rien à monter. Ensuite un crédit différé
+de 24 h en `pending`, qui laisse une fenêtre de reversal. Puis des plafonds par paire
+client-garage et par mois, la restriction des paliers convertibles aux garages certifiés,
+et l'`idempotency_key` sur le ledger. Et en v1, la conversion en Mobile Money n'est jamais
+automatique.
 
-Traitement, par ordre d'efficacité :
-- **Preuve de mouvement** : `position_pings` doit montrer deux parties initialement
-  éloignées puis convergentes. C'est ce qui casse la collusion statique.
-- **Crédit différé** 24 h en `pending` — fenêtre de reversal.
-- **Plafonds** par paire (client, garage) et par mois.
-- **Garages certifiés uniquement** pour les paliers convertibles.
-- **`idempotency_key`** sur le ledger.
-- **Conversion Mobile Money jamais automatique en v1.**
+Les seuils sont dans `ANTI_FRAUD`, dans `packages/shared/src/loyalty.ts`. Posés dès le
+schéma ils ne coûtent rien ; rétro-installés ils coûtent une migration et un audit
+comptable.
 
-Seuils dans `ANTI_FRAUD` (`packages/shared/src/loyalty.ts`). Posés dès le schéma, ils ne
-coûtent rien ; rétro-installés, ils coûtent une migration et un audit comptable.
+### Le GPS et le réseau
 
-### Risque 2 — GPS et réseau au Cameroun
+On est entre vingt et cinquante mètres de précision en centre-ville, sur un réseau 2G/3G
+intermittent. Ça se traduit par des ETA qui sautent, des positions qui téléportent et un
+badge « ±5m » qui ment.
 
-20–50 m de précision en centre-ville, réseau 2G/3G intermittent. Symptômes : ETA qui
-saute, positions qui téléportent, badge « ±5m » qui ment.
+Ce qui est en place ou à tenir : le filtre EMA et le rejet des sauts implausibles dans
+`shared/geo.ts`, l'affichage de la précision réelle issue de `coords.accuracy` plutôt
+qu'une valeur rassurante, une file de requêtes avec retry, les sessions de conduite
+stockées localement puis synchronisées, et le mode dégradé pensé dès le départ plutôt
+qu'ajouté après coup. Il faudra aussi tester sur un Android milieu de gamme en 3G réelle,
+parce que l'émulateur ne montrera rien de tout ça.
 
-Traitement : filtre EMA + rejet des sauts implausibles (`shared/geo.ts`) ; **afficher la
-précision réelle** issue de `coords.accuracy` ; file de requêtes avec retry ; sessions de
-conduite stockées localement puis synchronisées ; mode dégradé conçu dès le départ.
-Et tester sur un **Android milieu de gamme en 3G réelle** — l'émulateur ne montrera rien.
-
-### Risque 3 — MapLibre + New Architecture sur Expo 54
+### MapLibre sur la New Architecture
 
 `app.json` active `newArchEnabled: true`. Le plugin Expo de MapLibre existe, mais son
-support New Architecture n'est **pas confirmé**. C'est le risque le plus susceptible de
-coûter une semaine, et il est sous tout le reste.
+support de la New Architecture n'est pas confirmé. C'est le risque le plus susceptible de
+coûter une semaine entière, et il est sous tout le reste, d'où la phase 0a avant le moindre
+écran. Les deux issues sont connues d'avance : repasser `newArchEnabled` à `false`, ce que
+le SDK 54 autorise encore et les suivants non, ou se replier sur `react-native-maps` en
+acceptant le compromis sur iOS.
 
-Traitement : **phase 0a, avant tout écran.** Si ça casse, deux issues connues dès le
-premier jour : `newArchEnabled: false` (SDK 54 est la dernière version à le permettre —
-donc dette datée), ou repli sur `react-native-maps` en acceptant le compromis iOS.
-
-S'y ajoute la performance des marqueurs : 20 écussons en vues React se re-rendent à chaque
-mouvement de caméra. Passer par un `ShapeSource` + `SymbolLayer` MapLibre avec le `rank` en
-champ de données. Budget : 60 fps au pan/zoom avec 20 marqueurs sur Android milieu de gamme.
+Il y a un second volet à ce risque, la performance des marqueurs. Vingt écussons rendus en
+vues React se re-rendent à chaque mouvement de caméra. La parade est de passer par un
+`ShapeSource` et un `SymbolLayer` MapLibre avec le `rank` en champ de données. Le budget
+à tenir est de soixante images par seconde au pan et au zoom, avec vingt marqueurs, sur un
+Android milieu de gamme.
