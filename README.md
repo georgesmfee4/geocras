@@ -90,9 +90,10 @@ npm run mobile
 | `EXPO_PUBLIC_SUPPORT_PHONE` | numéro vert du menu Assistance | `+237800000000` |
 
 La navigation complète est en place : splash, onglets Carte et Conduite, tiroir latéral,
-pile par-dessus. L'écran Carte est réel. Les autres écrans produits sont encore des
-squelettes qui nomment la maquette destinée à les remplacer. L'écran de validation des
-primitives visuelles reste accessible sur `geocras://design`.
+pile par-dessus. Les écrans produits sont écrits : carte, déclaration de panne, résultats
+classés, suivi, fiche garage et avis, atelier du garagiste, fidélité, historique, profil,
+véhicules, paramètres. Vingt-six routes au total. Ce qui reste tient au rendu réel de la
+carte, qui ne se vérifie que sur un appareil — voir le spike plus bas.
 
 ## Le spike carte
 

@@ -210,8 +210,9 @@ marqué comme provisoire dans l'interface.
 
 ## Où en est la construction
 
-L'ossature est en place. Ce qui reste, pour l'essentiel, c'est d'habiller les écrans à
-partir des maquettes ; la plomberie sous chacun est écrite et testée.
+L'application est écrite de bout en bout. Ce qui reste ne tient plus à des écrans
+manquants mais à ce qui ne se vérifie que sur un appareil, et à trois branchements
+en attente.
 
 | # | Phase | Validation | État |
 |---|---|---|---|
@@ -219,15 +220,15 @@ partir des maquettes ; la plomberie sous chacun est écrite et testée.
 | 0b | Monorepo, `shared`, thème, primitives, écran de démo | revue visuelle deux thèmes | fait |
 | 1 | Migrations, seed Yaoundé, requête `nearby` | `EXPLAIN` montre l'Index Scan GIST | fait, 19 tests en attente de base |
 | 2 | Auth et routes garages | tests d'intégration HTTP | fait |
-| 3 | Splash avec GPS réel, navigation, écran Carte | sur appareil | plomberie faite, rendu carte à faire |
-| 4 | Flux SOS vers résultats | changer de tri renumérote les marqueurs | API faite, écrans à faire |
-| 5 | Fiche garage et lecture des avis | | API faite, écrans à faire |
-| 6 | Rôle garagiste : 3ᵉ onglet, accepter / en route / arrivé | deux comptes, deux appareils | API et onglet faits, écran à faire |
+| 3 | Splash avec GPS réel, navigation, écran Carte | sur appareil | fait, rendu carte à éprouver sur appareil |
+| 4 | Flux SOS vers résultats | changer de tri renumérote les marqueurs | fait |
+| 5 | Fiche garage et lecture des avis | | fait |
+| 6 | Rôle garagiste : 3ᵉ onglet, accepter / refuser / en route / arrivé | deux comptes, deux appareils | fait |
 | 7 | Temps réel, double ETA, mode dégradé | couper le socket en pleine session | fait de bout en bout, à éprouver sur appareil |
 | 8 | Double confirmation et crédit fidélité | une double confirmation ne crédite qu'une fois | fait, contrainte SQL et ledger idempotent |
-| 9 | Publication d'avis verrouillée | bouton désactivé avec explication | API faite, écran à faire |
-| 10 | Mode conduite et `SimulatedAlertSource` | courbe de vitesse plausible | moteur fait et testé, écran à faire |
-| 11 | Profil, tiroir, paramètres, i18n | | tiroir et i18n faits, écrans à faire |
+| 9 | Publication d'avis verrouillée | bouton désactivé avec explication | fait |
+| 10 | Mode conduite et `SimulatedAlertSource` | courbe de vitesse plausible | fait |
+| 11 | Profil, tiroir, paramètres, véhicules, i18n | | fait |
 | 12 | Push et deep links | la notification ouvre le bon écran | routes prêtes, branchement à faire |
 | 13 | Écran Sécurité | à cadrer avant codage | à faire |
 
@@ -279,3 +280,10 @@ vues React se re-rendent à chaque mouvement de caméra. La parade est de passer
 `ShapeSource` et un `SymbolLayer` MapLibre avec le `rank` en champ de données. Le budget
 à tenir est de soixante images par seconde au pan et au zoom, avec vingt marqueurs, sur un
 Android milieu de gamme.
+
+## Le cahier des charges
+
+Le dossier complet — analyse des besoins, critique de l'existant, modélisation UML,
+schéma de base de données, justification des choix techniques et état des résultats —
+est dans [`docs/cahier-des-charges/`](docs/cahier-des-charges/), en DOCX et en PDF.
+Il se régénère depuis ses sources avec `python3 make.py`.
