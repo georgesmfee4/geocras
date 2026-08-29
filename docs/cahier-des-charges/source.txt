@@ -243,7 +243,7 @@ Le troisième est technique et concerne la couche cartographique. La bibliothèq
 
 Le système se compose de quatre couches, dont une, le paquet de contrats partagés, n'existe que pour empêcher les deux extrémités de diverger.
 
-[FIG] figures/01-architecture.png | Architecture générale : couches, responsabilités et dépendances externes
+[FIG] assets/01-architecture.png | Architecture générale : couches, responsabilités et dépendances externes
 
 La couche de présentation est une application React Native construite avec Expo, dont le routage repose sur l'arborescence de fichiers. Elle contient les écrans, l'état applicatif, la couche d'accès au réseau et le rendu cartographique. Une règle y est appliquée strictement : aucun appel réseau n'est écrit dans un composant, tout passe par le dossier dédié. Cette règle a un effet concret sur le mode dégradé, qui n'aurait pas été implémentable si les appels avaient été dispersés.
 
@@ -267,7 +267,7 @@ Le fait que la recherche de garages soit ouverte sans authentification est un ch
 
 #2 Diagramme de cas d'utilisation
 
-[FIG] figures/02-cas-utilisation.png | Diagramme de cas d'utilisation : acteurs, paquets fonctionnels et relations d'inclusion et d'extension
+[FIG] assets/02-cas-utilisation.png | Diagramme de cas d'utilisation : acteurs, paquets fonctionnels et relations d'inclusion et d'extension
 
 Le diagramme fait apparaître trois structures qu'il vaut la peine de commenter.
 
@@ -313,7 +313,7 @@ La postcondition est une demande clôturée, un avis rendu possible, et un mouve
 
 Le modèle du domaine comporte douze classes persistantes et un ensemble d'énumérations qui vivent dans le paquet partagé. Le diagramme ci-dessous en donne la structure complète, attributs et cardinalités comprises.
 
-[FIG] figures/04-classes.png | Diagramme de classes du domaine : entités, attributs, opérations et cardinalités
+[FIG] assets/04-classes.png | Diagramme de classes du domaine : entités, attributs, opérations et cardinalités
 
 Trois compositions structurent le modèle, et il faut noter qu'il s'agit bien de compositions et non de simples agrégations : les entités portées n'ont aucune existence indépendante de leur conteneur. Le journal d'événements n'existe pas sans sa demande. Les relevés de position n'existent pas sans elle non plus. Les alertes de conduite n'existent pas sans leur session. La suppression du conteneur emporte celle des éléments portés, ce qui se traduit en base par des suppressions en cascade.
 
@@ -345,7 +345,7 @@ Inscription parrainée | 30 | Le filleul, à la même occasion
 
 La demande d'assistance est l'entité qui porte le cycle de vie du produit. Sa machine à états compte sept états dont deux terminaux.
 
-[FIG] figures/03-etats-transitions.png | Cycle de vie d'une demande d'assistance, avec la garde inscrite en base
+[FIG] assets/03-etats-transitions.png | Cycle de vie d'une demande d'assistance, avec la garde inscrite en base
 
 Le chemin nominal est linéaire : la demande naît en attente de choix de garage, passe en attente de réponse dès qu'un garage est retenu, puis en acceptée, puis en route lorsque le garagiste se déclare parti. Elle entre ensuite dans un état intermédiaire d'attente de la seconde confirmation, franchi lorsque la première des deux parties confirme son arrivée, et se clôt à la seconde confirmation.
 
@@ -374,7 +374,7 @@ Une vérification écrite dans un service est vraie tant que tous les appelants 
 
 Le diagramme suivant déroule un parcours complet, de l'appui sur le bouton d'urgence jusqu'au crédit de fidélité, en faisant apparaître les six participants réels.
 
-[FIG] figures/05-sequence-sos.png | Séquence complète d'une intervention, de la déclaration de panne à la clôture
+[FIG] assets/05-sequence-sos.png | Séquence complète d'une intervention, de la déclaration de panne à la clôture
 
 Plusieurs points de ce déroulé sont des décisions de conception plutôt que des évidences.
 
@@ -390,7 +390,7 @@ Enfin, la clôture et le crédit sont deux opérations distinctes exécutées da
 
 Le comportement en réseau dégradé fait l'objet d'un diagramme séparé, parce qu'il constitue une exigence à part entière et non une gestion d'erreur.
 
-[FIG] figures/06-sequence-reconnexion.png | Perte de connexion, bascule en mode dégradé et rattrapage par rejeu du journal
+[FIG] assets/06-sequence-reconnexion.png | Perte de connexion, bascule en mode dégradé et rattrapage par rejeu du journal
 
 Le mécanisme repose entièrement sur le fait que le journal des événements est en ajout seul et numéroté. Chaque événement porte un numéro de séquence unique au sein de sa demande, et le client conserve le dernier numéro qu'il a reçu. Quand le canal temps réel meurt, l'application bascule sur une interrogation périodique de la route d'état — la même route, exactement, qui sert au premier chargement — et affiche un bandeau qui dit honnêtement que la connexion est dégradée. La donnée affichée reste juste, elle est simplement moins fraîche, et l'indicateur d'âge le montre.
 
@@ -400,7 +400,7 @@ Ce dispositif a un effet secondaire appréciable : il rend le mode dégradé et 
 
 #2 Diagramme d'activité de la déclaration de panne
 
-[FIG] figures/07-activite-sos.png | Activité de déclaration de panne, réparties entre le client, l'application et le serveur
+[FIG] assets/07-activite-sos.png | Activité de déclaration de panne, réparties entre le client, l'application et le serveur
 
 Le diagramme fait apparaître deux points de décision dont le traitement est plus subtil qu'il n'y paraît.
 
@@ -412,7 +412,7 @@ Le second est l'absence de résultat dans le rayon de recherche. Plutôt que de 
 
 La base compte quatorze tables. Le schéma est décrit ci-dessous avec ses clés, ses contraintes et ses index décisifs.
 
-[FIG] figures/08-schema-bd.png | Modèle physique de données : quatorze tables, clés, contraintes et index
+[FIG] assets/08-schema-bd.png | Modèle physique de données : quatorze tables, clés, contraintes et index
 
 Deux partis pris traversent tout le schéma.
 
@@ -676,7 +676,7 @@ Un point doit être signalé avec netteté avant la présentation des interfaces
 
 #3 Lancement et carte principale
 
-[FIG2] ../maquettes/00-splash.png | ../maquettes/01-accueil-carte.png | Écran de lancement avec acquisition de la position, et carte principale avec marqueurs numérotés | 9.4
+[FIG2] assets/maq-00-splash.png | assets/maq-01-accueil-carte.png | Écran de lancement avec acquisition de la position, et carte principale avec marqueurs numérotés | 9.4
 
 L'écran de lancement n'est pas décoratif : il attend le résultat réel de l'acquisition de position. La durée d'affichage minimale qui lui est imposée est un plancher et non un plafond — l'écran ne disparaît jamais avant que la position soit résolue, on empêche seulement qu'un signal obtenu en cent vingt millisecondes produise un clignotement illisible. Si la position ne peut pas être obtenue, l'application s'ouvre quand même : rester bloqué priverait de l'application quelqu'un qui a refusé la permission.
 
@@ -684,7 +684,7 @@ La carte principale porte l'essentiel de l'identité visuelle. Les marqueurs son
 
 #3 Déclaration de panne et résultats
 
-[FIG2] ../maquettes/02-declarer-panne.png | ../maquettes/03-resultats-fiche.png | Déclaration de panne avec tri automatique des problèmes, et résultats classés avec fiche contextuelle | 9.4
+[FIG2] assets/maq-02-declarer-panne.png | assets/maq-03-resultats-fiche.png | Déclaration de panne avec tri automatique des problèmes, et résultats classés avec fiche contextuelle | 9.4
 
 La déclaration de panne est l'écran le plus travaillé de l'application, et son code est le plus volumineux du projet. Le tri automatique visible ici n'est pas un effet d'interface : la liste des problèmes proposés est celle du paquet partagé, ordonnée par véhicule, la panne la plus probable en tête. Choisir une moto ne fait pas seulement disparaître les problèmes de boîte de vitesses, cela remonte la transmission par chaîne et le carburateur.
 
@@ -692,7 +692,7 @@ L'écran de résultats affiche la liste et la carte simultanément, avec la mêm
 
 #3 Itinéraire, suivi et avis
 
-[FIG2] ../maquettes/04-itineraire-suivi.png | ../maquettes/05-details-avis.png | Suivi bidirectionnel avec double estimation d'arrivée, et fiche complète d'un garage avec ses avis | 9.4
+[FIG2] assets/maq-04-itineraire-suivi.png | assets/maq-05-details-avis.png | Suivi bidirectionnel avec double estimation d'arrivée, et fiche complète d'un garage avec ses avis | 9.4
 
 L'écran de suivi affiche les deux temps d'arrivée estimés côte à côte, celui du garagiste vers le client et celui du client vers le garage. Les deux sont calculés par le serveur et identiques des deux côtés. L'indicateur de fraîcheur visible dans le bandeau affiche l'âge réel de la dernière donnée reçue, calculé par différence avec l'horodatage d'émission, et non l'intervalle nominal.
 
@@ -700,7 +700,7 @@ La fiche complète d'un garage présente ses photographies, ses services, ses ho
 
 #3 Mode conduite
 
-[FIG2] ../maquettes/06-conduite-demarrer.png | ../maquettes/07-conduite-actif.png | Mode conduite au repos et en session, avec vitesse, statistiques et pile d'alertes | 9.4
+[FIG2] assets/maq-06-conduite-demarrer.png | assets/maq-07-conduite-actif.png | Mode conduite au repos et en session, avec vitesse, statistiques et pile d'alertes | 9.4
 
 Le mode conduite affiche la vitesse en grand caractère monospacé, les statistiques de la session en cours et une pile d'alertes horodatées. Les alertes sont produites par une source d'événements simulée, isolée derrière une interface qui définit un contrat minimal : démarrer, arrêter, émettre. Une source réelle branchée sur des capteurs implémenterait la même interface et ne demanderait aucune modification des écrans.
 
@@ -708,13 +708,13 @@ Les sessions sont enregistrées localement pendant leur déroulement et envoyée
 
 #3 Fidélité, menu et paramètres
 
-[FIG2] ../maquettes/08-profil-fidelite.png | ../maquettes/09-menu-lateral.png | Espace de fidélité avec grade et progression, et tiroir latéral de navigation | 9.4
+[FIG2] assets/maq-08-profil-fidelite.png | assets/maq-09-menu-lateral.png | Espace de fidélité avec grade et progression, et tiroir latéral de navigation | 9.4
 
 L'espace de fidélité présente le solde de points, le grade courant et la progression vers le suivant. La distinction entre les deux mesures y est rendue visible : le solde est une monnaie qui peut baisser, le grade une ancienneté qui ne baisse pas. La progression affichée est un compte de réparations terminées, pas un compte de points.
 
 Le tiroir latéral donne accès au profil, à la sécurité, à l'assistance téléphonique, aux paramètres et à l'historique. Son en-tête affiche le grade et le solde en caractère monospacé, conformément à la règle qui veut que toute donnée mesurée le soit.
 
-[FIG] ../maquettes/10-parametres-sombre.png | Écran de paramètres en mode sombre | 13.0
+[FIG] assets/maq-10-parametres-sombre.png | Écran de paramètres en mode sombre | 13.0
 
 Le mode sombre n'est pas un simple inversement de contraste. Il conserve la chaleur de la palette — le fond sombre reste chaud plutôt que bleuté — parce que basculer sur des gris froids en mode sombre aurait produit deux applications différentes selon le réglage du téléphone. Toutes les couleurs des deux modes sont définies dans un fichier unique de jetons, et aucune couleur n'est écrite en dur dans un composant.
 

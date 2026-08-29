@@ -3,6 +3,7 @@
 import os, re, sys, unicodedata
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import build as B
+import optimize
 import pypdf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -48,6 +49,7 @@ def measure(pdf_path, heads, figs, n_front=0):
 
 
 def main():
+    optimize.main()
     print("passe 1 — composition à blanc")
     b = B.build(SRC, DOCX)
     pdf = B.to_pdf(DOCX, HERE)
@@ -69,8 +71,14 @@ def main():
         B.build(SRC, DOCX, toc_pages=toc, fig_pages=ftoc)
         pdf = B.to_pdf(DOCX, HERE)
 
+    import subprocess
+    lin = pdf + ".lin"
+    subprocess.run(["qpdf", "--linearize", "--object-streams=generate", pdf, lin],
+                   check=True, capture_output=True)
+    os.replace(lin, pdf)
+
     r = pypdf.PdfReader(pdf)
-    print(f"\nterminé : {len(r.pages)} pages")
+    print(f"\nterminé : {len(r.pages)} pages, {os.path.getsize(pdf) // 1024} Ko")
     print("  " + DOCX)
     print("  " + pdf)
 

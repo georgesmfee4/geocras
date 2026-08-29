@@ -51,3 +51,12 @@ l'environnement de développement rapide et exige un build installable, donc un 
 Le document le dit explicitement au lecteur. Les vraies captures viendront avec la
 campagne d'essais sur appareil, et il suffira alors de remplacer les fichiers de
 `docs/maquettes/` référencés dans `source.txt`.
+
+## Export PDF
+
+LibreOffice ré-encode les images en JPEG par défaut. Sur des diagrammes au trait c'est
+doublement mauvais : le fichier grossit et le texte fin bave. `build.py` passe donc
+`UseLosslessCompression` à l'export, et `optimize.py` prépare en amont des images à
+200 ppi en palette de 128 teintes. Le PDF final est linéarisé.
+
+Sans ces deux précautions, le document pèse trois mégaoctets et ses diagrammes sont flous.

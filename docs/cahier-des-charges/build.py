@@ -571,8 +571,20 @@ def build(source, out_docx, toc_pages=None, fig_pages=None):
     return b
 
 
+# Par défaut, LibreOffice ré-encode les images en JPEG. Sur des diagrammes au
+# trait, c'est doublement mauvais : le fichier grossit et le texte fin bave.
+PDF_OPTS = (
+    'pdf:writer_pdf_Export:{'
+    '"UseLosslessCompression":{"type":"boolean","value":"true"},'
+    '"ReduceImageResolution":{"type":"boolean","value":"false"},'
+    '"ExportBookmarks":{"type":"boolean","value":"true"},'
+    '"UseTaggedPDF":{"type":"boolean","value":"true"}'
+    '}'
+)
+
+
 def to_pdf(docx_path, outdir):
     subprocess.run(["soffice", "--headless", "-env:UserInstallation=file:///tmp/lo_build",
-                    "--convert-to", "pdf", "--outdir", outdir, docx_path],
+                    "--convert-to", PDF_OPTS, "--outdir", outdir, docx_path],
                    check=True, capture_output=True, timeout=600)
     return docx_path.replace(".docx", ".pdf")
