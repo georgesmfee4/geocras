@@ -8,6 +8,8 @@ Le document qui suit est le cahier des charges de ce service et le dossier de co
 
 La dernière partie rend compte de ce qui a été effectivement construit. L'application existe : près de cinquante-deux mille lignes de TypeScript réparties entre un client mobile React Native, une interface de programmation Express et un paquet de contrats partagés, avec quarante-trois routes exposées, quatorze tables, neuf migrations et trois cent vingt-sept tests automatisés. Elle connaît désormais les deux sens d'un dépannage — le garagiste qui se déplace, et le client qui conduit jusqu'à l'atelier — et tient un registre d'observation des commissions fondé non sur une déclaration mais sur la trace de celui qui s'est déplacé. Le document décrit les interfaces écran par écran, expose les mesures obtenues et énonce sans détour ce qui reste à faire.
 
+[PB]
+
 #0 Abstract
 
 Breaking down in Yaoundé is currently handled by phone and from memory. You call a relative, who calls a mechanic they know, and you wait by the roadside with no way of knowing whether anyone is coming, or when. GeoCras replaces that sequence with a map of nearby garages ranked by genuine relevance, a breakdown report that fits in three screens and carries the user's position, live tracking of the mechanic until arrival, and a timestamped record of the job which — once both parties agree they have met — credits loyalty points convertible into discounts at certified garages.
@@ -40,7 +42,7 @@ S'y ajoute une contrainte de contexte qui traverse tout le projet et qui interdi
 
 #2 Objectifs
 
-L'objectif général est de livrer une application mobile utilisable en situation réelle de panne, sur un téléphone Android de milieu de gamme, à Yaoundé, avec un réseau imparfait.
+L'objectif général est de livrer une application mobile utilisable en situation réelle de panne, sur un téléphone Android de milieu de gamme, avec un réseau imparfait. Le lancement porte sur deux villes : Yaoundé, qui est le parc principal, et Ebolowa. Les retenir toutes les deux dès le départ n'est pas une ambition d'affichage, c'est une précaution de conception — une application éprouvée dans une seule ville finit toujours par contenir des hypothèses tacites sur cette ville, et la seconde les révèle avant qu'elles ne durcissent.
 
 Les objectifs particuliers découlent de la problématique. Il s'agit d'abord de capter automatiquement la position du conducteur au lancement, de manière à ce que la déclaration de panne n'ait jamais à contenir une adresse tapée à la main. Il s'agit ensuite de présenter les garages environnants sur une carte, numérotés selon un classement calculé par le serveur et modifiable par l'utilisateur — le plus proche, le mieux noté, le certifié — de façon à ce que le numéro affiché ait un sens et reste cohérent quel que soit l'écran où on le regarde. Il s'agit également d'établir un suivi bidirectionnel après l'appel, avec un temps d'arrivée estimé pour chacune des deux parties, recalculé à partir des déplacements réels et non d'une distance à vol d'oiseau figée.
 
@@ -1367,10 +1369,10 @@ Tables de base de données | 14
 Migrations SQL versionnées | 9
 Fichiers de tests automatisés | 29
 Cas de test | 327
-Garages du jeu de données de développement | 32, à Yaoundé
+Garages du jeu de données | 30 à Yaoundé, 3 à Ebolowa
 [/TAB]
 
-Un point doit être signalé avec netteté avant la présentation des interfaces. Les visuels qui suivent sont les maquettes de référence du produit, celles qui ont été dessinées avant le développement et qui ont servi de contrat visuel tout au long de sa réalisation. Ce ne sont pas des captures prises sur un appareil en fonctionnement. La raison en est que la bibliothèque de rendu cartographique ne fonctionne pas dans l'environnement de développement rapide et exige une version installable construite spécifiquement, ce qui suppose un appareil physique. Les captures réelles seront produites à l'occasion de la campagne d'essais sur appareil décrite en fin de chapitre. On notera par ailleurs que les libellés de quartiers visibles sur ces maquettes sont ceux de Douala, ville initialement retenue ; le produit se lance à Yaoundé et le jeu de données de développement l'est déjà.
+Un point doit être signalé avec netteté avant la présentation des interfaces. Les visuels qui suivent sont les maquettes de référence du produit, celles qui ont été dessinées avant le développement et qui ont servi de contrat visuel tout au long de sa réalisation. Ce ne sont pas des captures prises sur un appareil en fonctionnement. La raison en est que la bibliothèque de rendu cartographique ne fonctionne pas dans l'environnement de développement rapide et exige une version installable construite spécifiquement, ce qui suppose un appareil physique. Les captures réelles seront produites à l'occasion de la campagne d'essais sur appareil décrite en fin de chapitre. On notera par ailleurs que les libellés de quartiers visibles sur ces maquettes sont ceux de Douala, ville initialement retenue ; le produit se lance à Yaoundé et Ebolowa, et le jeu de données l'est déjà.
 
 #2 Les interfaces
 
@@ -1479,7 +1481,7 @@ La première est que le mode conduite ne mesure rien. Il est architecturé pour 
 
 La deuxième est que le dispositif anti-fraude n'a pas été éprouvé. Il repose sur un raisonnement solide et sur des seuils argumentés, mais aucun de ces seuils n'a rencontré une tentative réelle. Il faut s'attendre à devoir les corriger.
 
-La troisième est que l'application n'a pas encore tourné sur un appareil en conditions réelles, à Yaoundé, en réseau 3G, dans la rue. C'est la seule épreuve qui compte vraiment pour un produit dont toutes les hypothèses portent sur le terrain, et elle reste devant.
+La troisième est que l'application n'a pas encore tourné sur un appareil en conditions réelles, à Yaoundé ou à Ebolowa, en réseau 3G, dans la rue. C'est la seule épreuve qui compte vraiment pour un produit dont toutes les hypothèses portent sur le terrain, et elle reste devant.
 
 #2 Perspectives
 
@@ -1489,7 +1491,7 @@ La troisième est que l'application n'a pas encore tourné sur un appareil en co
 
 Le changement de mode en cours d'intervention est un manque connu : un client qui annonce venir puis dont la voiture cale doit aujourd'hui annuler et refaire une demande. Le corriger suppose l'accord des deux parties, donc un état de négociation dans la machine à états et le traitement du refus. La structure est prête — le mode vit dans une colonne modifiable, doublée d'un événement de journal qui conserverait l'historique du changement — mais le travail ne se justifiera qu'une fois connue la fréquence réelle du cas.
 
-À plus long terme, deux directions ouvrent le produit. La première est la conversion des points en Mobile Money, qui suppose que le dispositif anti-fraude ait fait ses preuves sur des données réelles et qui restera assortie d'une revue humaine sur les montants significatifs. La seconde est l'extension à Douala puis aux autres villes, qui ne demande aucun travail d'ingénierie particulier — le modèle n'a rien de spécifique à Yaoundé — mais qui demande un travail de terrain considérable, puisqu'il faut constituer et vérifier une base de garages ville par ville. C'est d'ailleurs le vrai actif du produit : le code se réécrit, la base de garages vérifiés ne se réécrit pas.
+À plus long terme, deux directions ouvrent le produit. La première est la conversion des points en Mobile Money, qui suppose que le dispositif anti-fraude ait fait ses preuves sur des données réelles et qui restera assortie d'une revue humaine sur les montants significatifs. La seconde est l'extension à Douala puis aux autres villes, qui ne demande aucun travail d'ingénierie particulier — le modèle n'a rien de spécifique aux deux villes de lancement — mais qui demande un travail de terrain considérable, puisqu'il faut constituer et vérifier une base de garages ville par ville. C'est d'ailleurs le vrai actif du produit : le code se réécrit, la base de garages vérifiés ne se réécrit pas.
 
 #2 Références
 

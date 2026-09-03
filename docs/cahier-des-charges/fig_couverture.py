@@ -52,7 +52,7 @@ s.add(f'<polygon points="{mx},{my} {mx+mw},{my} {mx+mw},{my+mh*0.62} {mx+mw/2},{
 s.text(mx + mw / 2, my + 68, "1", size=54, fill=RED_F, anchor="middle", font=PLEXM, weight="600")
 
 # ------------------------------------------------------------ bas du champ
-s.text(190, 700, "PROJET DE FIN D'ÉTUDES", size=30, fill="#FFFFFF",
+s.text(190, 700, "PROJET D'INNOVATION", size=30, fill="#FFFFFF",
        font=BEBAS, ls="6.5", weight="400")
 s.add(f'<rect x="190" y="742" width="86" height="5" fill="#FFFFFF"/>')
 s.text(190, 826, "Cahier des charges", size=52, fill="#FFFFFF", font=BEBAS, ls="2.4")
@@ -73,23 +73,17 @@ s.add(f'<rect x="190" y="{WY + 152}" width="1274" height="5" fill="{RED_F}"/>')
 # ------------------------------------------------------------ bloc métadonnées
 MY = WY + 342
 COLS = [
-    ("DOCUMENT", ["Cahier des charges", "et dossier de conception"]),
-    ("PÉRIMÈTRE", ["Application mobile", "Yaoundé, Cameroun"]),
+    ("AUTEUR", ["MFEE Georges"]),
+    ("LANCEMENT", ["Yaoundé et Ebolowa"]),
 ]
 for i, (label, rows) in enumerate(COLS):
     x = 190 + i * 640
     s.add(f'<rect x="{x}" y="{MY - 26}" width="26" height="4" fill="{RED_F}"/>')
     s.text(x + 42, MY - 20, label, size=23, fill="#8A8578", font=BEBAS, ls="3.4")
     for j, r in enumerate(rows):
-        s.text(x, MY + 32 + j * 40, r, size=30, fill="#1C1A17", font=PLEX)
+        s.text(x, MY + 34 + j * 40, r, size=34, fill="#1C1A17", font=PLEX, weight="500")
 
-# ---- chiffres, en mono comme le veut la charte
-NY = MY + 262
-NUMS = [("77", "PAGES"), ("15", "FIGURES"), ("13", "CAS D'USAGE"), ("1.1", "VERSION")]
-for i, (v, k) in enumerate(NUMS):
-    x = 190 + i * 320
-    s.text(x, NY, v, size=64, fill="#1C1A17", font=PLEXM, weight="600")
-    s.text(x, NY + 40, k, size=22, fill="#8A8578", font=BEBAS, ls="3.2")
+s.text(830, MY + 76, "Cameroun", size=30, fill="#6E6A62", font=PLEX)
 
 # ------------------------------------------------------------- pied de page
 s.add(f'<rect x="190" y="{H - 250}" width="1274" height="2" fill="#E8E4DB"/>')

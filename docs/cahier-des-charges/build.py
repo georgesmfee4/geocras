@@ -223,7 +223,7 @@ class Builder:
 
     # -- primitives ------------------------------------------------------- #
     def para(self, text="", size=10.5, font=SERIF, color=INK, align="just",
-             before=0, after=6, indent=0, line=1.3, rich=True):
+             before=0, after=6, indent=0, line=1.3, rich=True, first_line=0.0):
         p = self.doc.add_paragraph()
         pf = p.paragraph_format
         pf.alignment = {"just": WD_ALIGN_PARAGRAPH.JUSTIFY, "left": WD_ALIGN_PARAGRAPH.LEFT,
@@ -232,6 +232,8 @@ class Builder:
         pf.line_spacing = line
         if indent:
             pf.left_indent = Cm(indent)
+        if first_line:
+            pf.first_line_indent = Cm(first_line)
         if text:
             if rich:
                 add_rich(p, text, size=size, font=font, color=color)
@@ -652,7 +654,7 @@ def build(source, out_docx, toc_pages=None, fig_pages=None):
         elif kind.startswith("h"):
             b.heading(kind[1], payload)
         elif kind == "p":
-            b.para(payload)
+            b.para(payload, after=4, first_line=0.7)
         elif kind == "fig":
             b.figure(*payload)
         elif kind == "fig2":
