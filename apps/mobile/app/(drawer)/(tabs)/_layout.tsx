@@ -11,7 +11,12 @@ import { useI18n } from '../../../src/i18n/I18nProvider';
 import { useJobFeed } from '../../../src/realtime/useJobFeed';
 import { useDrivingStore } from '../../../src/stores/driving';
 import { useTheme } from '../../../src/theme/ThemeProvider';
-import { tabBarHeight, tabIndicator, MIN_TOUCH_TARGET } from '../../../src/theme/tokens';
+import {
+  tabBarHeight,
+  tabIconSize,
+  tabIndicator,
+  MIN_TOUCH_TARGET,
+} from '../../../src/theme/tokens';
 import {
   DrivingTabIcon,
   JobsTabIcon,
@@ -384,7 +389,7 @@ function TabItem({
         langue à l'autre.
       */}
       <Animated.View style={{ transform: [{ scale: press }] }}>
-        {Icon ? Icon({ color: tint, size: 23, active: focused }) : null}
+        {Icon ? Icon({ color: tint, size: tabIconSize, active: focused }) : null}
 
         {/*
           Compteur de demandes en attente.

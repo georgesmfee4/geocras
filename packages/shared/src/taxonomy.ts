@@ -288,3 +288,91 @@ export function matchingServices(
   if (requiresTowing(problem, immobilized)) services.add('towing');
   return [...services];
 }
+
+/* ------------------------------------------------------------------------ *
+ * Les deux parties, et les deux façons de se rencontrer
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Les deux côtés d'une demande.
+ *
+ * Ici plutôt que dans le contrat des demandes, parce que le **mode de service**
+ * juste en dessous en a besoin et qu'un contrat ne doit pas dépendre d'un autre
+ * contrat pour une notion aussi élémentaire. Rien ne change pour les appelants :
+ * `PartyRole` sort toujours de `@geocras/shared`.
+ */
+export const PARTY_ROLES = ['client', 'garage'] as const;
+export type PartyRole = (typeof PARTY_ROLES)[number];
+
+/**
+ * Comment le client et le garagiste se rencontrent.
+ *
+ * Deux cas, et ils n'ont **rien en commun sur le terrain** :
+ *
+ *  - `on_site` — le garagiste sort son véhicule et se rend là où la panne s'est
+ *    produite. C'est le dépannage au bord de la route, le cas fondateur de
+ *    GeoCras ;
+ *  - `at_garage` — le véhicule roule encore, et c'est le client qui conduit
+ *    jusqu'à l'atelier. Le garagiste ne bouge pas.
+ *
+ * ---
+ *
+ * **Ce n'est pas une préférence, c'est une géométrie.** Tout le reste du produit
+ * en découle mécaniquement : qui déclare son départ, quel téléphone dessine la
+ * trace qui compte, vers quel point on mesure une arrivée, quel itinéraire
+ * s'affiche, quel bouton porte quel mot. Un seul champ décide de tout cela, et
+ * c'est le seul moyen de ne pas avoir à choisir dix fois de suite.
+ *
+ * Le mode est fixé **à la création de la demande** et n'est plus modifié : le
+ * client sait, lui et lui seul, si son véhicule peut encore rouler. Le
+ * changer en cours de route demanderait un accord des deux parties, donc un
+ * état de négociation — voir `MODES-DE-SERVICE.md`, section « Ce qu'on n'a pas
+ * fait ».
+ */
+export const SERVICE_MODES = ['on_site', 'at_garage'] as const;
+export type ServiceMode = (typeof SERVICE_MODES)[number];
+
+export const SERVICE_MODE_LABELS: Readonly<Record<ServiceMode, { fr: string; en: string }>> = {
+  on_site: { fr: 'Le garagiste vient', en: 'Mechanic comes to you' },
+  at_garage: { fr: 'Je vais au garage', en: 'I drive to the garage' },
+};
+
+/**
+ * **Qui se déplace**, dans chaque mode.
+ *
+ * La table la plus importante de tout le dispositif, et la plus courte. Deux
+ * lignes qui répondent d'un coup à quatre questions que le code posait
+ * séparément :
+ *
+ *  1. qui a le droit de se déclarer « en route » ;
+ *  2. de quel téléphone la trace GPS constitue la preuve ;
+ *  3. sur quel écran s'affiche un itinéraire ;
+ *  4. de qui on estime l'heure d'arrivée.
+ *
+ * Sans elle, chacune de ces quatre questions aurait porté son propre `if
+ * (mode === …)`, et il aurait suffi qu'un seul soit oublié pour facturer un
+ * garage qui n'a jamais quitté son atelier.
+ */
+export const SERVICE_MODE_TRAVELLER: Readonly<Record<ServiceMode, PartyRole>> = {
+  on_site: 'garage',
+  at_garage: 'client',
+};
+
+/** La partie qui se déplace dans ce mode. */
+export function travellerFor(mode: ServiceMode): PartyRole {
+  return SERVICE_MODE_TRAVELLER[mode];
+}
+
+/**
+ * Ce mode est-il compatible avec l'état déclaré du véhicule ?
+ *
+ * Un véhicule immobilisé ne conduit personne nulle part. La règle est
+ * **également** gravée en contrainte SQL (`at_garage_requires_rolling_vehicle`,
+ * migration 0009) : la fonction sert à désactiver le bon bouton dans le
+ * formulaire et à refuser proprement côté serveur, la contrainte garantit
+ * qu'aucun chemin de code, présent ou futur, ne pourra écrire la combinaison
+ * impossible.
+ */
+export function isServiceModeAllowed(mode: ServiceMode, immobilized: boolean): boolean {
+  return mode === 'on_site' || !immobilized;
+}

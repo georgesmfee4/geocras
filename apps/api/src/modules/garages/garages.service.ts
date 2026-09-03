@@ -48,7 +48,18 @@ function toSummary(row: NearbyRow): GarageSummary {
  * 23 km » plutôt qu'un écran vide — ce qui, au bord de la route, est la
  * différence entre une app utile et une app qu'on désinstalle.
  */
-export async function searchNearby(query: NearbyQuery): Promise<NearbyResponse> {
+export async function searchNearby(
+  query: NearbyQuery,
+  /**
+   * Options **non exposées au réseau**.
+   *
+   * Second paramètre plutôt qu'un champ de `NearbyQuery` : ce type est celui du
+   * corps validé par zod, et y ajouter `excludeOwnedBy` permettrait à un client
+   * de choisir qui exclure de sa propre recherche. Ici, la valeur ne peut venir
+   * que du serveur.
+   */
+  options: { excludeOwnedBy?: string | null } = {},
+): Promise<NearbyResponse> {
   const origin = { lat: query.lat, lng: query.lng };
   const params = {
     origin,
@@ -59,6 +70,7 @@ export async function searchNearby(query: NearbyQuery): Promise<NearbyResponse> 
     matchAny: query.matchAny,
     openNow: query.openNow,
     certifiedOnly: query.certifiedOnly,
+    excludeOwnedBy: options.excludeOwnedBy ?? null,
   };
 
   const rows = await findNearbyGarages(db, params);
@@ -87,6 +99,16 @@ export async function searchNearby(query: NearbyQuery): Promise<NearbyResponse> 
     // ou non certifié, joignable à 20 km vaut mieux qu'un écran vide.
     openNow: false,
     certifiedOnly: false,
+    /*
+      L'exclusion du propriétaire, elle, **n'est pas un filtre de confort** et
+      survit donc au repli.
+
+      C'est même ici qu'elle compte le plus : le repli se déclenche quand rien
+      n'a été trouvé dans le rayon, c'est-à-dire précisément la situation où le
+      garage le plus proche d'un garagiste en panne est le sien. L'oublier
+      aurait laissé le seul chemin par lequel le cas se produit vraiment.
+    */
+    excludeOwnedBy: params.excludeOwnedBy,
   });
 
   return {

@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   PROBLEM_LABELS,
   REQUEST_VEHICLE_TYPES,
+  SERVICE_MODE_LABELS,
   URGENCY_LABELS,
   URGENCY_LEVELS,
   VEHICLE_LABELS,
@@ -22,6 +23,7 @@ import {
   type Locale,
   type ProblemType,
   type RequestVehicleType,
+  type ServiceMode,
   type UrgencyLevel,
   type Vehicle,
 } from '@geocras/shared';
@@ -33,6 +35,7 @@ import { useCoordinates, useLocation } from '../../src/location/LocationProvider
 import { useReverseGeocode } from '../../src/location/useReverseGeocode';
 import { PhotoField } from '../../src/sos/PhotoField';
 import { SavedVehiclePicker, vehicleTitle } from '../../src/sos/SavedVehiclePicker';
+import { ServiceModePicker } from '../../src/sos/ServiceModePicker';
 import { SosHeader } from '../../src/sos/SosHeader';
 import { SosIllustration } from '../../src/sos/SosIllustration';
 import { VehicleTile } from '../../src/sos/VehicleTile';
@@ -117,6 +120,16 @@ type Draft = {
   urgency: UrgencyLevel;
   immobilized: boolean;
   vulnerablePassengers: boolean;
+  /**
+   * Qui se déplace vers qui.
+   *
+   * Lié à `immobilized` : un véhicule qui ne roule plus impose `on_site`, et
+   * le formulaire remet le champ à cette valeur dès qu'on coche
+   * l'immobilisation. Ne jamais le laisser à `at_garage` derrière une case
+   * cochée — le serveur refuserait la demande à l'envoi, c'est-à-dire au pire
+   * moment.
+   */
+  serviceMode: ServiceMode;
   /** Fichier local choisi. */
   photoUri: string | null;
   /** URL distante, une fois le téléversement abouti. */
@@ -134,6 +147,10 @@ const EMPTY_DRAFT: Draft = {
   // au bord d'une route, et jamais « en danger » par défaut.
   urgency: 'blocking',
   immobilized: true,
+  // `on_site` avec `immobilized` à `true` : les deux défauts se tiennent, et
+  // ils décrivent le cas fondateur — quelqu'un dont le véhicule ne repartira
+  // pas tout seul.
+  serviceMode: 'on_site',
   vulnerablePassengers: false,
   photoUri: null,
   photoUrl: null,
@@ -373,6 +390,7 @@ export default function DeclarerPanneScreen() {
         description: draft.description.trim(),
         urgency: draft.urgency,
         immobilized: draft.immobilized,
+        serviceMode: draft.serviceMode,
         vulnerablePassengers: draft.vulnerablePassengers,
         photoUrl: draft.photoUrl,
         origin,
@@ -826,7 +844,19 @@ function DescribeStep({
                 label={t('sos.immobilized')}
                 hint={t('sos.immobilizedHint')}
                 value={draft.immobilized}
-                onChange={(immobilized) => onPatch({ immobilized })}
+                /*
+                  Cocher l'immobilisation **ramène le mode à `on_site`**.
+
+                  Sans cette remise à zéro, quelqu'un qui choisit « je vais au
+                  garage » puis se ravise sur l'état de son véhicule garderait un
+                  brouillon que le serveur refuse — et il l'apprendrait à
+                  l'envoi, après le récapitulatif, sur un écran d'urgence. Un
+                  champ dont la valeur devient impossible se corrige à l'instant
+                  où elle le devient, pas à la validation.
+                */
+                onChange={(immobilized) =>
+                  onPatch(immobilized ? { immobilized, serviceMode: 'on_site' } : { immobilized })
+                }
               />
               <View style={{ height: 1, backgroundColor: theme.colors.rule }} />
               <ToggleRow
@@ -834,6 +864,52 @@ function DescribeStep({
                 hint={t('sos.vulnerableHint')}
                 value={draft.vulnerablePassengers}
                 onChange={(vulnerablePassengers) => onPatch({ vulnerablePassengers })}
+              />
+            </View>
+
+            {/*
+              Le mode de service vient **après** les deux constats, et non
+              avant.
+
+              L'ordre est celui de la dépendance : on ne peut pas répondre
+              « je vais au garage » sans avoir d'abord dit si le véhicule
+              roule. Le poser plus haut aurait obligé à revenir en arrière.
+
+              Immobilisé, la section ne montre pas un choix grisé mais la
+              conséquence en une phrase : il n'y a plus qu'un scénario
+              possible, et l'annoncer vaut mieux que faire semblant d'ouvrir
+              une porte fermée.
+            */}
+            <View style={{ gap: theme.space.md }}>
+              <SectionLabel>{t('sos.serviceMode')}</SectionLabel>
+
+              <ServiceModePicker
+                value={draft.serviceMode}
+                locale={locale}
+                onChange={(serviceMode) => {
+                  void Haptics.selectionAsync();
+                  /*
+                    Choisir « je vais au garage », c'est déclarer que le
+                    véhicule roule.
+
+                    Les deux champs décrivent le même fait vu de deux côtés, et
+                    le serveur refuse la combinaison contraire. On les tient
+                    donc cohérents **dans les deux sens** : cocher
+                    l'immobilisation ramène le mode sur place, et choisir
+                    l'atelier lève l'immobilisation.
+
+                    C'est ce qui remplace l'ancienne version, où le sélecteur
+                    disparaissait derrière une phrase dès que le véhicule était
+                    déclaré immobilisé — c'est-à-dire **par défaut**. La
+                    question s'affichait, mais sans rien à toucher : on lisait
+                    un réglage figé là où il fallait lire un choix.
+                  */
+                  onPatch(
+                    serviceMode === 'at_garage'
+                      ? { serviceMode, immobilized: false }
+                      : { serviceMode },
+                  );
+                }}
               />
             </View>
           </>
@@ -1042,6 +1118,10 @@ function ReviewStep({
       value: draft.problemType ? PROBLEM_LABELS[draft.problemType][locale] : t('sos.none'),
     },
     { label: t('sos.urgency'), value: URGENCY_LABELS[draft.urgency][locale] },
+    // Le mode juste sous l'urgence, avant les deux constats : c'est ce que le
+    // client relit en dernier avant d'envoyer, et c'est celle des réponses qui
+    // décide de ce qui va se passer dans la demi-heure qui suit.
+    { label: t('sos.serviceMode'), value: SERVICE_MODE_LABELS[draft.serviceMode][locale] },
     { label: t('sos.immobilized'), value: draft.immobilized ? t('sos.yes') : t('sos.no') },
     { label: t('sos.vulnerable'), value: draft.vulnerablePassengers ? t('sos.yes') : t('sos.no') },
     { label: t('sos.photo'), value: draft.photoUri ? t('sos.yes') : t('sos.no') },

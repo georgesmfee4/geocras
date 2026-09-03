@@ -570,7 +570,16 @@ export function useDeclineJob() {
  */
 export function useApproachRoute(
   requestId: string | null,
-  mechanic: { lat: number; lng: number } | null,
+  /**
+   * Position de **celui qui se déplace** — le garagiste en `on_site`, le client
+   * en `at_garage`.
+   *
+   * Elle ne part pas au serveur : elle ne sert qu'à reclé le cache, pour que le
+   * tracé soit redemandé quand le voyageur a changé de rue. L'appelant choisit
+   * la bonne selon le mode ; lui passer systématiquement celle du garagiste
+   * aurait figé l'itinéraire d'un client sur un atelier immobile.
+   */
+  traveller: { lat: number; lng: number } | null,
   enabled: boolean,
 ) {
   const grid = (value: number) => Math.round(value / 0.001);
@@ -580,8 +589,8 @@ export function useApproachRoute(
       'requests',
       'approach',
       requestId,
-      mechanic ? grid(mechanic.lat) : null,
-      mechanic ? grid(mechanic.lng) : null,
+      traveller ? grid(traveller.lat) : null,
+      traveller ? grid(traveller.lng) : null,
     ],
     enabled: enabled && requestId !== null,
     staleTime: 60_000,

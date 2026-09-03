@@ -291,9 +291,22 @@ function Masthead({
         {certified ? <ShieldCheckIcon color={theme.colors.success} size={16} /> : null}
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.md }}>
+      {/*
+        L'état de détection **et l'endroit où elle porte**, sur une seule ligne.
+
+        Les deux étaient déjà là, mais côte à côte et sans contrainte de
+        largeur : le bloc d'état gardait sa taille naturelle — `flexShrink` vaut
+        zéro par défaut en React Native — et c'est le lieu, seul à pouvoir
+        rétrécir, qui se faisait écraser jusqu'à disparaître. Un garagiste
+        lisait donc « détection ouverte » sans jamais savoir **ouverte où**.
+
+        L'ordre est maintenant contraint : l'état ne rétrécit pas, le lieu prend
+        tout le reste et ne se tronque qu'en dernier recours. Le point médian
+        les relie en une phrase au lieu de les juxtaposer.
+      */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.xs }}>
         {known ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.xs }}>
+          <>
             <View
               style={{
                 width: 7,
@@ -304,16 +317,23 @@ function Masthead({
             />
             <Text
               variant="btnSm"
+              numberOfLines={1}
               style={{ color: open ? theme.colors.success : theme.colors.warning }}
             >
               {open ? t('jobs.detectionOpen') : t('jobs.closedTitle')}
             </Text>
-          </View>
+          </>
         ) : null}
 
         {place ? (
-          <Text variant="txt" tone="muted" numberOfLines={1} style={{ flexShrink: 1 }}>
-            {place}
+          <Text
+            variant="txt"
+            tone="secondary"
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={{ flex: 1 }}
+          >
+            {known ? ` · ${place}` : place}
           </Text>
         ) : null}
       </View>

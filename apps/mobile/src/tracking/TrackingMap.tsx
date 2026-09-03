@@ -89,7 +89,7 @@ export function TrackingMap({
               justifyContent: 'center',
             }}
           >
-            <TowTruckIcon color={theme.colors.surface} size={20} />
+            <TowTruckIcon color={theme.colors.onFill} size={20} />
           </View>
         </Marker>
       ) : null}

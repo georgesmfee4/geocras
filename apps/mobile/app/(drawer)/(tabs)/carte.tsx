@@ -448,11 +448,18 @@ export default function CarteScreen() {
                 gap: theme.space.sm,
               }}
             >
-              <Text variant="lblb" style={{ color: theme.colors.ink }}>
+              {/*
+                `onHighlight` et non `ink` : le fond est un aplat ambre, qui ne
+                change pas avec le thème. En sombre, `ink` vaut `#FFFFFF` — du
+                blanc sur de l'ambre, soit 2,2:1, illisible. `onHighlight` est
+                l'encre prévue pour ce fond et vaut `#1C1A17` dans les deux
+                thèmes : 7,6:1.
+              */}
+              <Text variant="lblb" style={{ color: theme.colors.onHighlight }}>
                 Position simulée
               </Text>
               {origin ? (
-                <Text variant="numSm" style={{ color: theme.colors.ink }}>
+                <Text variant="numSm" style={{ color: theme.colors.onHighlight }}>
                   {origin.lat.toFixed(4)} · {origin.lng.toFixed(4)}
                 </Text>
               ) : null}

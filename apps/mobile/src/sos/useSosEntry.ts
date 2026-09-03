@@ -1,10 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { Alert } from 'react-native';
 import type { RequestDetail, RequestStatus } from '@geocras/shared';
 import { api } from '../api/endpoints';
+import { useMyGarage } from '../api/hooks';
 import { queryKeys } from '../api/queryClient';
 import { useAuth } from '../auth/AuthProvider';
+import { useI18n } from '../i18n/I18nProvider';
 
 /**
  * Point d'entrée du service SOS.
@@ -87,9 +90,40 @@ export function useSosEntry(): SosEntryState {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { status: authStatus } = useAuth();
+  const { t } = useI18n();
   const [checking, setChecking] = useState(false);
 
+  /**
+   * Le garage détenu par ce compte, s'il en détient un.
+   *
+   * Interrogé seulement une fois connecté — un visiteur n'a pas de garage, et
+   * la requête répondrait 401. La réponse est partagée par React Query : les
+   * trois écrans qui appellent `useSosEntry` ne déclenchent qu'une lecture.
+   */
+  const myGarage = useMyGarage(authStatus === 'authenticated');
+  const myGarageId = myGarage.data?.garage?.id ?? null;
+
   const start = useCallback((preferredGarageId?: string) => {
+    /*
+      On ne se dépanne pas soi-même — dit **avant** la saisie, pas après.
+
+      Le garde-fou qui compte est côté serveur (`selectGarage` refuse), et le
+      SOS n'offre déjà plus les garages du demandeur dans ses résultats. Reste
+      ce chemin-ci : ouvrir sa propre fiche garage et appuyer sur le bouton
+      d'intervention. Sans ce test, le garagiste décrivait sa panne en trois
+      étapes pour se voir opposer un refus à la toute fin — ou, pire, tombait
+      sur une liste de résultats dont son atelier avait disparu sans un mot.
+
+      Une alerte plutôt qu'un bouton grisé : le bouton est légitime partout
+      ailleurs, et le griser sur une seule fiche n'expliquerait rien.
+    */
+    if (preferredGarageId && myGarageId && preferredGarageId === myGarageId) {
+      Alert.alert(t('sos.ownGarageTitle'), t('sos.ownGarageBody'), [
+        { text: t('common.close') },
+      ]);
+      return;
+    }
+
     // Sans compte, la question n'a pas de sens : le serveur répondrait 401 et
     // il n'y a de toute façon pas de demande rattachée à personne. On envoie
     // au formulaire, qui porte déjà l'écran « connexion requise ».
@@ -130,7 +164,7 @@ export function useSosEntry(): SosEntryState {
         setChecking(false);
       }
     })();
-  }, [authStatus, router, queryClient]);
+  }, [authStatus, router, queryClient, myGarageId, t]);
 
   return { checking, start };
 }

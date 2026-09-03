@@ -240,7 +240,7 @@ export default function GarageDetailScreen() {
                   plutôt qu'un repli de police : c'est ce que demande le cahier
                   des charges pour les pictogrammes.
                 */}
-                  <CheckIcon color={theme.colors.surface} size={11} />
+                  <CheckIcon color={theme.colors.onFill} size={11} />
                   <Text variant="lblb" tone="inverse">
                     {t('garage.certified')}
                   </Text>

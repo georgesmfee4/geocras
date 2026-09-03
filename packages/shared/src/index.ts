@@ -1,5 +1,6 @@
 export * from './taxonomy';
 export * from './loyalty';
+export * from './billing';
 export * from './geo';
 
 export * from './contracts/common';

@@ -1,10 +1,14 @@
 import { z } from 'zod';
 import { coordinatesSchema, paginatedSchema, positionSchema, uuidSchema } from './common';
 import {
+  isServiceModeAllowed,
+  PARTY_ROLES,
   PROBLEM_TYPES,
   REQUEST_VEHICLE_TYPES,
+  SERVICE_MODES,
   URGENCY_LEVELS,
   VEHICLE_LABEL_MAX,
+  type ServiceMode,
 } from '../taxonomy';
 import { garageSummarySchema } from './garages';
 
@@ -60,6 +64,46 @@ export const REQUEST_STATUS_LABELS: Readonly<
   cancelled: { fr: 'Annulée', en: 'Cancelled' },
 };
 
+/**
+ * Ce que les mêmes états deviennent quand **c'est le client qui se déplace**.
+ *
+ * Une table de remplacement partielle, et non une seconde table complète : cinq
+ * des sept libellés ne dépendent pas du mode — une demande annulée est annulée
+ * dans les deux sens. Dupliquer les cinq pour en changer deux, c'est se
+ * condamner à corriger un mot à deux endroits et à en oublier un.
+ *
+ * `accepted` change parce qu'il ne dit pas la même chose de part et d'autre :
+ * en `on_site`, l'acceptation annonce au client que quelqu'un va venir, et il
+ * n'a rien à faire ; en `at_garage`, elle est le feu vert **pour lui**. Un
+ * simple « Acceptée » laisserait attendre au bord de la route quelqu'un dont
+ * c'est le tour de démarrer.
+ */
+const AT_GARAGE_STATUS_LABELS: Readonly<
+  Partial<Record<RequestStatus, { fr: string; en: string }>>
+> = {
+  accepted: { fr: 'Vous pouvez y aller', en: 'You can head over' },
+  en_route: { fr: 'En route vers le garage', en: 'On your way to the garage' },
+};
+
+/**
+ * Le libellé d'un état, pour un mode donné.
+ *
+ * **À préférer systématiquement à `REQUEST_STATUS_LABELS` lu directement.**
+ * Celui-ci reste exporté parce que la table brute sert aux écrans qui listent
+ * les états sans demande sous la main, mais tout affichage rattaché à une
+ * demande réelle passe par ici — sinon un client parti conduire vers l'atelier
+ * lit « Garagiste en route » pendant tout son trajet.
+ */
+export function requestStatusLabel(
+  status: RequestStatus,
+  mode: ServiceMode,
+): { fr: string; en: string } {
+  if (mode === 'at_garage') {
+    return AT_GARAGE_STATUS_LABELS[status] ?? REQUEST_STATUS_LABELS[status];
+  }
+  return REQUEST_STATUS_LABELS[status];
+}
+
 export const TERMINAL_STATUSES: readonly RequestStatus[] = ['closed', 'cancelled'];
 
 /** Une demande vit encore : elle a sa place en haut de l'historique. */
@@ -88,9 +132,6 @@ export const REQUEST_EVENT_TYPES = [
 ] as const;
 export type RequestEventType = (typeof REQUEST_EVENT_TYPES)[number];
 
-export const PARTY_ROLES = ['client', 'garage'] as const;
-export type PartyRole = (typeof PARTY_ROLES)[number];
-
 const createRequestFields = z.object({
   vehicleType: z.enum(REQUEST_VEHICLE_TYPES),
   problemType: z.enum(PROBLEM_TYPES),
@@ -107,6 +148,16 @@ const createRequestFields = z.object({
   photoUrl: z.string().url().nullable().default(null),
   origin: coordinatesSchema,
   accuracyM: z.number().nonnegative().nullable().default(null),
+  /**
+   * Comment la rencontre doit avoir lieu — cf. `SERVICE_MODES`.
+   *
+   * Le défaut est `on_site`, et ce n'est pas un choix esthétique : c'était le
+   * seul comportement possible avant la migration 0009, et c'est ce que doit
+   * comprendre une version de l'app antérieure à ce champ. Un défaut
+   * `at_garage` aurait fait envoyer des clients immobilisés chez un garagiste
+   * qui ne serait jamais parti.
+   */
+  serviceMode: z.enum(SERVICE_MODES).default('on_site'),
   /** Le client peut demander un tri d'emblée ; défaut « plus proche ». */
   sort: z.enum(['distance', 'rating', 'certified']).default('distance'),
 });
@@ -140,6 +191,24 @@ export const createRequestBodySchema = createRequestFields.superRefine((value, c
       message: 'Décrivez la panne en quelques mots',
     });
   }
+
+  /*
+    Un véhicule immobilisé ne conduit personne jusqu'à un atelier.
+
+    Troisième barrière sur la même règle, et les trois sont utiles : le
+    formulaire grise l'option, ce contrat refuse la demande, la contrainte SQL
+    `at_garage_requires_rolling_vehicle` interdit la ligne. La première évite
+    une erreur, la deuxième protège des clients trafiqués, la troisième protège
+    de nous-mêmes — d'un futur script d'import ou d'une reprise de données qui
+    ne passerait par aucune des deux autres.
+  */
+  if (!isServiceModeAllowed(value.serviceMode, value.immobilized)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['serviceMode'],
+      message: 'Un véhicule immobilisé ne peut pas se rendre au garage',
+    });
+  }
 });
 export type CreateRequestBody = z.infer<typeof createRequestBodySchema>;
 
@@ -169,6 +238,14 @@ export const assistanceRequestSchema = z.object({
   vulnerablePassengers: z.boolean(),
   photoUrl: z.string().url().nullable(),
   origin: coordinatesSchema,
+  /**
+   * Qui se déplace vers qui. Fixé à la création, jamais modifié ensuite.
+   *
+   * Présent sur **toutes** les vues de la demande et non seulement sur le
+   * détail : l'historique, la file du garage et l'écran de suivi en dépendent
+   * tous pour choisir leurs mots et leurs boutons.
+   */
+  serviceMode: z.enum(SERVICE_MODES),
 
   createdAt: z.string().datetime(),
   /**

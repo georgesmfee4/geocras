@@ -307,6 +307,21 @@ export const translations = {
     'sos.immobilizedHint': 'Détermine si un remorquage est nécessaire.',
     'sos.vulnerable': 'Enfant, personne âgée ou blessée à bord',
     'sos.vulnerableHint': 'Le garage priorise ces interventions.',
+
+    // — Comment la rencontre se fait ————————————————————————————————
+    // L'intitulé de section dit une situation, pas un réglage : « mode de
+    // service » est le mot du code, pas celui de quelqu'un au bord d'une route.
+    // — On ne se dépanne pas soi-même ———————————————————————————
+    // Le titre énonce le fait, le corps donne la raison **et** la sortie. Un
+    // simple « impossible » aurait laissé le garagiste chercher ce qu'il avait
+    // mal fait, alors qu'il n'a rien fait de mal : il a ouvert sa propre fiche.
+    'sos.ownGarageTitle': 'C’est votre garage',
+    'sos.ownGarageBody':
+      'Une intervention engage deux parties différentes : vous ne pouvez pas vous l’adresser à vous-même. Lancez le SOS depuis la carte pour voir les autres ateliers autour de vous.',
+
+    'sos.serviceMode': 'Comment on se retrouve',
+    'sos.modeOnSiteLead': 'Il se rend là où vous êtes tombé en panne.',
+    'sos.modeAtGarageLead': 'Vous conduisez jusqu’à son atelier.',
     'sos.photo': 'Photo de la panne',
     'sos.photoOptional': 'Facultatif — aide le garage à venir équipé.',
     'sos.photoTake': 'Prendre',
@@ -606,6 +621,8 @@ export const translations = {
     'history.loadMore': 'Charger les plus anciennes',
     'history.failed': 'Historique indisponible',
     'history.rate': 'Noter ce garage',
+    'history.requestAgain': 'Refaire appel',
+    'history.requestAgainHint': 'Refaire appel à ce garage',
     'history.rated': 'Noté',
     'history.noGarage': 'Aucun garage retenu',
     'history.duration': 'durée',
@@ -800,6 +817,23 @@ export const translations = {
     'settings.privacy': 'Règles de confidentialité',
     'settings.terms': 'Conditions d’utilisation',
 
+    // Mise à jour à distance. Le libellé de droite est un état, jamais un
+    // verbe : c'est la ligne entière qu'on touche, et ce qu'elle fera dépend
+    // de l'état qu'elle affiche déjà.
+    'settings.update': 'Mise à jour',
+    'settings.updateIdle': 'À JOUR',
+    'settings.updateChecking': 'RECHERCHE…',
+    'settings.updateDownloading': 'TÉLÉCHARGEMENT…',
+    'settings.updateReady': 'PRÊTE',
+    'settings.updateFailed': 'INDISPONIBLE',
+    // Sur un serveur Metro, il n'y a pas d'OTA : le dire plutôt que d'afficher
+    // « à jour », qui serait faux.
+    'settings.updateDisabled': 'DÉVELOPPEMENT',
+    // La seule phrase de la ligne, et elle porte une information qu'aucun état
+    // ne dit : la mise à jour est déjà là, redémarrer n'est qu'un raccourci.
+    'settings.updateReadyHint':
+      'Elle s’appliquera au prochain démarrage. Touchez pour redémarrer maintenant.',
+
     'common.callSupport': 'Appeler l’assistance',
 
     'soon.drivingTitle': 'Mode conduite',
@@ -820,6 +854,39 @@ export const translations = {
     'jobs.soon': 'BIENTÔT',
     'jobs.detectionOpen': 'Détection ouverte',
 
+    // — Qui se déplace ————————————————————————————————————————————
+    // Les intitulés nomment le lieu de l'intervention, pas le mécanisme :
+    // « déplacement » et « à l'atelier » se lisent d'un coup d'œil sur une
+    // file, « mode on_site » demanderait un glossaire.
+    'jobs.modeOnSite': 'DÉPLACEMENT',
+    'jobs.modeAtGarage': 'À L’ATELIER',
+    'jobs.modeOnSiteLead': 'Vous vous rendez sur le lieu de la panne.',
+    'jobs.modeAtGarageLead': 'Le client conduit jusqu’à votre atelier. Ne sortez rien.',
+    // Les deux attentes du garagiste, en deux mots chacune.
+    //
+    // Elles vivent dans une fente qui fait un peu plus de la moitié d'une barre
+    // d'action, à côté d'une pastille qui bat : « En attente du départ du
+    // client » y arrivait tronqué au tiers. Un libellé qu'on ne peut pas lire
+    // en entier ne dit rien de plus qu'un libellé absent.
+    //
+    // Le verbe est sous-entendu parce que la pastille le porte déjà : elle bat,
+    // donc quelque chose est en cours. Restent le sujet et l'objet.
+    'jobs.awaitingDeparture': 'Attente départ',
+
+    // — Fin d'intervention, côté garagiste ————————————————————————
+    // Le pendant de `live.doneTitle` du côté client. Il manquait : la file de
+    // travail exclut les demandes closes, si bien qu'une intervention menée à
+    // son terme disparaissait sans un mot — et l'écran l'annonçait comme une
+    // demande évanouie.
+    'jobs.doneTitle': 'Intervention terminée',
+    'jobs.doneLead':
+      'Vous et le client avez confirmé l’arrivée. La demande est clôturée et rejoint votre historique.',
+    'jobs.doneSummary': 'Ce que vous venez de terminer',
+    'jobs.backToDesk': 'Retour au poste de travail',
+    // La cellule du tableau de bord : en `at_garage`, la durée affichée est
+    // celle du trajet **du client**, pas d'une approche que personne ne fait.
+    'jobs.clientTrip': 'Trajet client',
+
     // L'ardoise SOS. Le libellé est un état, pas un nom de rubrique : « SOS »
     // tout seul nommait un menu, « SOS en attente » dit ce que le chiffre à
     // côté est en train de compter.
@@ -838,7 +905,7 @@ export const translations = {
     'jobs.commitments': 'Vos engagements',
     'jobs.commitmentsLead':
       'Ce que vous avez accepté et pas encore terminé. Chacun attend votre prochain geste.',
-    'jobs.awaitingClientShort': 'En attente du client',
+    'jobs.awaitingClientShort': 'Attente client',
 
     'jobs.radarTile': 'Radar',
     'jobs.radarLead':
@@ -869,9 +936,25 @@ export const translations = {
     'jobs.vulnerableLead': 'Enfant, personne âgée ou blessée à bord.',
     'jobs.noPhoto': 'Aucune photo envoyée',
     'jobs.phoneHidden': 'Numéro masqué jusqu’à l’acceptation',
-    'jobs.areaOnly': 'Zone approchée. La position exacte s’affiche dès que vous acceptez.',
+    // Deux choses manquent avant l'acceptation, et la phrase les nomme toutes
+    // les deux : le plan et le point exact. Ne mentionner que le second aurait
+    // laissé prendre le fond muet pour une carte qui n'a pas chargé.
+    //
+    // Le rayon est cité en chiffres : « zone approchée » seul laissait imaginer
+    // une marge de cinquante mètres, donc une adresse. Il suit la constante
+    // previewRadiusMeters du contrat partagé.
+    'jobs.areaOnly':
+      'Rayon d’environ 1 km. Le plan et la position exacte s’affichent dès que vous acceptez.',
     'jobs.approxLocation': 'position approchée',
-    'jobs.gone': 'Cette demande n’est plus dans votre file. Le client l’a peut-être annulée.',
+    // Le message ne désigne plus de coupable.
+    //
+    // « Le client l’a peut-être annulée » était une conjecture présentée comme
+    // la cause probable, et elle tombait le plus souvent à côté : la raison de
+    // loin la plus fréquente était la **clôture réussie** de l’intervention,
+    // qui fait sortir la demande de la file. Ce cas-là a désormais son propre
+    // écran ; ce qui reste ici est ce qu’on ne sait pas, et on le dit ainsi.
+    'jobs.gone':
+      'Cette demande a quitté votre file : elle vient d’être terminée, annulée, ou traitée depuis un autre appareil.',
 
     'jobs.accept': 'Accepter',
     'jobs.decline': 'Décliner',
@@ -879,7 +962,6 @@ export const translations = {
     'jobs.goThere': 'Y aller',
     'jobs.enRoute': 'Je pars',
     'jobs.confirmArrival': 'Je suis arrivé',
-    'jobs.waitingClient': 'Arrivée enregistrée — en attente du client',
 
     'jobs.declineTitle': 'Décliner cette demande ?',
     'jobs.declineBody':
@@ -916,6 +998,12 @@ export const translations = {
       'Vous êtes arrivé dans la zone de la panne. Regardez autour de vous : le véhicule devrait être en vue.',
     'proximity.clientLead':
       'Votre garagiste est tout près du lieu de la panne, et vous cherche peut-être déjà du regard.',
+    // La même feuille, l’autre sens : c’est le client qui arrive, et la
+    // question qu’on lui pose est « y êtes-vous ? » et non « le voyez-vous ? ».
+    'proximity.atGarageLead':
+      'Vous êtes arrivé aux abords de l’atelier. Garez-vous et confirmez votre arrivée.',
+    'proximity.atGarageQuestion': 'Vous y êtes ?',
+    'proximity.atGarageConfirm': 'J’y suis',
 
 
     // — Côté client : le suivi en direct ————————————————————————————
@@ -925,6 +1013,28 @@ export const translations = {
     'live.stepConfirmed': 'Confirmée',
     'live.arrivesIn': 'Arrive dans',
     'live.onSite': 'Sur place',
+
+    // — Les mêmes jalons, quand c’est le client qui conduit ——————————
+    // Le sujet change, donc le mot change. « En route » laisse chercher
+    // quelqu’un d’autre sur la carte ; « Vous roulez » dit que le rail parle
+    // de soi, et c’est toute la différence entre attendre et agir.
+    'live.stepDriving': 'Vous roulez',
+    'live.stepAtWorkshop': 'À l’atelier',
+    'live.youArriveIn': 'Vous arrivez dans',
+    'live.atWorkshop': 'À l’atelier',
+    'live.youNotMovingYet':
+      'Vous n’avez pas encore émis de position : trajet estimé depuis le lieu de la panne.',
+
+    // Le seul bouton du produit qui ouvre la fenêtre de lecture de la trace.
+    // Sans lui, rien ne prouve jamais le déplacement — cf. MODES-DE-SERVICE.md.
+    'live.leave': 'Je pars',
+    'live.callGarage': 'Appeler',
+    'live.confirmArrivedMe': 'Je suis arrivé',
+    'live.confirmedWaitingGarage': 'En attente du garage',
+    'live.confirmTitleMe': 'Vous êtes au garage ?',
+    'live.confirmBodyMe':
+      'Le garagiste doit confirmer de son côté pour que l’intervention se termine.',
+    'live.confirmActionMe': 'Oui, j’y suis',
     'live.moving': 'En approche',
     'live.stopped': 'À l’arrêt — circulation ou pause',
     'live.notMovingYet': 'Le garagiste n’a pas encore émis sa position : trajet depuis son atelier.',
@@ -1219,6 +1329,14 @@ export const translations = {
     'sos.immobilizedHint': 'Determines whether towing is needed.',
     'sos.vulnerable': 'Child, elderly or injured person on board',
     'sos.vulnerableHint': 'Garages prioritise these jobs.',
+
+    'sos.ownGarageTitle': 'This is your garage',
+    'sos.ownGarageBody':
+      'A job involves two different parties: you cannot send one to yourself. Start the SOS from the map to see the other workshops around you.',
+
+    'sos.serviceMode': 'How you meet',
+    'sos.modeOnSiteLead': 'They drive to where you broke down.',
+    'sos.modeAtGarageLead': 'You drive to their workshop.',
     'sos.photo': 'Photo of the breakdown',
     'sos.photoOptional': 'Optional — helps the garage arrive equipped.',
     'sos.photoTake': 'Take',
@@ -1513,6 +1631,8 @@ export const translations = {
     'history.loadMore': 'Load older ones',
     'history.failed': 'History unavailable',
     'history.rate': 'Rate this garage',
+    'history.requestAgain': 'Request again',
+    'history.requestAgainHint': 'Request this garage again',
     'history.rated': 'Rated',
     'history.noGarage': 'No garage picked',
     'history.duration': 'duration',
@@ -1691,6 +1811,16 @@ export const translations = {
     'settings.privacy': 'Privacy policy',
     'settings.terms': 'Terms of use',
 
+    'settings.update': 'Update',
+    'settings.updateIdle': 'UP TO DATE',
+    'settings.updateChecking': 'CHECKING…',
+    'settings.updateDownloading': 'DOWNLOADING…',
+    'settings.updateReady': 'READY',
+    'settings.updateFailed': 'UNAVAILABLE',
+    'settings.updateDisabled': 'DEVELOPMENT',
+    'settings.updateReadyHint':
+      'It will apply on next launch. Tap to restart now.',
+
     'common.callSupport': 'Call support',
 
     'soon.drivingTitle': 'Driving mode',
@@ -1711,6 +1841,19 @@ export const translations = {
     'jobs.soon': 'SOON',
     'jobs.detectionOpen': 'Detection open',
 
+    'jobs.modeOnSite': 'CALL-OUT',
+    'jobs.modeAtGarage': 'AT THE WORKSHOP',
+    'jobs.modeOnSiteLead': 'You drive to where the breakdown happened.',
+    'jobs.modeAtGarageLead': 'The client drives to your workshop. Take nothing out.',
+    'jobs.awaitingDeparture': 'Awaiting departure',
+
+    'jobs.doneTitle': 'Job completed',
+    'jobs.doneLead':
+      'You and the client both confirmed the arrival. The request is closed and moves to your history.',
+    'jobs.doneSummary': 'What you just completed',
+    'jobs.backToDesk': 'Back to the desk',
+    'jobs.clientTrip': 'Client trip',
+
     'jobs.queueLabel': 'SOS waiting',
     'jobs.oldestWaiting': 'Longest wait',
     'jobs.firstToHandle': 'Take this one first',
@@ -1726,7 +1869,7 @@ export const translations = {
     'jobs.commitments': 'Your commitments',
     'jobs.commitmentsLead':
       'What you accepted and have not finished. Each one is waiting on your next move.',
-    'jobs.awaitingClientShort': 'Waiting for the client',
+    'jobs.awaitingClientShort': 'Awaiting client',
 
     'jobs.radarTile': 'Radar',
     'jobs.radarLead':
@@ -1757,9 +1900,11 @@ export const translations = {
     'jobs.vulnerableLead': 'A child, an elderly or injured person on board.',
     'jobs.noPhoto': 'No photo sent',
     'jobs.phoneHidden': 'Number hidden until you accept',
-    'jobs.areaOnly': 'Approximate area. The exact spot shows as soon as you accept.',
+    'jobs.areaOnly':
+      'Roughly a 1 km radius. The map and the exact spot show as soon as you accept.',
     'jobs.approxLocation': 'approximate location',
-    'jobs.gone': 'This request has left your queue. The client may have cancelled it.',
+    'jobs.gone':
+      'This request has left your queue: it was just completed, cancelled, or handled from another device.',
 
     'jobs.accept': 'Accept',
     'jobs.decline': 'Decline',
@@ -1767,7 +1912,6 @@ export const translations = {
     'jobs.goThere': 'Go there',
     'jobs.enRoute': 'Leaving',
     'jobs.confirmArrival': 'I have arrived',
-    'jobs.waitingClient': 'Arrival recorded — waiting for the client',
 
     'jobs.declineTitle': 'Decline this request?',
     'jobs.declineBody':
@@ -1801,6 +1945,10 @@ export const translations = {
       'You have reached the breakdown area. Look around — the vehicle should be in sight.',
     'proximity.clientLead':
       'Your mechanic is very close to the breakdown spot, and may already be looking for you.',
+    'proximity.atGarageLead':
+      'You have reached the workshop area. Park and confirm your arrival.',
+    'proximity.atGarageQuestion': 'Are you there?',
+    'proximity.atGarageConfirm': 'I am here',
 
 
     'live.stepAccepted': 'Accepted',
@@ -1809,6 +1957,22 @@ export const translations = {
     'live.stepConfirmed': 'Confirmed',
     'live.arrivesIn': 'Arrives in',
     'live.onSite': 'On site',
+
+    'live.stepDriving': 'You are driving',
+    'live.stepAtWorkshop': 'At the workshop',
+    'live.youArriveIn': 'You arrive in',
+    'live.atWorkshop': 'At the workshop',
+    'live.youNotMovingYet':
+      'You have not sent a position yet: route estimated from the breakdown spot.',
+
+    'live.leave': 'I am leaving',
+    'live.callGarage': 'Call',
+    'live.confirmArrivedMe': 'I have arrived',
+    'live.confirmedWaitingGarage': 'Waiting for the garage',
+    'live.confirmTitleMe': 'Are you at the garage?',
+    'live.confirmBodyMe':
+      'The mechanic must confirm on their side for the job to close.',
+    'live.confirmActionMe': 'Yes, I am here',
     'live.moving': 'Approaching',
     'live.stopped': 'Stopped — traffic or a break',
     'live.notMovingYet': 'The mechanic has not sent a position yet: route from the workshop.',
@@ -1866,6 +2030,10 @@ export const errorMessages: Record<'fr' | 'en', Partial<Record<ErrorCode, string
     GARAGE_NOT_VERIFIED: 'Votre garage est encore en cours de vérification',
     GARAGE_ALREADY_VERIFIED:
       'Votre garage est déjà vérifié : son dossier ne se modifie plus depuis l’application',
+    // Le message dit la règle, pas le refus. « Action interdite » laisserait
+    // chercher ce qu'on a fait de mal ; ici on comprend en une lecture que le
+    // garage visé est le sien, et qu'il faut en choisir un autre.
+    OWN_GARAGE: 'Vous ne pouvez pas vous adresser une demande à vous-même. Choisissez un autre garage.',
     INTERNAL_ERROR: 'Une erreur est survenue',
   },
   en: {
@@ -1892,6 +2060,7 @@ export const errorMessages: Record<'fr' | 'en', Partial<Record<ErrorCode, string
     GARAGE_NOT_VERIFIED: 'Your garage is still under review',
     GARAGE_ALREADY_VERIFIED:
       'Your garage is already verified: its application can no longer be edited from the app',
+    OWN_GARAGE: 'You cannot send a request to your own garage. Pick another one.',
     INTERNAL_ERROR: 'Something went wrong',
   },
 };

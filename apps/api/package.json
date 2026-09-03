@@ -14,7 +14,9 @@
     "db:reset": "tsx src/db/migrate.ts reset",
     "db:seed": "tsx src/seed/yaounde.ts",
     "db:seed:ebolowa": "tsx src/seed/ebolowa.ts",
-    "db:seed:garagiste": "tsx src/seed/garage-owner.ts"
+    "db:seed:garagiste": "tsx src/seed/garage-owner.ts",
+    "audit:arrivals": "tsx src/modules/requests/arrival.audit.ts",
+    "report:commissions": "tsx src/modules/requests/commission.report.ts"
   },
   "dependencies": {
     "@geocras/shared": "*",

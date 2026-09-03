@@ -35,6 +35,21 @@ export const ERROR_CODES = [
    * à la détection, ce qui préserve ses avis et son historique.
    */
   'GARAGE_ALREADY_VERIFIED',
+  /**
+   * Demande refusée : ce garage appartient au compte qui la passe.
+   *
+   * **C'est une règle anti-fraude, pas une règle d'usage.** Une intervention
+   * dont les deux parties sont la même personne fabriquerait à volonté des
+   * points de fidélité, une ligne au registre des commissions et un avis — le
+   * tout sans qu'aucun client n'ait été apporté à qui que ce soit.
+   *
+   * Elle produisait par ailleurs une demande **définitivement bloquée** :
+   * `resolveParty` teste `client_id` en premier, donc le propriétaire s'y
+   * voyait rendre le rôle `client` et ne pouvait plus accepter sa propre
+   * demande. Elle restait en `selected`, et l'index d'unicité interdisait d'en
+   * ouvrir une autre : le compte était gelé.
+   */
+  'OWN_GARAGE',
   'INTERNAL_ERROR',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
