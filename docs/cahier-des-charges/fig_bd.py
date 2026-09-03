@@ -2,7 +2,7 @@
 import sys; sys.path.insert(0, '/home/user/geocras/docs/cahier-des-charges')
 from svgkit import *
 
-s = Svg(1560, 1180)
+s = Svg(1560, 1290)
 T = {}
 
 def table(key, x, y, w, name, cols, accent=INK, note=None):
@@ -127,6 +127,7 @@ table("req", 560, 40, 380, "assistance_requests", [
     ("immobilized / vulnerable_passengers  BOOL", ""),
     ("photo_url  TEXT", ""),
     ("origin  GEOGRAPHY(POINT,4326)", "geo"), ("accuracy_m  REAL", ""),
+    ("service_mode  TEXT  CHECK(on_site|at_garage)", ""),
     ("status  TEXT  CHECK(7 valeurs)", ""),
     ("last_seq  INTEGER", ""),
     ("created_at / selected_at / accepted_at", ""),
@@ -179,6 +180,22 @@ table("reviews", 1170, 400, 360, "reviews", [
     ("rating  INTEGER  1..5", ""), ("comment  TEXT", ""),
 ], note="UNIQUE : un avis par demande")
 
+table("commission", 1170, 992, 360, "commission_ledger", [
+    ("id  UUID", "pk"),
+    ("request_id  UUID → assistance_requests", "uk"),
+    ("garage_id  UUID → garages", "fk"),
+    ("client_id  UUID → users", "fk"),
+    ("service_mode  TEXT", ""),
+    ("proof_level  TEXT  none|weak|trail|mutual", ""),
+    ("travelled_m / dwell_s / closest_m", ""),
+    ("tariff_class  TEXT  light|heavy", ""),
+    ("repeat_pair  BOOLEAN", ""),
+    ("amount_xaf  INTEGER", ""),
+    ("state  TEXT  pending|confirmed|reversed|waived", ""),
+    ("state_reason  TEXT", ""),
+    ("idempotency_key  TEXT", "uk"),
+], accent=GREEN, note="une ligne par intervention close")
+
 # ---------------- relations ----------------
 fk_same("users", "tokens", 118, 62, 20)
 fk_same("users", "vehicles", 130, 77, 34)
@@ -194,6 +211,7 @@ fk("req", "pings", 47, 62, route=1020)
 fk("req", "reviews", 62, 77, route=1060)
 fk("garages", "req", 62, 92, route=1080)
 fk_same("garages", "reviews", 200, 92, 1546, side="right")
+fk("req", "commission", 300, 62, route=1092)
 fk("users", "garages", 94, 62, route=1100)
 
 # ---------------- légende ----------------

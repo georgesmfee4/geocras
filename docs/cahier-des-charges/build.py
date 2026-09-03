@@ -20,11 +20,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SERIF = "IBM Plex Serif"
 SANS = "IBM Plex Sans"
 MONO = "IBM Plex Mono"
+# Bebas porte les titres, comme dans l'app. Elle n'a qu'une graisse et pas de
+# bas-de-casse : on ne lui demande donc ni gras ni capitalisation.
+BEBAS = "Bebas Neue"
 
 INK = RGBColor(0x1C, 0x1A, 0x17)
 INK2 = RGBColor(0x55, 0x51, 0x4A)
 MUTED = RGBColor(0x8A, 0x85, 0x78)
 RED = RGBColor(0xC6, 0x2A, 0x26)
+RED_DARK = RGBColor(0x9E, 0x21, 0x1E)
 GREEN = RGBColor(0x24, 0x6B, 0x45)
 
 PAGE_W = Cm(21.0)
@@ -138,6 +142,15 @@ def parse(path):
             while lines[i].strip() != "[/NOTE]":
                 body.append(lines[i].strip()); i += 1
             blocks.append(("note", (title, " ".join(body)))); i += 1; continue
+        if st.startswith("[STEPS]"):
+            items = []; i += 1
+            while lines[i].strip() != "[/STEPS]":
+                if lines[i].strip():
+                    items.append(lines[i].strip().lstrip("- ").strip())
+                i += 1
+            blocks.append(("steps", items)); i += 1; continue
+        if st.startswith("[SUB]"):
+            blocks.append(("sub", st[5:].strip())); i += 1; continue
         if st.startswith("[LIST]"):
             items = []; i += 1
             while lines[i].strip() != "[/LIST]":
@@ -145,6 +158,8 @@ def parse(path):
                     items.append(lines[i].strip().lstrip("- ").strip())
                 i += 1
             blocks.append(("list", items)); i += 1; continue
+        if st.startswith("[COVERIMG]"):
+            blocks.append(("coverimg", st[10:].strip())); i += 1; continue
         if st.startswith("[COVER]"):
             body = []; i += 1
             while lines[i].strip() != "[/COVER]":
@@ -230,7 +245,7 @@ class Builder:
             p = self.doc.add_paragraph()
             p.paragraph_format.space_before = Pt(4)
             p.paragraph_format.space_after = Pt(8)
-            style_run(p.add_run(title), font=SANS, size=16, color=INK, bold=True)
+            style_run(p.add_run(title), font=BEBAS, size=22, color=INK, spacing=0.5)
             border(p, "bottom", size=8, color="C62A26", space=6)
             keep_with_next(p)
             return p
@@ -244,20 +259,20 @@ class Builder:
             page_break_before(p)
             p.paragraph_format.space_before = Pt(0)
             p.paragraph_format.space_after = Pt(2)
-            style_run(p.add_run("CHAPITRE " + str(self.counters[0])), font=SANS, size=9,
-                      color=RED, bold=True, spacing=1.6)
+            style_run(p.add_run("CHAPITRE " + str(self.counters[0])), font=BEBAS, size=11,
+                      color=RED, spacing=1.9)
             p2 = self.doc.add_paragraph()
             p2.paragraph_format.space_after = Pt(16)
-            style_run(p2.add_run(title), font=SANS, size=20, color=INK, bold=True)
+            style_run(p2.add_run(title), font=BEBAS, size=27, color=INK, spacing=0.5)
             border(p2, "bottom", size=10, color="C62A26", space=8)
             keep_with_next(p2)
             return p2
-        size = 13.5 if n == 2 else 11.5
+        size = 18 if n == 2 else 14.5
         p = self.doc.add_paragraph()
-        p.paragraph_format.space_before = Pt(15 if n == 2 else 11)
+        p.paragraph_format.space_before = Pt(16 if n == 2 else 12)
         p.paragraph_format.space_after = Pt(5)
-        style_run(p.add_run(num + "   "), font=SANS, size=size, color=RED, bold=True)
-        style_run(p.add_run(title), font=SANS, size=size, color=INK, bold=True)
+        style_run(p.add_run(num + "   "), font=MONO, size=size - 5, color=RED, bold=True)
+        style_run(p.add_run(title), font=BEBAS, size=size, color=INK, spacing=0.5)
         keep_with_next(p)
         return p
 
@@ -389,6 +404,26 @@ class Builder:
         border(b, "left", size=18, color="C62A26", space=8)
         shade(b, "FBF6F4")
 
+    def steps(self, items):
+        """Scénario numéroté : le numéro en mono rouge, comme dans l'app."""
+        for n, it in enumerate(items, 1):
+            p = self.doc.add_paragraph()
+            pf = p.paragraph_format
+            pf.left_indent = Cm(1.05); pf.first_line_indent = Cm(-1.05)
+            pf.space_after = Pt(3); pf.line_spacing = 1.26
+            pf.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            style_run(p.add_run(f"{n:>2}.".replace(" ", "\u00a0") + "\u00a0\u00a0"),
+                      font=MONO, size=9.5, color=RED, bold=True)
+            add_rich(p, it, size=10.2)
+
+    def sub(self, title):
+        """Intertitre de fiche : hors numérotation, donc hors sommaire."""
+        p = self.doc.add_paragraph()
+        pf = p.paragraph_format
+        pf.space_before = Pt(10); pf.space_after = Pt(4)
+        style_run(p.add_run(title), font=BEBAS, size=13, color=RED_DARK, spacing=0.8)
+        keep_with_next(p)
+
     def bullets(self, items):
         for it in items:
             p = self.doc.add_paragraph()
@@ -400,6 +435,61 @@ class Builder:
             add_rich(p, it, size=10.5)
 
     # -- pages liminaires -------------------------------------------------- #
+    def cover_image(self, src):
+        """Couverture à fond perdu : sa propre section, sans marges ni pied.
+
+        L'image est **ancrée à la page** et non insérée dans le fil du texte :
+        une image en ligne partage sa ligne avec l'interligne du paragraphe, et
+        le traitement de texte la réduit de un ou deux pour cent pour la faire
+        tenir — ce qui laisse un filet blanc sur deux bords.
+        """
+        sec = self.doc.sections[0]
+        sec.top_margin = sec.bottom_margin = Cm(0)
+        sec.left_margin = sec.right_margin = Cm(0)
+        p = self.doc.add_paragraph()
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after = Pt(0)
+        run = p.add_run()
+        run.add_picture(os.path.join(HERE, src), width=Cm(21.0), height=Cm(29.7))
+        self._anchor_to_page(p, Cm(21.0), Cm(29.7))
+
+        nxt = self.doc.add_section(WD_SECTION.NEW_PAGE)
+        nxt.page_width, nxt.page_height = Cm(21.0), Cm(29.7)
+        nxt.top_margin, nxt.bottom_margin = Cm(2.4), Cm(2.2)
+        nxt.left_margin, nxt.right_margin = MARGIN_L, MARGIN_R
+        nxt.header_distance = nxt.footer_distance = Cm(1.2)
+        self._body_section = nxt
+
+    @staticmethod
+    def _anchor_to_page(par, cx, cy):
+        """Transforme l'image en ligne du paragraphe en image ancrée à la page."""
+        inline = par._p.find(".//" + qn("wp:inline"))
+        if inline is None:
+            return
+        anchor = OxmlElement("wp:anchor")
+        for k, v in (("distT", "0"), ("distB", "0"), ("distL", "0"), ("distR", "0"),
+                     ("simplePos", "0"), ("relativeHeight", "0"), ("behindDoc", "1"),
+                     ("locked", "0"), ("layoutInCell", "1"), ("allowOverlap", "1")):
+            anchor.set(k, v)
+        sp = OxmlElement("wp:simplePos"); sp.set("x", "0"); sp.set("y", "0")
+        anchor.append(sp)
+        for tag, rel, off in (("wp:positionH", "page", 0), ("wp:positionV", "page", 0)):
+            el = OxmlElement(tag)
+            el.set("relativeFrom", rel)
+            o = OxmlElement("wp:posOffset"); o.text = str(off)
+            el.append(o)
+            anchor.append(el)
+        ext = OxmlElement("wp:extent"); ext.set("cx", str(int(cx))); ext.set("cy", str(int(cy)))
+        anchor.append(ext)
+        eff = OxmlElement("wp:effectExtent")
+        for a in ("l", "t", "r", "b"):
+            eff.set(a, "0")
+        anchor.append(eff)
+        anchor.append(OxmlElement("wp:wrapNone"))
+        for child in list(inline):
+            anchor.append(child)
+        inline.getparent().replace(inline, anchor)
+
     def cover(self, lines):
         for raw in lines:
             st = raw.strip()
@@ -448,7 +538,7 @@ class Builder:
     def render_toc(self):
         p = self.doc.add_paragraph()
         p.paragraph_format.space_after = Pt(14)
-        style_run(p.add_run("Sommaire"), font=SANS, size=20, color=INK, bold=True)
+        style_run(p.add_run("Sommaire"), font=BEBAS, size=27, color=INK, spacing=0.5)
         border(p, "bottom", size=10, color="C62A26", space=8)
         for lvl, num, title in self.headings:
             key = (num, title)
@@ -463,8 +553,9 @@ class Builder:
             if num:
                 style_run(par.add_run(num + "   "), font=SANS, size=size,
                           color=RED if lvl == 1 else INK2, bold=(lvl == 1))
-            style_run(par.add_run(title), font=SANS if lvl <= 1 else SERIF, size=size,
-                      color=INK if lvl < 3 else INK2, bold=(lvl <= 1))
+            style_run(par.add_run(title), font=BEBAS if lvl <= 1 else SERIF,
+                      size=size + (2.5 if lvl <= 1 else 0),
+                      color=INK if lvl < 3 else INK2, bold=False)
             style_run(par.add_run("\t"), font=SERIF, size=size)
             style_run(par.add_run(str(page)), font=MONO, size=size - 0.6,
                       color=INK if lvl == 1 else INK2, bold=(lvl == 1))
@@ -473,7 +564,7 @@ class Builder:
         p = self.doc.add_paragraph()
         p.paragraph_format.space_before = Pt(18)
         p.paragraph_format.space_after = Pt(12)
-        style_run(p.add_run("Table des figures"), font=SANS, size=15, color=INK, bold=True)
+        style_run(p.add_run("Table des figures"), font=BEBAS, size=21, color=INK, spacing=0.5)
         border(p, "bottom", size=8, color="C62A26", space=6)
         for n, cap in self.figures:
             par = self.doc.add_paragraph()
@@ -485,7 +576,12 @@ class Builder:
             style_run(par.add_run(str(self.fig_pages.get(n, ""))), font=MONO, size=9, color=INK2)
 
     def footer(self):
-        for sec in self.doc.sections:
+        sections = self.doc.sections
+        body = sections[1:] if len(sections) > 1 else sections
+        for sec in body:
+            # Sans cela, le pied de la section du corps est « lié au précédent »
+            # et vient donc s'écrire aussi dans celui de la couverture.
+            sec.footer.is_linked_to_previous = False
             sec.different_first_page_header_footer = True
             f = sec.footer.paragraphs[0]
             f.paragraph_format.tab_stops.add_tab_stop(CONTENT_W, WD_TAB_ALIGNMENT.RIGHT)
@@ -545,6 +641,8 @@ def build(source, out_docx, toc_pages=None, fig_pages=None):
     for kind, payload in blocks:
         if kind == "cover":
             b.cover(payload)
+        elif kind == "coverimg":
+            b.cover_image(payload)
         elif kind == "toc":
             b.render_toc()
         elif kind == "figtoc":
@@ -567,6 +665,10 @@ def build(source, out_docx, toc_pages=None, fig_pages=None):
             b.note(*payload)
         elif kind == "list":
             b.bullets(payload)
+        elif kind == "steps":
+            b.steps(payload)
+        elif kind == "sub":
+            b.sub(payload)
     b.save(out_docx)
     return b
 

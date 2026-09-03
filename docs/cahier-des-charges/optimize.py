@@ -25,7 +25,11 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     a = b = 0
     for f in sorted(glob.glob(os.path.join(HERE, "figures", "*.png"))):
-        x, y = opt(f, os.path.join(OUT, os.path.basename(f)), 1300, 128)
+        # La couverture est une page entière : elle garde plus de définition
+        # et plus de teintes que les diagrammes au trait.
+        cover = os.path.basename(f).startswith("00-")
+        x, y = opt(f, os.path.join(OUT, os.path.basename(f)),
+                   1654 if cover else 1300, 200 if cover else 128)
         a += x; b += y
     for f in sorted(glob.glob(os.path.join(HERE, "..", "maquettes", "*.png"))):
         x, y = opt(f, os.path.join(OUT, "maq-" + os.path.basename(f)), 470, 192)

@@ -2,7 +2,7 @@
 import sys; sys.path.insert(0, '/home/user/geocras/docs/cahier-des-charges')
 from svgkit import *
 
-s = Svg(1520, 1080)
+s = Svg(1520, 1170)
 BOXES = {}
 
 def cls(key, x, y, w, name, attrs, ops=None, stereo=None, accent=INK):
@@ -74,6 +74,14 @@ cls("ledger", 40, 700, 250, "MouvementFidelite", [
     "- etat : EtatMouvement", "- cleIdempotence : String «unique»",
     "- confirmeLe : DateTime",
 ], accent=GREEN)
+
+cls("commission", 1100, 1000, 300, "MouvementCommission", [
+    "- id : UUID", "- modeService : ModeService",
+    "- niveauPreuve : NiveauPreuve", "- metresParcourus : Double",
+    "- secondesSurPlace : Integer", "- classeTarif : ClasseTarif",
+    "- paireRecurrente : Boolean", "- montantXaf : Integer",
+    "- etat : EtatMouvement", "- cleIdempotence : String «unique»",
+], stereo="«registre d'observation»", accent=GREEN)
 
 cls("badge", 40, 900, 250, "Badge", [
     "- id : String", "- libelleFr : String", "- libelleEn : String", "- ton : TonBadge",
@@ -181,9 +189,13 @@ rel("req", "event", "1", "1..*", "journalise", side="v")
 rel("req", "ping", "1", "0..*", "", side="v", off=90)
 rel("garage", "review", "1", "0..*", "reçoit", side="v")
 rel("req", "review", "1", "0..1", "autorise", side="h", off=120)
+s.path("M 660 470 L 1040 470 L 1040 1040 L 1100 1040", stroke=INK, sw=1.4, marker="diamond")
+s.text(1046, 1030, "0..1", size=10, fill=INK2, font=MONO, anchor="end")
+s.text(676, 462, "1", size=10, fill=INK2, font=MONO)
+s.text(1050, 760, "facture", size=10, fill=MUTED, italic=True)
 rel("sess", "alert", "1", "0..*", "", side="v")
 
-s.text(760, 1060, "Composition (losange plein côté conteneur) : le journal, les pings et les alertes n'existent pas sans leur parent.",
+s.text(760, 1150, "Composition (losange plein côté conteneur) : le journal, les pings et les alertes n'existent pas sans leur parent.",
        size=11, fill=MUTED, anchor="middle", italic=True)
 
 s.save("figures/04-classes.svg")

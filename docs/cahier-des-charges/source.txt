@@ -1,29 +1,4 @@
-[COVER]
-~
-~
->PROJET DE FIN D'ÉTUDES
-~
-!GEOCRAS
-=Géolocalisation de garages et assistance à la conduite
-___
-~
--Cahier des charges et dossier de conception
--Application mobile pour le marché camerounais
-~
-~
-~
--Yaoundé, Cameroun
--Août 2026
-~
-~
-~
-~
-~
-~
--Version 1.0
-[/COVER]
-
-[PB]
+[COVERIMG] assets/00-couverture.png
 
 #0 Résumé
 
@@ -31,13 +6,13 @@ Tomber en panne à Yaoundé se règle aujourd'hui au téléphone et de mémoire.
 
 Le document qui suit est le cahier des charges de ce service et le dossier de conception de sa première version. Il commence par une analyse du terrain et une critique argumentée des solutions existantes, formelles comme informelles. Il expose ensuite la solution retenue, ses spécifications générales puis détaillées — modélisation UML complète, schéma de base de données, contrats d'interface — et justifie chaque choix technique par un raisonnement rattaché aux contraintes du contexte camerounais : précision GPS médiocre en centre-ville, réseau mobile intermittent, forfaits de données comptés, et une chaîne de fidélité qui manipule ce qui est en pratique de l'argent.
 
-La dernière partie rend compte de ce qui a été effectivement construit. L'application existe, elle compte environ quarante-sept mille lignes de TypeScript réparties entre un client mobile React Native, une interface de programmation Express et un paquet de contrats partagés, avec quarante-quatre routes exposées, quatorze tables et cent trente-trois tests automatisés. Le document décrit les interfaces écran par écran, expose les mesures obtenues et énonce sans détour ce qui reste à faire.
+La dernière partie rend compte de ce qui a été effectivement construit. L'application existe : près de cinquante-deux mille lignes de TypeScript réparties entre un client mobile React Native, une interface de programmation Express et un paquet de contrats partagés, avec quarante-trois routes exposées, quatorze tables, neuf migrations et trois cent vingt-sept tests automatisés. Elle connaît désormais les deux sens d'un dépannage — le garagiste qui se déplace, et le client qui conduit jusqu'à l'atelier — et tient un registre d'observation des commissions fondé non sur une déclaration mais sur la trace de celui qui s'est déplacé. Le document décrit les interfaces écran par écran, expose les mesures obtenues et énonce sans détour ce qui reste à faire.
 
 #0 Abstract
 
 Breaking down in Yaoundé is currently handled by phone and from memory. You call a relative, who calls a mechanic they know, and you wait by the roadside with no way of knowing whether anyone is coming, or when. GeoCras replaces that sequence with a map of nearby garages ranked by genuine relevance, a breakdown report that fits in three screens and carries the user's position, live tracking of the mechanic until arrival, and a timestamped record of the job which — once both parties agree they have met — credits loyalty points convertible into discounts at certified garages.
 
-This document is both the requirements specification and the design record for the first version. It analyses the field and criticises existing alternatives, formal and informal alike; sets out the proposed solution, its general and then detailed specifications including full UML modelling, the database schema and the interface contracts; and justifies every technical decision against the constraints of the Cameroonian context: poor GPS accuracy downtown, intermittent mobile coverage, metered data plans, and a loyalty chain that handles what is effectively cash. The final part reports on what was actually built — roughly forty-seven thousand lines of TypeScript, forty-four routes, fourteen tables and one hundred and thirty-three automated tests — and states plainly what remains to be done.
+This document is both the requirements specification and the design record for the first version. It analyses the field and criticises existing alternatives, formal and informal alike; sets out the proposed solution, its general and then detailed specifications including full UML modelling, the database schema and the interface contracts; and justifies every technical decision against the constraints of the Cameroonian context: poor GPS accuracy downtown, intermittent mobile coverage, metered data plans, and a loyalty chain that handles what is effectively cash. The final part reports on what was actually built — close to fifty-two thousand lines of TypeScript, forty-three routes, fourteen tables, nine migrations and three hundred and twenty-seven automated tests. The system now handles both directions of a breakdown — the mechanic driving out, or the customer driving in — and keeps an observation ledger of commissions grounded not in a declaration but in the GPS trail of whoever actually travelled.
 
 [PB]
 
@@ -265,6 +240,28 @@ Administrateur | Vérifier un dossier de garage, prononcer la certification | La
 
 Le fait que la recherche de garages soit ouverte sans authentification est un choix délibéré. Obliger quelqu'un à créer un compte avant de lui montrer les garages autour de lui reviendrait à lui demander de taper un mot de passe pendant que son véhicule est en panne. L'authentification n'est exigée qu'au moment où la demande d'assistance est réellement émise, c'est-à-dire au moment où l'on a besoin de savoir à qui l'on parle.
 
+#2 Les deux modes de service
+
+Un dépannage se déroule dans deux sens, et le produit n'en a longtemps connu qu'un seul. Ou bien le garagiste sort son véhicule et se rend sur le lieu de la panne, ou bien le véhicule roule encore et c'est le client qui conduit jusqu'à l'atelier. Le premier cas est le cas fondateur, celui de quelqu'un immobilisé au bord d'une route. Le second existait déjà dans la réalité — un voyant, un bruit, un frein qui mollit — mais n'existait nulle part dans les données.
+
+[FIG] assets/09-modes-service.png | Les deux modes de service : un mode est une géométrie, c'est-à-dire un couple
+
+Ce n'est pas une distinction cosmétique. GeoCras se rémunère en apportant des clients aux garages, et pour facturer il faut pouvoir affirmer sans discussion qu'un client a bien été apporté. Cette affirmation ne repose pas sur un bouton, que le garage pourrait refuser d'appuyer, mais sur la trace de celui qui s'est déplacé. Or dans le second cas le garagiste ne bouge pas : sa trace est vide. À ne lire que la sienne, chaque client réellement venu à l'atelier serait compté comme un déplacement qui n'a pas eu lieu.
+
+L'idée qui règle le problème tient en une phrase : **un mode de service est une géométrie**, c'est-à-dire un couple formé de celui qui se déplace et du point vers lequel il se déplace. Une fois ce couple connu, rien d'autre ne change, parce que la question posée reste la même dans les deux cas — quelqu'un a-t-il réellement fait un trajet, et s'est-il arrêté au bout ?
+
+[TAB] Les deux modes et leur géométrie
+Mode | Situation | Qui se déplace | Vers quel point
+`on_site` | Le véhicule ne roule plus | Le garage | Le lieu de la panne
+`at_garage` | Le véhicule roule encore | Le client | L'adresse de l'atelier
+[/TAB]
+
+Le mode est choisi par le client au moment où il déclare sa panne — lui seul sait si son véhicule peut encore rouler — et il n'est plus modifiable ensuite. Il est écrit deux fois : dans une colonne, qui décrit l'état courant, et dans le journal des événements, qui est en ajout seul. Le jour où une commission sera contestée, c'est la ligne du journal qui dira ce qui avait été convenu au départ. Une colonne seule est une affirmation ; une colonne doublée de son événement fondateur est une preuve.
+
+Une règle ne se négocie pas : un véhicule immobilisé ne conduit personne nulle part. Le formulaire demande déjà si le véhicule est immobilisé ; si la réponse est oui, le mode « je vais au garage » devient impossible. Cette règle est tenue à trois endroits, et les trois sont utiles. L'écran n'offre pas l'option, ce qui protège l'utilisateur d'une erreur. Le contrat partagé refuse la demande, ce qui protège le serveur d'un client modifié. Et la base refuse la ligne, ce qui nous protège nous-mêmes d'un futur script d'import ou d'une reprise de données.
+
+Enfin, la machine à états ne gagne aucun état. Ce qui change, c'est à qui appartient la transition de départ : elle appartient à celui qui se déplace, et le serveur le vérifie. La raison est mesurable — l'horodatage de départ ouvre la fenêtre de lecture de la trace, et un garagiste qui le poserait sur une demande où c'est le client qui conduit démarrerait le chronomètre de quelqu'un d'autre, au mieux trop tôt, au pire après l'arrivée, ce qui effacerait la trace entière d'un trajet réel.
+
 #2 Diagramme de cas d'utilisation
 
 [FIG] assets/02-cas-utilisation.png | Diagramme de cas d'utilisation : acteurs, paquets fonctionnels et relations d'inclusion et d'extension
@@ -277,35 +274,699 @@ Les relations d'extension traduisent des comportements conditionnels. Publier un
 
 Enfin, la confirmation d'arrivée est le seul cas d'utilisation associé aux deux acteurs opérationnels. Cette symétrie n'est pas cosmétique : elle est la traduction, au niveau des cas d'utilisation, de la règle qui fonde toute la chaîne de confiance.
 
-#2 Description des cas d'utilisation principaux
+#1 Description des cas d'utilisation
 
-#3 Déclarer une panne
+Ce chapitre décrit chaque cas d'utilisation du système sous la forme d'une fiche normalisée. Chaque fiche porte les mêmes rubriques — identification, acteurs, préconditions, déclencheur, scénario nominal, scénarios alternatifs, scénarios d'erreur, postconditions, règles de gestion et exigences associées — de manière à ce que deux cas se comparent sans avoir à les relire en entier.
 
-L'acteur principal est le client. La précondition est qu'il soit authentifié et qu'il n'ait pas déjà une demande en cours. Le déclenchement est l'appui sur le bouton SOS.
+Une convention de lecture s'impose d'emblée. Les préconditions sont les états du monde qui doivent être vrais pour que le cas puisse commencer ; le système ne les vérifie pas nécessairement, il les suppose. Les règles de gestion, elles, sont vérifiées : chacune de celles qui touchent à l'argent ou à la preuve est adossée à une contrainte de base de données, et la fiche le signale.
 
-Le déroulement nominal enchaîne l'acquisition de la position, le choix du type de véhicule parmi voiture, moto, camion et une catégorie ouverte, l'affichage des pannes correspondantes triées par probabilité décroissante, le choix de la panne, le renseignement du niveau d'urgence, une description libre, une photographie facultative, puis l'envoi. Le système valide la demande, l'enregistre, la journalise et retourne dans la même réponse la liste des garages classés.
+#2 UC-01 — S'inscrire et se connecter
 
-Deux variantes méritent d'être notées. Si la position n'a pas pu être obtenue, l'application affiche un bandeau de reprise de la localisation et laisse néanmoins l'utilisateur poursuivre : rester bloqué priverait de l'application quelqu'un qui a refusé la permission de localisation. Si le type de véhicule ou la nature de la panne relève de la catégorie ouverte, un libellé libre devient obligatoire — règle appliquée simultanément par le mobile, qui désactive le bouton de validation, et par le serveur, qui refuse la demande, les deux s'appuyant sur la même définition partagée.
+[TAB] Fiche du cas d'utilisation UC-01
+Rubrique | Contenu
+Objectif | Permettre à une personne de disposer d'un compte et d'ouvrir une session authentifiée
+Acteur principal | Client, Garagiste
+Acteurs secondaires | Aucun
+Portée | Application mobile et interface de programmation
+Niveau | Objectif utilisateur
+Préconditions | La personne dispose d'un numéro de téléphone valide et d'une connexion réseau
+Déclencheur | La personne ouvre l'écran de connexion, ou tente une action exigeant une identité
+Postcondition en cas de succès | Un compte existe, une session est ouverte, un jeton d'accès et un jeton de rafraîchissement sont stockés de façon sécurisée sur l'appareil
+Postcondition en cas d'échec | Aucun compte n'est créé, aucune session n'est ouverte, l'état antérieur est inchangé
+Fréquence | Une fois à l'inscription, puis à chaque expiration de session
+[/TAB]
 
-La postcondition est une demande en attente de choix de garage, associée à une liste ordonnée de candidats.
+[SUB] Scénario nominal
 
-#3 Suivre l'intervention
+[STEPS]
+La personne saisit son numéro de téléphone, son nom complet et un mot de passe.
+Le système valide la forme des données au moyen du schéma partagé, avant tout appel réseau.
+Le système vérifie que le numéro n'est pas déjà rattaché à un compte.
+Le système enregistre le compte, produit un code de parrainage unique et hache le mot de passe.
+Le système émet un jeton d'accès de courte durée et un jeton de rafraîchissement, dont seule l'empreinte est conservée en base.
+L'application stocke les deux jetons dans le coffre sécurisé du système d'exploitation et ouvre l'écran Carte.
+[/STEPS]
 
-Les acteurs sont le client et le garagiste. La précondition est une demande acceptée dont le garagiste s'est déclaré en route.
+[SUB] Scénarios alternatifs
 
-Le déroulement est continu plutôt que séquentiel. Chaque partie émet sa position selon une double condition : au plus une émission toutes les quatre secondes, et seulement si elle s'est déplacée d'au moins quinze mètres. Le serveur enregistre chaque position, calcule les deux temps d'arrivée estimés et les diffuse aux deux parties avec l'horodatage d'émission. L'interface affiche l'âge réel de la donnée, calculé par différence avec cet horodatage, plutôt qu'un intervalle nominal qui serait faux dès la première latence.
+[LIST]
+__A1 — Le compte existe déjà.__ À l'étape 3, si le numéro est connu, le système bascule sur le formulaire de connexion en conservant le numéro saisi, plutôt que de rejeter la demande.
+__A2 — Session expirée en cours d'usage.__ Le jeton d'accès expire pendant une action. L'application présente le jeton de rafraîchissement, obtient une nouvelle paire, et rejoue l'action interrompue sans que l'utilisateur en soit informé.
+__A3 — Consultation sans compte.__ La recherche de garages et la lecture des fiches n'exigent aucune identité. Le cas d'utilisation n'est déclenché qu'au moment d'émettre une demande d'assistance.
+[/LIST]
 
-La variante importante est la perte de connexion. Le canal temps réel est alors déclaré mort, l'application bascule sur une interrogation périodique de la route d'état, et affiche un bandeau de connexion dégradée. Au retour du réseau, le client se réannonce en indiquant le dernier numéro de séquence qu'il a reçu, et le serveur lui rejoue les événements manquants. Ce mécanisme est détaillé au chapitre 5.
+[SUB] Scénarios d'erreur
 
-#3 Confirmer l'arrivée
+[LIST]
+__E1 — Données invalides.__ Le schéma partagé rejette la saisie. Le champ fautif est signalé sur place ; aucun appel réseau n'a lieu.
+__E2 — Identifiants incorrects.__ Le système renvoie un code d'erreur générique, sans préciser si c'est le numéro ou le mot de passe qui est en cause, afin de ne pas confirmer l'existence d'un compte.
+__E3 — Jeton de rafraîchissement révoqué ou expiré.__ La session est fermée, les jetons sont effacés de l'appareil, et l'écran de connexion est présenté avec un message explicite.
+__E4 — Réseau indisponible.__ La requête est mise en file d'attente avec réessai ; passé le délai, un message invite à réessayer et l'application reste utilisable en consultation.
+[/LIST]
 
-Les acteurs sont le client et le garagiste, chacun de son côté. La précondition est une demande en cours de suivi.
+[SUB] Règles de gestion
 
-Lorsque la distance entre les deux parties passe sous un seuil de cent vingt mètres, l'application propose à chacune de confirmer qu'elle voit l'autre. Ce seuil peut surprendre : on imaginerait spontanément dix mètres. Trois raisons l'écartent. La précision d'un téléphone en ville se situe entre dix et trente mètres, et davantage entre deux immeubles, si bien qu'un seuil de dix mètres vivrait entièrement dans le bruit de mesure — il ne se déclencherait jamais, ou il clignoterait. La position transmise a par ailleurs de l'âge, puisqu'on n'émet qu'au-delà de quinze mètres parcourus et toutes les quatre secondes : à quarante kilomètres par heure, le dernier point connu date déjà d'une quarantaine de mètres. Enfin, cent vingt mètres correspond à une portée de vue réelle : sur une rue de Yaoundé, un véhicule arrêté à cette distance se repère.
+[LIST]
+Le numéro de téléphone est l'identifiant principal, et il est unique — contrainte `phone UNIQUE`.
+Le mot de passe n'est jamais stocké en clair, ni transmis à un tiers.
+Le jeton de rafraîchissement est opaque et n'existe en base que sous forme d'empreinte : une fuite de la table ne donne aucune session utilisable.
+Chaque usage du jeton de rafraîchissement produit une nouvelle paire et révoque la précédente.
+Un compte ne peut pas se parrainer lui-même — contrainte `no_self_referral`.
+[/LIST]
 
-La première confirmation fait passer la demande dans un état d'attente de la seconde. La seconde clôt la demande. L'opération est idempotente : une confirmation rejouée, par exemple à cause d'un renvoi réseau, ne produit aucun effet supplémentaire.
+#2 UC-02 — Rechercher les garages à proximité
 
-La postcondition est une demande clôturée, un avis rendu possible, et un mouvement de fidélité créé à l'état différé.
+[TAB] Fiche du cas d'utilisation UC-02
+Rubrique | Contenu
+Objectif | Présenter les garages autour de l'utilisateur, classés par pertinence, sur une carte et dans une liste
+Acteur principal | Client
+Acteurs secondaires | Service de tuiles cartographiques, récepteur de positionnement de l'appareil
+Portée | Application mobile et interface de programmation
+Niveau | Objectif utilisateur
+Préconditions | Aucune. Le cas est accessible sans authentification
+Déclencheur | L'ouverture de l'écran Carte, un changement de tri, un changement de filtre, ou un déplacement significatif de l'utilisateur
+Postcondition en cas de succès | Une liste ordonnée de garages est affichée, chacun portant un rang, une distance et une note ; les marqueurs de la carte portent le même rang que la liste
+Postcondition en cas d'échec | La carte reste affichée avec un bandeau explicite ; aucun classement erroné n'est présenté
+Fréquence | Très élevée — c'est l'écran d'accueil de l'application
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+L'application obtient la position courante, lissée et débarrassée des sauts implausibles.
+L'application appelle la route de recherche avec la position, un rayon, un tri et d'éventuels filtres.
+Le serveur restreint les garages actifs à ceux situés dans le rayon, au moyen du filtre géospatial qui consomme l'index.
+Le serveur calcule le rang de chaque garage par une fonction de fenêtrage, selon le tri demandé.
+Le serveur renvoie les garages avec leur rang, leur distance en mètres, leur note pondérée et leur état d'ouverture.
+L'application affiche les marqueurs numérotés sur la carte et la liste correspondante, sans jamais recalculer le rang.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Aucun garage dans le rayon.__ Le serveur élargit la recherche et renvoie le garage le plus proche dans un champ distinct, en signalant que le rayon a été élargi. L'interface le présente comme tel, et non comme un résultat ordinaire.
+__A2 — Changement de tri.__ Le classement est recalculé côté serveur et les marqueurs sont renumérotés en même temps que la liste, puisque les deux lisent la même valeur.
+__A3 — Filtres actifs.__ Un filtre par service, par certification ou par ouverture s'applique dans la requête elle-même et non après coup, faute de quoi la numérotation ne porterait pas sur les garages réellement proposés.
+__A4 — Position indisponible.__ L'écran reste utilisable, centré sur la ville par défaut, avec un bandeau de reprise de la localisation.
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — Clé de tuiles absente ou invalide.__ La carte affiche un fond neutre portant la mention « indisponible » ; la liste, elle, reste complète et exploitable.
+__E2 — Serveur injoignable.__ Le cache local est présenté avec son horodatage, de manière à ce que l'utilisateur sache qu'il lit une donnée ancienne.
+__E3 — Coordonnées hors domaine.__ Le schéma partagé rejette la requête avant qu'elle n'atteigne la base.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+Le filtre de distance s'applique **avant** le tri, sans quoi l'index géospatial n'est pas utilisé et la requête parcourt toute la table.
+Le rang est calculé en SQL et jamais recalculé sur l'appareil.
+Le tri par qualité s'appuie sur une note bayésienne et non sur une moyenne, afin qu'un garage noté cinq sur deux avis ne devance pas un garage noté quatre virgule six sur cent vingt-huit.
+Un garage non vérifié ne peut pas être actif, donc ne peut pas apparaître — contrainte `active_requires_verification`.
+[/LIST]
+
+#2 UC-03 — Déclarer une panne
+
+[TAB] Fiche du cas d'utilisation UC-03
+Rubrique | Contenu
+Objectif | Enregistrer une demande d'assistance décrivant le véhicule, la panne, l'urgence, la position et le mode de service, et obtenir immédiatement les garages candidats
+Acteur principal | Client
+Acteurs secondaires | Service de stockage des photographies, récepteur de positionnement
+Portée | Application mobile et interface de programmation
+Niveau | Objectif utilisateur — c'est le cas central du produit
+Préconditions | Le client est authentifié et n'a aucune demande active
+Déclencheur | L'appui sur le bouton SOS
+Postcondition en cas de succès | Une demande existe à l'état d'attente de choix de garage ; un événement `created` est inscrit au journal, portant le mode de service convenu ; les garages candidats sont renvoyés classés
+Postcondition en cas d'échec | Aucune demande n'est créée ; la saisie est conservée localement pour que rien ne soit à retaper
+Fréquence | Moyenne — plusieurs fois par an et par conducteur
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+Le client appuie sur le bouton SOS depuis l'écran Carte.
+L'application acquiert la position, applique le filtre de lissage et affiche la précision réelle du relevé.
+Le client choisit le type de véhicule parmi voiture, moto, camion et une catégorie ouverte.
+L'application affiche les pannes correspondant à ce véhicule, ordonnées de la plus probable à la moins probable.
+Le client choisit la panne, puis renseigne le niveau d'urgence, l'immobilisation et la présence de passagers vulnérables.
+Le client choisit le mode de service : le garagiste se déplace, ou il conduit lui-même jusqu'à l'atelier.
+Le client ajoute éventuellement une description libre et une photographie.
+L'application présente un récapitulatif ; le client valide.
+Le serveur valide la demande, l'enregistre, inscrit l'événement fondateur au journal avec le mode retenu, puis recherche les garages et les renvoie classés dans la même réponse.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Véhicule de catégorie ouverte.__ À l'étape 3, un libellé libre devient obligatoire. La règle vit dans le contrat partagé : l'application désactive la validation et le serveur refuse la demande, sans que la règle soit écrite deux fois.
+__A2 — Panne de catégorie ouverte.__ À l'étape 5, la description libre devient obligatoire, pour la même raison : c'est elle que le garagiste lit pour décider s'il peut intervenir.
+__A3 — Véhicule immobilisé.__ Le sélecteur de mode disparaît et laisse une phrase explicative, le mode étant forcé au déplacement du garagiste. Un choix impossible qu'on grise reste un choix qu'on a proposé.
+__A4 — Le client revient sur l'immobilisation.__ Cocher « immobilisé » après avoir choisi l'atelier remet automatiquement le mode au déplacement du garagiste, afin qu'aucun brouillon refusé par le serveur ne survive jusqu'à l'envoi.
+__A5 — Véhicule enregistré.__ Le client choisit un véhicule de son profil, ce qui préremplit le type et la marque.
+__A6 — Photographie.__ L'image part directement vers le service de stockage au moyen d'une signature délivrée par le serveur ; elle ne transite pas par l'interface de programmation.
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — Une demande est déjà active.__ Le serveur refuse la création. L'application propose d'ouvrir la demande en cours plutôt que d'en créer une seconde.
+__E2 — Position indisponible.__ Le parcours se poursuit avec un bandeau de reprise ; la demande est refusée seulement si aucune position n'a pu être obtenue au moment de l'envoi.
+__E3 — Mode incompatible avec l'immobilisation.__ Refus par le contrat partagé, puis par la contrainte de base. La règle est tenue à trois endroits, dont deux qui survivent à un client modifié.
+__E4 — Envoi de la photographie en échec.__ La demande part sans photographie plutôt que d'échouer : l'image est un confort, la demande est une urgence.
+__E5 — Réseau perdu pendant l'envoi.__ La saisie est conservée localement et l'envoi est réessayé.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+Un client n'a qu'une seule demande active — index d'unicité `requests_one_active_per_client_idx`.
+Un véhicule immobilisé interdit le mode « je vais au garage » — contrainte de la migration `0009`.
+La catégorie ouverte de véhicule exige un libellé — contrainte `vehicle_other_requires_label`.
+La panne de catégorie ouverte exige une description — contrainte `problem_other_requires_description`.
+Le mode de service est fixé à la création et n'est plus modifiable ; il est écrit à la fois dans une colonne et dans le journal, de sorte qu'une commission contestée puisse être tranchée sur l'événement fondateur.
+[/LIST]
+
+#2 UC-04 — Choisir un garage
+
+[TAB] Fiche du cas d'utilisation UC-04
+Rubrique | Contenu
+Objectif | Retenir un garage parmi les candidats classés et lui adresser la demande
+Acteur principal | Client
+Acteurs secondaires | Garagiste, par la notification qu'il reçoit
+Portée | Application mobile, interface de programmation, canal temps réel
+Niveau | Sous-objectif du cas UC-03
+Préconditions | Une demande existe à l'état d'attente de choix de garage, et au moins un candidat a été renvoyé
+Déclencheur | Le client sélectionne un garage dans la liste ou sur la carte
+Postcondition en cas de succès | La demande passe à l'état d'attente de réponse, l'horodatage de sélection est posé, et la file de travail du garagiste lui est poussée
+Postcondition en cas d'échec | La demande reste en attente de choix, sans garage rattaché
+Fréquence | Une fois par demande, parfois davantage en cas de refus
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+Le client consulte la fiche contextuelle d'un garage : nom, distance, note, certification, services.
+Le client retient ce garage.
+Le serveur rattache le garage à la demande, pose l'horodatage de sélection et inscrit un événement au journal.
+Le serveur pousse la file de travail complète au propriétaire du garage, sur sa salle utilisateur.
+L'application du client bascule sur l'écran d'attente, dont le compteur démarre à l'horodatage de sélection.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Appel téléphonique préalable.__ Le client appelle le garage depuis la fiche avant de le retenir. L'appel ne modifie pas l'état de la demande.
+__A2 — Consultation de la fiche complète.__ Le client ouvre la fiche détaillée et ses avis avant de décider, puis revient aux résultats sans perdre le classement.
+__A3 — Le garagiste n'est pas connecté.__ La demande lui est présentée à sa prochaine connexion ; l'écran d'attente du client indique que le garage n'a pas encore répondu.
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — Le garage est devenu inactif entre la recherche et le choix.__ Le serveur refuse la sélection et invite à en choisir un autre.
+__E2 — La demande a été annulée entre-temps.__ Le serveur refuse la transition ; l'application se resynchronise sur l'état réel.
+__E3 — Réseau perdu.__ Le choix est réessayé ; l'écran d'attente affiche le mode dégradé.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+Passé la sélection, un garage est obligatoire sur la demande — contrainte `garage_set_after_selection`.
+L'horodatage de sélection existe pour que le compteur d'attente ne démarre pas à l'ouverture du formulaire : les minutes passées à comparer les garages ne sont pas du temps d'attente du garagiste.
+La file de travail est poussée entière plutôt que sous forme d'un signal à recharger, pour éviter un aller-retour réseau supplémentaire au moment le plus sensible.
+[/LIST]
+
+#2 UC-05 — Accepter ou refuser une demande
+
+[TAB] Fiche du cas d'utilisation UC-05
+Rubrique | Contenu
+Objectif | Permettre au garagiste de s'engager sur une demande, ou de la rendre à la recherche sans la détruire
+Acteur principal | Garagiste
+Acteurs secondaires | Client, par la notification qu'il reçoit
+Portée | Application mobile, interface de programmation, canal temps réel
+Niveau | Objectif utilisateur
+Préconditions | Le garagiste est authentifié, propriétaire d'un garage vérifié, et une demande lui a été adressée
+Déclencheur | La réception d'une demande dans sa file de travail
+Postcondition en cas de succès | La demande est acceptée, ou rendue à l'état de recherche avec un événement de refus inscrit au journal
+Postcondition en cas d'échec | L'état de la demande est inchangé
+Fréquence | Élevée pour un garage actif
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+Le garagiste ouvre la demande depuis sa file de travail.
+La fiche présente un bandeau indiquant le mode de service, placé avant les chiffres parce qu'il en change la lecture.
+Le garagiste consulte le véhicule, la panne, l'urgence, la distance, la photographie éventuelle et le trajet concerné.
+Le garagiste accepte.
+Le serveur pose l'horodatage d'acceptation, inscrit l'événement et prévient le client.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Refus.__ Le garagiste ne peut pas intervenir. La demande retourne à l'état de recherche en perdant uniquement son garage : elle conserve son identifiant, son journal et son ancienneté. Un événement de refus est inscrit, distinct d'une annulation.
+__A2 — Mode « je vais au garage ».__ L'acceptation n'ouvre pas l'écran d'itinéraire, puisque le garagiste ne se déplace pas. Le bouton principal devient une mention inerte annonçant l'attente du départ du client.
+__A3 — Mode « le garagiste vient ».__ L'acceptation propose l'itinéraire vers le lieu de la panne.
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — La demande a été annulée par le client.__ Le serveur refuse l'acceptation ; la file se met à jour.
+__E2 — Un autre garage a été retenu entre-temps.__ Le serveur refuse la transition.
+__E3 — Le garage n'est pas vérifié.__ Il ne reçoit aucune demande, puisqu'un garage non vérifié ne peut pas être actif.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+Le refus est un événement de journal à part entière et non une annulation déguisée : c'est lui qui portera le taux de refus par garage, et qui explique après coup pourquoi une demande a traversé trois ateliers.
+Le retour à l'état de recherche est la seule marche arrière de la machine à états, et elle ne retire que le garage.
+Le bandeau de mode figure sur la fiche pour les deux modes, alors que la liste ne signale que l'exception : on parcourt une file, mais on s'engage sur une fiche.
+[/LIST]
+
+#2 UC-06 — Déclarer son départ
+
+[TAB] Fiche du cas d'utilisation UC-06
+Rubrique | Contenu
+Objectif | Ouvrir la fenêtre de lecture de la trace de celui qui se déplace, et signaler le départ à l'autre partie
+Acteur principal | Le voyageur : le garagiste en mode « le garagiste vient », le client en mode « je vais au garage »
+Acteurs secondaires | L'autre partie, par la notification qu'elle reçoit
+Portée | Application mobile, interface de programmation, canal temps réel
+Niveau | Sous-objectif du suivi
+Préconditions | La demande est acceptée, et l'acteur est bien le voyageur du mode retenu
+Déclencheur | L'appui sur « Je pars »
+Postcondition en cas de succès | L'horodatage de départ est posé, la demande passe en route, et tout relevé de position postérieur entre dans la fenêtre de preuve
+Postcondition en cas d'échec | L'état est inchangé et aucune fenêtre n'est ouverte
+Fréquence | Une fois par intervention
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+Le voyageur appuie sur « Je pars ». Aucune boîte de confirmation ne s'interpose.
+Le serveur vérifie que l'acteur est bien le voyageur du mode de service retenu.
+Le serveur pose l'horodatage de départ, fait passer la demande en route et inscrit l'événement.
+L'autre partie est prévenue et son écran de suivi s'ouvre.
+Le téléphone du voyageur commence à émettre sa position selon la cadence convenue.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Départ anticipé.__ Le voyageur appuie avant d'être réellement parti. La fenêtre de lecture s'en trouve élargie, ce qui ne fausse aucune mesure : la preuve lit une trace, pas une intention.
+__A2 — Le client conduit.__ L'écran présenté n'est pas celui de l'attente mais celui de la conduite : on n'y demande pas « où en est-il ? » mais « où je vais ».
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — Le mauvais acteur déclare le départ.__ Le serveur refuse. Un garagiste qui poserait cet horodatage sur une demande où le client conduit démarrerait le chronomètre de quelqu'un d'autre, et pourrait effacer la trace entière d'un trajet réel.
+__E2 — La demande n'est pas acceptée.__ La transition est refusée.
+__E3 — Réseau perdu.__ L'appui est réessayé ; les positions accumulées localement sont transmises au retour du réseau.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+Le départ appartient exclusivement au voyageur du mode, vérifié côté serveur et non seulement masqué dans l'interface.
+L'absence de confirmation est une décision technique déguisée en choix d'ergonomie : ce bouton ouvre la fenêtre de preuve, et un geste de plus est un geste qu'on saute — donc un trajet qu'on ne saura pas prouver.
+Les relevés antérieurs à l'horodatage de départ sont ignorés par la preuve.
+[/LIST]
+
+#2 UC-07 — Suivre l'intervention en temps réel
+
+[TAB] Fiche du cas d'utilisation UC-07
+Rubrique | Contenu
+Objectif | Montrer aux deux parties où en est l'intervention, avec un temps d'arrivée estimé partagé et une donnée dont la fraîcheur est affichée honnêtement
+Acteur principal | Client et Garagiste, simultanément
+Acteurs secondaires | Service de tuiles cartographiques
+Portée | Application mobile, canal temps réel, interface de programmation
+Niveau | Objectif utilisateur
+Préconditions | La demande est en route ; les deux parties ont accès à la salle de la demande
+Déclencheur | Le passage en route, ou la réouverture de l'écran de suivi
+Postcondition en cas de succès | Les deux parties voient la même position, le même temps d'arrivée estimé et le même âge de la donnée
+Postcondition en cas d'échec | Le suivi bascule en mode dégradé, avec une donnée exacte mais moins fraîche et un bandeau qui le dit
+Fréquence | Continue pendant toute l'intervention
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+Chaque application rejoint la salle de la demande après vérification du jeton et contrôle d'appartenance.
+Le serveur envoie l'état courant et le dernier numéro de séquence connu.
+Le téléphone du voyageur émet sa position au plus toutes les quatre secondes, et seulement au-delà de quinze mètres parcourus.
+Le serveur enregistre le relevé, calcule les deux temps d'arrivée estimés et les diffuse aux deux parties avec l'horodatage d'émission.
+Les deux écrans affichent la progression, la distance restante et l'âge réel de la dernière donnée reçue.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Véhicule à l'arrêt.__ Le seuil de quinze mètres suspend l'émission. Ce silence n'est pas une panne : une trace qui s'arrête au lieu de s'éloigner est la signature d'une arrivée, et c'est le signal le plus fiable dont dispose la preuve.
+__A2 — Mode « je vais au garage ».__ Les mêmes composants servent, mais trois libellés changent de sujet : « arrive dans » devient « vous arrivez dans », « en route » devient « vous roulez », « sur place » devient « à l'atelier ».
+__A3 — Approche de la destination.__ Sous cent vingt mètres, une feuille de proximité remplace la barre d'action et pose la question de la reconnaissance mutuelle.
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — Canal temps réel interrompu.__ L'application bascule sur une interrogation périodique de la route d'état, toutes les quinze secondes, et affiche un bandeau de connexion dégradée.
+__E2 — Retour du réseau.__ Le client se réannonce avec son dernier numéro de séquence ; le serveur rejoue les événements manquants dans l'ordre. Aucun état n'est perdu.
+__E3 — Position aberrante.__ Un relevé impliquant plus de cent cinquante kilomètres par heure est rejeté avant d'atteindre l'affichage.
+__E4 — Tentative d'accès par un tiers.__ La salle est refusée : l'appartenance à la demande est vérifiée, pas seulement l'authentification.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+Le temps d'arrivée estimé est calculé par le serveur, jamais par l'appareil : les deux parties doivent voir le même chiffre, et cet estimé alimente la détection de fraude.
+L'indicateur de fraîcheur affiche la différence entre l'heure courante et l'horodatage d'émission, c'est-à-dire une mesure et non une promesse.
+Le journal des événements est en ajout seul et numéroté ; c'est ce qui rend le rattrapage possible.
+La route d'état du mode dégradé est exactement celle du premier chargement, afin qu'aucun chemin de code rarement emprunté ne dorme jusqu'au jour de la coupure.
+[/LIST]
+
+#2 UC-08 — Confirmer l'arrivée
+
+[TAB] Fiche du cas d'utilisation UC-08
+Rubrique | Contenu
+Objectif | Faire constater par les deux parties que la rencontre a eu lieu, clore l'intervention et ouvrir les droits qui en découlent
+Acteur principal | Client et Garagiste, chacun de son côté
+Acteurs secondaires | Aucun
+Portée | Application mobile, interface de programmation, base de données
+Niveau | Objectif utilisateur — c'est le cas qui fonde toute la chaîne de confiance
+Préconditions | La demande est en route ou en attente de la seconde confirmation
+Déclencheur | Le franchissement du seuil de proximité, ou l'appui volontaire sur la confirmation
+Postcondition en cas de succès | À la première confirmation, la demande passe en attente de la seconde ; à la seconde, elle est close, un mouvement de fidélité différé est créé et une ligne est inscrite au registre des commissions
+Postcondition en cas d'échec | L'état est inchangé ; aucun point n'est crédité
+Fréquence | Deux fois par intervention aboutie
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+La distance entre les deux parties passe sous cent vingt mètres.
+Les deux applications basculent ensemble sur la feuille de reconnaissance mutuelle.
+La première partie confirme. La demande passe en attente de la seconde confirmation.
+La seconde partie confirme. Le serveur pose le second horodatage.
+La base vérifie que les deux horodatages sont présents avant d'autoriser la clôture.
+Le serveur crée un mouvement de fidélité à l'état différé, muni de sa clé d'idempotence.
+Le serveur calcule la preuve d'arrivée à partir de la trace du voyageur et inscrit une ligne au registre des commissions, y compris lorsque rien n'est dû.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Confirmation manuelle hors seuil.__ Chaque partie peut confirmer sans attendre le franchissement du seuil, par exemple lorsque la précision du signal est mauvaise.
+__A2 — Confirmation rejouée.__ L'opération est idempotente : un renvoi réseau ne produit aucun effet supplémentaire.
+__A3 — Une seule partie confirme.__ La demande reste en attente de la seconde. Elle n'est pas close, aucun point n'est crédité, et aucun avis ne peut être publié.
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — Tentative de clôture sans les deux confirmations.__ Rejet par la base, quelle que soit la voie empruntée par le code.
+__E2 — Preuve insuffisante.__ La ligne du registre est écrite malgré tout, avec un niveau de preuve faible ou nul et un motif en clair. Une ligne manquante ne se compte pas ; c'est tout l'intérêt d'un registre d'observation.
+__E3 — Signal indisponible chez l'une des parties.__ La confirmation manuelle reste possible ; la preuve, elle, sera d'autant plus faible, ce qui est le comportement voulu.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+Une demande ne peut pas être close sans les deux confirmations — contrainte `closed_requires_both_arrivals`. C'est la garde la plus importante du système.
+La double confirmation ne crée aucun droit à facturation : elle hisse une preuve déjà acquise d'un niveau. Dès qu'une confirmation conditionnerait la facture, le débiteur aurait intérêt à la retenir.
+Le crédit de fidélité est différé de vingt-quatre heures, ce qui laisse une fenêtre d'annulation.
+La clé d'idempotence du mouvement de fidélité interdit tout double crédit.
+[/LIST]
+
+#2 UC-09 — Publier un avis
+
+[TAB] Fiche du cas d'utilisation UC-09
+Rubrique | Contenu
+Objectif | Recueillir une note et un commentaire sur une intervention réellement terminée
+Acteur principal | Client
+Acteurs secondaires | Aucun
+Portée | Application mobile, interface de programmation
+Niveau | Sous-objectif consécutif à la clôture
+Préconditions | Une demande du client, avec ce garage, est close, et aucun avis n'a encore été publié pour cette demande
+Déclencheur | La proposition affichée après la clôture, ou l'ouverture de l'historique
+Postcondition en cas de succès | Un avis est enregistré, la note agrégée du garage est recalculée, et un mouvement de fidélité est créé
+Postcondition en cas d'échec | Aucun avis n'est enregistré
+Fréquence | Au plus une fois par intervention close
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+Le client ouvre la proposition d'avis depuis l'écran de clôture ou depuis son historique.
+Le client attribue une note de une à cinq étoiles et rédige éventuellement un commentaire.
+Le serveur vérifie que la demande est close et qu'aucun avis ne lui est déjà rattaché.
+Le serveur enregistre l'avis. Un déclencheur recalcule la note agrégée et le nombre d'avis du garage.
+Un mouvement de fidélité est créé au titre de l'avis publié.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Client fidèle.__ Un client qui revient trois fois chez le même garage publie trois avis, puisque la clé porte sur la demande et non sur le couple client-garage.
+__A2 — Avis différé.__ Le client ferme l'écran sans noter et publie plus tard depuis l'historique.
+__A3 — Note sans commentaire.__ Le commentaire est facultatif ; la note ne l'est pas.
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — Demande non close.__ Le serveur refuse et l'interface désactive le bouton avec une explication, plutôt que de le masquer.
+__E2 — Avis déjà publié.__ Rejet par la contrainte d'unicité portant sur la demande.
+__E3 — Note hors bornes.__ Rejet par la contrainte de vérification de la base.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+Un avis exige une intervention réellement close — clé unique sur la demande.
+La note agrégée est recalculée par un déclencheur couvrant l'insertion, la modification et la suppression, afin qu'une suppression d'avis ou de compte ne laisse pas une moyenne définitivement fausse.
+La note utilisée pour le classement est pondérée, celle affichée sur la fiche est brute.
+[/LIST]
+
+#2 UC-10 — Consulter sa fidélité et parrainer
+
+[TAB] Fiche du cas d'utilisation UC-10
+Rubrique | Contenu
+Objectif | Présenter le solde de points, le grade, la progression et l'historique des mouvements ; permettre le rattachement à un parrain
+Acteur principal | Client
+Acteurs secondaires | Le parrain, indirectement
+Portée | Application mobile, interface de programmation
+Niveau | Objectif utilisateur
+Préconditions | Le client est authentifié
+Déclencheur | L'ouverture de l'écran de fidélité depuis le tiroir latéral
+Postcondition en cas de succès | Le solde, le grade et la progression sont affichés ; le cas échéant, un rattachement de parrainage est enregistré
+Postcondition en cas d'échec | L'affichage bascule sur le cache local, horodaté
+Fréquence | Occasionnelle
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+Le client ouvre l'écran de fidélité.
+Le serveur renvoie le solde, le grade courant, la progression vers le grade suivant et les derniers mouvements.
+L'interface présente le solde comme une monnaie et le grade comme une ancienneté, en affichant la progression en nombre de réparations et non en points.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Parrainage.__ Le client saisit un code de parrainage. Le rattachement est enregistré ; les points ne sont crédités qu'à la première intervention terminée du filleul.
+__A2 — Grade maximum atteint.__ La progression affiche l'état complet sans grade suivant.
+__A3 — Mouvements différés.__ Un mouvement à l'état différé est affiché comme tel, avec sa date de confirmation prévue.
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — Code de parrainage inconnu.__ Le serveur refuse avec un code d'erreur explicite.
+__E2 — Auto-parrainage.__ Rejet par la contrainte `no_self_referral`.
+__E3 — Client déjà parrainé.__ Le rattachement est refusé, un compte n'ayant qu'un parrain.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+Les points et les grades sont deux mesures distinctes : les premiers se dépensent, les seconds non. Les faire dépendre l'un de l'autre rétrograderait quelqu'un qui convertit ses points.
+Le grade se gagne en réparations terminées, donc en doubles confirmations d'arrivée.
+Le solde affiché est un cache ; la vérité comptable est la somme du journal des mouvements.
+[/LIST]
+
+#2 UC-11 — Inscrire son garage
+
+[TAB] Fiche du cas d'utilisation UC-11
+Rubrique | Contenu
+Objectif | Permettre à un professionnel de déposer un dossier de garage et de recevoir des demandes une fois vérifié
+Acteur principal | Garagiste
+Acteurs secondaires | Administrateur, pour la vérification
+Portée | Application mobile, interface de programmation
+Niveau | Objectif utilisateur
+Préconditions | La personne est authentifiée et ne détient aucun garage
+Déclencheur | L'entrée « Devenir garagiste » du menu de compte
+Postcondition en cas de succès | Un garage existe à l'état non vérifié, donc inactif ; le compte est promu au rôle de propriétaire
+Postcondition en cas d'échec | Aucun garage n'est créé et le rôle du compte est inchangé
+Fréquence | Une fois par professionnel
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+Le garagiste renseigne le nom de l'atelier, sa position, son quartier, son téléphone, son adresse électronique, ses services et ses horaires.
+Le serveur vérifie qu'aucun garage n'est déjà rattaché à ce compte.
+Le serveur enregistre le garage sans date de vérification, donc inactif, et promeut le compte.
+L'administrateur instruit le dossier et pose la date de vérification, ce qui rend le garage actif.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Certification.__ Après vérification, l'administrateur peut prononcer la certification, qui est un acte distinct : vérifier, c'est constater que le garage existe ; certifier, c'est répondre de sa qualité.
+__A2 — Modification de la fiche.__ Le propriétaire met à jour ses services, ses horaires ou ses photographies sans repasser par la vérification.
+__A3 — Suppression.__ Le propriétaire supprime son garage ; le rattachement au compte est libéré.
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — Double envoi du formulaire.__ Deux envois séparés d'une seconde passeraient tous deux la vérification applicative avant qu'aucun n'ait inséré. L'index d'unicité rend cette situation impossible, ce qui évite un garage fantôme que son propriétaire ne verrait jamais mais qui remonterait dans les recherches.
+__E2 — Tentative d'activation avant vérification.__ Rejet par la contrainte liant l'activité à la vérification.
+__E3 — Position hors zone couverte.__ Le dossier est accepté mais ne remontera dans aucune recherche tant que la zone n'est pas ouverte.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+Un compte ne peut détenir qu'un seul garage — index `garages_owner_idx`.
+Un garage non vérifié ne peut pas être actif — contrainte `active_requires_verification`. Aucun chemin de code, y compris une future route de modification mal gardée, ne peut faire entrer un dossier en attente dans les résultats.
+L'adresse électronique du garage sert à instruire le dossier ; le téléphone sert au client. Les confondre obligerait à appeler pour dire qu'un dossier est validé.
+[/LIST]
+
+#2 UC-12 — Utiliser le mode conduite
+
+[TAB] Fiche du cas d'utilisation UC-12
+Rubrique | Contenu
+Objectif | Enregistrer une session de conduite, afficher la vitesse et les statistiques en direct, et produire des alertes
+Acteur principal | Client
+Acteurs secondaires | Aucun. Aucun capteur externe n'est utilisé dans cette version
+Portée | Application mobile, interface de programmation
+Niveau | Objectif utilisateur
+Préconditions | Le client est authentifié et la localisation est disponible
+Déclencheur | L'appui sur « Démarrer » dans l'onglet Conduite
+Postcondition en cas de succès | Une session est enregistrée localement puis synchronisée, avec sa distance, ses vitesses, son nombre d'alertes et son score
+Postcondition en cas d'échec | La session reste stockée localement et sera synchronisée plus tard
+Fréquence | Variable, à l'initiative du conducteur
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+Le client démarre une session.
+L'application maintient l'écran allumé et affiche la vitesse en grands caractères monospacés.
+Le moteur d'alertes émet des événements crédibles, cohérents avec la vitesse courante.
+Le client met en pause ou arrête la session.
+L'application calcule la distance, les vitesses moyenne et maximale, le nombre d'alertes et le score, puis envoie l'ensemble en un seul lot.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Hors ligne.__ La session est conservée localement et synchronisée au retour du réseau, sans intervention.
+__A2 — Renvoi après incident.__ L'identifiant de session produit par l'appareil rend l'envoi idempotent : une reprise ne crée pas de doublon.
+__A3 — Mise en pause.__ La session reprend sans perdre les statistiques accumulées.
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — Localisation refusée.__ La session ne démarre pas et un message explique quelle permission est nécessaire.
+__E2 — Application mise en arrière-plan.__ La session se poursuit dans la limite de ce que le système d'exploitation autorise ; l'interruption éventuelle est signalée.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+Les alertes sont simulées et l'interface ne les présente jamais comme des observations. Il serait malhonnête de laisser croire à un conducteur qu'une alerte d'angle mort correspond à une mesure.
+La source d'alertes est isolée derrière une interface minimale — démarrer, arrêter, émettre — de sorte qu'une source réelle branchée sur des capteurs ne demanderait aucune modification des écrans.
+Une session de conduite ne consomme pas de réseau en direct.
+[/LIST]
+
+#2 UC-13 — Vérifier et certifier un garage
+
+[TAB] Fiche du cas d'utilisation UC-13
+Rubrique | Contenu
+Objectif | Instruire les dossiers de garage déposés depuis l'application, puis prononcer ou non la certification
+Acteur principal | Administrateur
+Acteurs secondaires | Garagiste, destinataire de la décision
+Portée | Base de données et outillage d'administration
+Niveau | Objectif métier
+Préconditions | Un dossier de garage existe sans date de vérification
+Déclencheur | L'arrivée d'un dossier dans la file d'attente, ordonnée par date de dépôt
+Postcondition en cas de succès | Le garage porte une date de vérification et devient actif ; il peut en outre être certifié
+Postcondition en cas d'échec | Le garage reste non vérifié, donc inactif et invisible
+Fréquence | Faible, mais critique pour la confiance
+[/TAB]
+
+[SUB] Scénario nominal
+
+[STEPS]
+L'administrateur relève les dossiers en attente, listés par date de dépôt grâce à un index partiel.
+Il contrôle l'existence de l'atelier, la cohérence de la position et la validité du contact.
+Il pose la date de vérification, ce qui rend le garage actif et éligible aux recherches.
+Il décide séparément de la certification, qui engage sur la qualité et non sur l'existence.
+[/STEPS]
+
+[SUB] Scénarios alternatifs
+
+[LIST]
+__A1 — Vérifié sans certification.__ C'est le cas normal. Un garage vérifié non certifié apparaît dans les résultats sans marque distinctive.
+__A2 — Retrait de certification.__ La certification peut être retirée sans que le garage cesse d'être actif.
+__A3 — Dossier incomplet.__ Le dossier reste en attente et le contact est sollicité par courrier électronique.
+[/LIST]
+
+[SUB] Scénarios d'erreur
+
+[LIST]
+__E1 — Garage inexistant.__ Le dossier est refusé et le garage reste inactif : un atelier inventé qui remonterait dans une recherche enverrait quelqu'un en panne vers une adresse qui n'existe pas.
+__E2 — Certification sans date.__ Rejet par la contrainte `certified_has_date`.
+__E3 — Position erronée.__ Le dossier est renvoyé pour correction plutôt que vérifié.
+[/LIST]
+
+[SUB] Règles de gestion
+
+[LIST]
+La vérification et la certification sont deux actes distincts, et le schéma les distingue par deux colonnes séparées.
+Seuls les garages certifiés ouvrent droit aux paliers de fidélité convertibles.
+Les dossiers en attente se lisent par date d'arrivée grâce à un index partiel : c'est la file de travail de la vérification.
+[/LIST]
+
+#2 Synthèse de la traçabilité
+
+Le tableau suivant relie chaque cas d'utilisation aux besoins fonctionnels du chapitre 2 et aux garanties qui le protègent. Il sert de table de correspondance lors des revues : une exigence qui n'apparaît dans aucun cas n'est pas couverte, et un cas qui ne s'adosse à aucune garantie repose sur la seule discipline du code.
+
+[TAB] Traçabilité des cas d'utilisation
+Cas | Besoin couvert | Garantie principale
+UC-01 | Gestion du compte | Unicité du téléphone, empreinte du jeton de rafraîchissement
+UC-02 | Recherche de garages | Filtre géospatial avant tri, rang calculé en SQL
+UC-03 | Déclaration de panne | Unicité de la demande active, libellés obligatoires, mode contraint
+UC-04 | Choix du garage | Garage obligatoire après sélection
+UC-05 | Traitement par le garagiste | Refus distinct de l'annulation, journal en ajout seul
+UC-06 | Départ du voyageur | Contrôle du rôle voyageur côté serveur
+UC-07 | Suivi temps réel | Rejeu par numéro de séquence, mode dégradé
+UC-08 | Clôture et fidélité | Double confirmation en contrainte de base, idempotence du crédit
+UC-09 | Avis | Clé unique portant sur la demande
+UC-10 | Fidélité et parrainage | Interdiction de l'auto-parrainage, journal comptable
+UC-11 | Inscription d'un garage | Un garage par compte, activité liée à la vérification
+UC-12 | Mode conduite | Idempotence de la synchronisation de session
+UC-13 | Vérification et certification | Certification datée, index de file d'attente
+[/TAB]
 
 #1 Spécifications détaillées
 
@@ -354,6 +1015,8 @@ Deux transitions sortent de ce chemin et méritent d'être commentées.
 La première est le refus. Un garagiste qui ne peut pas intervenir n'avait initialement qu'une seule sortie : annuler. C'est-à-dire fermer la demande de quelqu'un qui est en panne au bord d'une route, et l'obliger à tout ressaisir pour en trouver un autre. Le refus a donc été introduit comme une transition distincte, qui est la seule marche arrière de la machine : elle ramène la demande à son état initial en lui retirant uniquement son garage. La demande conserve son identifiant, son journal et son ancienneté. Cette distinction n'est pas cosmétique : elle préserve dans le journal la seule trace qui permette de mesurer le taux de refus d'un garage, et qui explique après coup pourquoi une demande a traversé trois ateliers avant d'aboutir.
 
 La seconde est l'annulation, accessible depuis tout état non terminal et réservée au client. Elle est terminale.
+
+Une précision s'ajoute depuis l'introduction des deux modes de service, sans qu'aucun état n'ait été créé : la transition de mise en route appartient à celui qui se déplace, et non au garagiste par défaut. Le serveur le vérifie plutôt que de se contenter de masquer le bouton, parce que cet horodatage ouvre la fenêtre de lecture de la trace et qu'un départ déclaré par la mauvaise partie fausserait la preuve d'un trajet réel.
 
 La garde la plus importante de cette machine n'est pas écrite dans le code du serveur mais dans le schéma de la base :
 
@@ -410,7 +1073,7 @@ Le second est l'absence de résultat dans le rayon de recherche. Plutôt que de 
 
 #2 Schéma de la base de données
 
-La base compte quatorze tables. Le schéma est décrit ci-dessous avec ses clés, ses contraintes et ses index décisifs.
+La base compte quatorze tables et neuf migrations. Le schéma est décrit ci-dessous avec ses clés, ses contraintes et ses index décisifs. La dernière table en date, le registre des commissions, est traitée à la section suivante ; elle suit la même discipline que le journal de fidélité, et pour la même raison : dès qu'il s'agit d'argent, on n'incrémente pas une colonne, on écrit une ligne.
 
 [FIG] assets/08-schema-bd.png | Modèle physique de données : quatorze tables, clés, contraintes et index
 
@@ -472,9 +1135,46 @@ pleinement, et 3,8 la note moyenne de référence.
 
 Enfin, le filtre par service utilise deux opérateurs différents selon le contexte. La recherche libre exige que le garage offre tous les services demandés ; la recherche déclenchée par un appel d'urgence se contente d'un service au moins. Les deux consomment le même index, la bascule ne coûte donc rien en performance, mais elle change complètement le sens — et c'est bien le second sens dont l'appel d'urgence a besoin, puisque la taxonomie lui fournit des compétences alternatives et non une liste d'exigences.
 
+#2 La preuve d'arrivée et le registre des commissions
+
+Le produit se rémunère en apportant des clients aux garages. Facturer suppose donc de pouvoir affirmer qu'un client a bien été apporté, et cette affirmation ne peut pas reposer sur un bouton que le débiteur appuierait lui-même. Elle repose sur la trace de celui qui s'est déplacé.
+
+La fonction qui rend ce jugement lit trois signaux, dans cet ordre. D'abord la sédentarisation : le dernier point de la fenêtre se trouve-t-il à moins de cent cinquante mètres de la destination ? Ensuite la longueur : le trajet a-t-il une distance réelle ? Enfin la durée : la demande a-t-elle vécu assez longtemps après l'arrivée ?
+
+Le premier signal mérite un commentaire, parce qu'il tire parti d'une contrainte qui semblait être un défaut. Pour ne pas dévorer un forfait de données, le téléphone n'émet un point qu'au-delà de quinze mètres parcourus ; un véhicule à l'arrêt cesse donc complètement d'émettre. C'est en réalité le signal le plus fiable dont on dispose : une trace qui **s'arrête** au lieu de s'éloigner est exactement la signature d'une arrivée, là où un simple passage devant laisse des points qui continuent.
+
+[TAB] Les quatre niveaux de preuve d'arrivée
+Niveau | Ce qu'il établit | Facturable
+`none` | Aucune trace n'établit un déplacement | Non
+`weak` | Trajet trop court, ou intervention trop brève | Non
+`trail` | La trace établit le déplacement | Oui
+`mutual` | La trace l'établit **et** les deux parties en conviennent | Oui
+[/TAB]
+
+Les seuils sont identiques dans les deux modes de service, et c'est délibéré : un client qui habite en face de l'atelier n'a pas davantage « été apporté » qu'un garagiste qui traverse la rue. Une fraude symétrique se traite symétriquement.
+
+Un point de conception mérite d'être souligné, car il est contre-intuitif. La double confirmation d'arrivée ne **crée** aucun droit à facturation : elle ne fait que hisser d'un cran une preuve déjà acquise par la trace. Le raisonnement est simple — dès qu'une confirmation conditionnerait la facture, le débiteur aurait intérêt à la retenir.
+
+Chaque intervention close écrit une ligne au registre, y compris lorsque rien n'est dû, avec le motif en clair. Une ligne manquante ne se compte pas, et c'est tout l'intérêt d'un registre d'observation.
+
+[TAB] Barème d'hypothèse, en francs CFA
+Classe | Situation | Montant
+`light` | Le véhicule roule encore : batterie, pneu, panne sèche, éclairage | 500
+`heavy` | Le véhicule ne roule plus, ou accident : plateau, mécanique | 1 500
+Paire récurrente | Ce client est déjà venu chez ce garage par l'application | Moitié du tarif
+[/TAB]
+
+La remise de moitié accordée aux clients qui reviennent n'est pas une générosité, c'est la réponse à la désintermédiation. Un garage qui a rencontré un client une fois détient son numéro et n'a plus besoin de l'application — sauf si continuer à passer par elle lui revient moins cher que le premier contact. La menace devient alors un argument commercial.
+
+Les montants sont arrondis à la cinquantaine inférieure et non à la centaine, parce que la remise de moitié produit des montants en 250 et 750 qu'un arrondi à la centaine ramènerait à 200 et 700, soit une remise de soixante pour cent au lieu de cinquante. On ne promet pas la moitié pour en donner davantage. Cinquante francs est par ailleurs la plus petite pièce d'usage courant, ce qui garantit qu'un montant se vérifie de tête.
+
+[NOTE] Rien n'est prélevé pour l'instant, et c'est le but
+Le registre tourne en observation : il inscrit ce qu'on aurait facturé sans qu'un franc ne change de main. Au bout de deux mois on saura combien de clients ont été apportés, dans quelle proportion d'interventions légères et lourdes, et combien de clients reviennent chez le même garage. Le barème se décidera sur ces chiffres au lieu d'une intuition, et le basculement ne coûtera qu'une constante. Un script d'étalonnage relit les interventions terminées et compte les faux négatifs — des demandes closes dont la preuve n'atteint pas le seuil, l'erreur qui fait fuir les garages honnêtes — et les faux positifs, qui cassent la confiance dans l'autre sens.
+[/NOTE]
+
 #2 Contrats de l'interface de programmation
 
-L'interface expose quarante-quatre routes réparties en six domaines. Les erreurs suivent toujours la même forme, un objet portant un code, un message et éventuellement les champs fautifs ; le mobile traduit sur le code et jamais sur le message, ce qui permet de changer les libellés sans casser les clients. Les dates sont exprimées en temps universel au format normalisé, la pagination est enveloppée, et chaque entrée est validée par un schéma partagé avant d'atteindre le contrôleur.
+L'interface expose quarante-trois routes réparties en six domaines. Les erreurs suivent toujours la même forme, un objet portant un code, un message et éventuellement les champs fautifs ; le mobile traduit sur le code et jamais sur le message, ce qui permet de changer les libellés sans casser les clients. Les dates sont exprimées en temps universel au format normalisé, la pagination est enveloppée, et chaque entrée est validée par un schéma partagé avant d'atteindre le contrôleur.
 
 [TAB] Routes principales de l'interface de programmation
 Méthode | Route | Rôle
@@ -656,17 +1356,17 @@ Validation | Schémas partagés serveur et mobile | Une règle écrite une fois,
 
 #2 État d'avancement
 
-L'application est construite. L'ossature complète — navigation, authentification, carte, déclaration de panne, résultats classés, suivi temps réel, clôture, fidélité, mode conduite, espace garagiste — est en place et fonctionne de bout en bout.
+L'application est construite. L'ossature complète — navigation, authentification, carte, déclaration de panne, résultats classés, suivi temps réel dans les deux sens, clôture, preuve d'arrivée, registre des commissions, fidélité, mode conduite, espace garagiste — est en place et fonctionne de bout en bout.
 
 [TAB] Volumétrie du code livré
 Indicateur | Valeur
-Lignes de TypeScript et TSX | environ 47 500
+Lignes de TypeScript et TSX | 51 954
 Routes d'écran mobile | 26
-Écrans dont le code dépasse 400 lignes | 15
-Routes exposées par l'interface de programmation | 44
+Routes exposées par l'interface de programmation | 43
 Tables de base de données | 14
-Migrations SQL versionnées | 7
-Fichiers de tests automatisés | 26
+Migrations SQL versionnées | 9
+Fichiers de tests automatisés | 29
+Cas de test | 327
 Garages du jeu de données de développement | 32, à Yaoundé
 [/TAB]
 
@@ -706,6 +1406,20 @@ Le mode conduite affiche la vitesse en grand caractère monospacé, les statisti
 
 Les sessions sont enregistrées localement pendant leur déroulement et envoyées groupées à la fin, avec un identifiant généré par le mobile qui rend le renvoi idempotent. Une session de conduite ne consomme donc pas de réseau en direct.
 
+#3 Le choix du mode et la conduite vers l'atelier
+
+Deux écrans sont nés de l'introduction des modes de service, et leur traitement illustre une règle suivie tout au long du projet : séparer plutôt que conditionner.
+
+Le sélecteur de mode s'insère dans la déclaration de panne, après les deux constats — immobilisation, passagers vulnérables — et jamais avant, parce qu'on ne peut pas répondre « je vais au garage » sans avoir d'abord dit si le véhicule roule. Placée plus haut, la question aurait obligé à revenir en arrière. Les deux options sont empilées et non côte à côte : chacune porte sa conséquence en clair, ce qui demande une ligne entière. L'aplat de sélection est en encre et non en rouge, parce que le rouge de ce formulaire appartient au danger et au bouton d'envoi ; l'étendre à une sélection ordinaire le viderait au moment précis où il doit alerter.
+
+Lorsque le véhicule est déclaré immobilisé, le sélecteur ne se grise pas : il disparaît et laisse une phrase explicative. Un choix impossible qu'on grise reste un choix qu'on a proposé, et sur un écran d'urgence chaque option écartée est une seconde gagnée.
+
+Le suivi, lui, aiguille vers deux écrans distincts plutôt que vers un composant à conditions. Sur l'un, on est assis au bord d'une route et l'écran répond à « où en est-il ? » ; sur l'autre, on conduit et il répond à « où je vais ». Les empiler aurait produit un composant dont la moitié des lignes commencent par un test. Le panneau d'information et le rail de progression restent en revanche les mêmes composants dans les deux sens ; seuls trois libellés changent de sujet.
+
+Un détail d'ergonomie mérite d'être signalé parce qu'il est en réalité une décision technique : le bouton « Je pars » n'ouvre aucune boîte de confirmation. Ce bouton ouvre la fenêtre de lecture de la trace, et un geste de plus est un geste qu'on saute — donc un trajet qu'on ne saura pas prouver. Le risque inverse est nul, puisqu'appuyer trop tôt ne fait qu'élargir la fenêtre.
+
+Côté garagiste, l'étiquette signalant que le client se déplace n'apparaît que dans ce cas, sur la file de travail. L'omission est le sujet : le déplacement du garagiste est le cas fondateur, et le marquer sur chaque ligne en ferait un ornement qu'on cesse de voir. Le défaut silencieux est aussi le défaut sûr — un garagiste qui ignore l'existence du marqueur lit une ligne nue et suppose qu'il doit se déplacer, ce qui est exact. Sur la fiche en revanche, un bandeau annonce les deux modes, parce qu'on parcourt une file mais qu'on s'engage sur une fiche, et que l'information manquante y porterait sur la seule chose à préparer avant de répondre : sortir un véhicule, ou ne pas le sortir.
+
 #3 Fidélité, menu et paramètres
 
 [FIG2] assets/maq-08-profil-fidelite.png | assets/maq-09-menu-lateral.png | Espace de fidélité avec grade et progression, et tiroir latéral de navigation | 9.4
@@ -720,14 +1434,13 @@ Le mode sombre n'est pas un simple inversement de contraste. Il conserve la chal
 
 #2 Tests et validation
 
-La suite de tests compte cent trente-trois tests répartis en vingt-six fichiers.
+La suite de tests compte trois cent vingt-sept cas répartis en vingt-neuf fichiers.
 
 [TAB] Répartition des tests automatisés
 Suite | Nombre | Base de données requise
-Contrats partagés : barème, taxonomie, géométrie, machine à états | 49 | Non
-Interface de programmation : routes, SQL compilé, calcul d'arrivée | 35 | Non
-Interface de programmation : géospatial, plan d'index, tris, filtres, repli | 21 | Oui
-Mobile : filtre de position, moteur de simulation, file de travail | 28 | Non
+Contrats partagés : barème, taxonomie, géométrie, machine à états, preuve d'arrivée, modes de service | 119 | Non
+Interface de programmation : routes, SQL compilé, calcul d'arrivée, géospatial | 63 | Partiellement
+Mobile : filtre de position, moteur de simulation, file de travail, style de carte, historique | 145 | Non
 [/TAB]
 
 Les tests géospatiaux exigent une véritable instance PostgreSQL avec son extension. Aucune base en mémoire ne sait exécuter la fonction de filtrage par distance, et tester la requête centrale du produit contre une imitation ne prouverait rien. Ces tests sont donc ignorés par défaut et ne s'exécutent que si une base de test est explicitement fournie, sur une branche dédiée puisque la suite réinitialise le schéma.
@@ -746,7 +1459,7 @@ Les notifications par poussée sont préparées côté routes mais non branchée
 
 L'écran de sécurité et l'interface anglaise restent à produire, cette dernière disposant déjà de tous ses libellés métier côté serveur.
 
-Enfin, les seuils du dispositif anti-fraude sont posés dans le code mais n'ont jamais été confrontés à des données réelles. Ils devront être révisés après les premières semaines d'exploitation, ce qui est le propre de ce genre de valeur : elles se calibrent sur le terrain, pas sur une intuition.
+Enfin, les seuils du dispositif anti-fraude et ceux de la preuve d'arrivée sont posés dans le code mais n'ont jamais été confrontés à des données réelles. Le script d'étalonnage existe et ne modifie rien ; il reste à le relancer maintenant que les deux modes de service coexistent, car les seuils ont été calibrés sur des dépanneuses et rien ne dit encore qu'ils conviennent à des clients au volant. Ce sont des valeurs qui se calibrent sur le terrain, pas sur une intuition.
 
 #1 Conclusion
 
@@ -773,6 +1486,8 @@ La troisième est que l'application n'a pas encore tourné sur un appareil en co
 À court terme, la campagne d'essais sur appareil est prioritaire, suivie du déploiement du moteur d'itinéraire et du branchement des notifications.
 
 À moyen terme, le service gagnerait un espace d'administration pour le traitement des dossiers de garage, aujourd'hui manuel, et une interface anglaise dont l'essentiel du travail est déjà fait côté serveur.
+
+Le changement de mode en cours d'intervention est un manque connu : un client qui annonce venir puis dont la voiture cale doit aujourd'hui annuler et refaire une demande. Le corriger suppose l'accord des deux parties, donc un état de négociation dans la machine à états et le traitement du refus. La structure est prête — le mode vit dans une colonne modifiable, doublée d'un événement de journal qui conserverait l'historique du changement — mais le travail ne se justifiera qu'une fois connue la fréquence réelle du cas.
 
 À plus long terme, deux directions ouvrent le produit. La première est la conversion des points en Mobile Money, qui suppose que le dispositif anti-fraude ait fait ses preuves sur des données réelles et qui restera assortie d'une revue humaine sur les montants significatifs. La seconde est l'extension à Douala puis aux autres villes, qui ne demande aucun travail d'ingénierie particulier — le modèle n'a rien de spécifique à Yaoundé — mais qui demande un travail de terrain considérable, puisqu'il faut constituer et vérifier une base de garages ville par ville. C'est d'ailleurs le vrai actif du produit : le code se réécrit, la base de garages vérifiés ne se réécrit pas.
 
