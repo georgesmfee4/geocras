@@ -106,7 +106,9 @@ export function GarageMarkers({ garages, onSelect, selectedId = null }: GarageMa
               {showCallout ? (
                 <View
                   style={{
-                    backgroundColor: theme.colors.ink,
+                    // La carte reste claire dans les deux thèmes : la bulle
+                    // doit donc rester sombre. Cf. le jeton `panel`.
+                    backgroundColor: theme.colors.panel,
                     paddingHorizontal: theme.space.md,
                     paddingVertical: theme.space.sm,
                     marginBottom: theme.space.sm,

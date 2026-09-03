@@ -404,7 +404,8 @@ function DrawerContent({ navigation }: DrawerContentComponentProps) {
                     paddingVertical: 3,
                   }}
                 >
-                  <Text variant="lblb" style={{ color: theme.colors.ink }}>
+                  {/* Aplat ambre invariant : l'encre doit l'être aussi. */}
+                  <Text variant="lblb" style={{ color: theme.colors.onHighlight }}>
                     {t('drawer.beta')}
                   </Text>
                 </View>

@@ -138,7 +138,7 @@ export function GarageResultRow({
                 }}
               >
                 {/* Bebas ne contient pas ✓ : icône vectorielle plutôt que tofu. */}
-                <CheckIcon color={theme.colors.surface} size={11} />
+                <CheckIcon color={theme.colors.onFill} size={11} />
                 <Text variant="lblb" tone="inverse">
                   {t('garage.certified')}
                 </Text>

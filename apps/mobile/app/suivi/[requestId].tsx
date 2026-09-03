@@ -11,6 +11,7 @@ import { usePreferences } from '../../src/settings/preferences';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { AwaitingGarage } from '../../src/sos/AwaitingGarage';
 import { forgetSentAt, useSentAt } from '../../src/sos/sentAt';
+import { DriveToGarage } from '../../src/tracking/DriveToGarage';
 import { LiveTracking } from '../../src/tracking/LiveTracking';
 import { TrackingDone } from '../../src/tracking/TrackingDone';
 import { Text } from '../../src/ui/Text';
@@ -42,6 +43,15 @@ export default function SuiviScreen() {
   /** Dernier événement du journal — voir l'effet de retour à la liste. */
   const lastEvent = useTrackingStore((state) => state.lastEvent);
   const toClient = useTrackingStore((state) => state.toClient);
+  /**
+   * ETA du **client vers l'atelier**.
+   *
+   * Le serveur calcule les deux sens depuis toujours — la maquette 04 affiche
+   * « 1,2 km · à pied » pour le trajet du client — mais rien ne s'en servait
+   * jusqu'ici. C'est ce champ qui nourrit tout le second mode : le panneau, la
+   * distance, et la fenêtre de proximité qui ouvre la confirmation d'arrivée.
+   */
+  const toGarage = useTrackingStore((state) => state.toGarage);
   const lastPacketAt = useTrackingStore((state) => state.lastPacketAt);
   const cancelRequest = useCancelRequest(requestId ?? '');
 
@@ -73,13 +83,34 @@ export default function SuiviScreen() {
     status === 'accepted' || status === 'en_route' || status === 'awaiting_confirmation';
 
   /**
+   * Qui se déplace sur cette demande.
+   *
+   * `on_site` par défaut tant que la fiche n'est pas arrivée, et ce défaut est
+   * sans conséquence : les deux écrans de suivi se rendent vides sans fiche —
+   * l'un n'a pas de lieu de panne, l'autre pas d'atelier. On ne risque donc
+   * pas d'afficher le mauvais pendant une fraction de seconde, seulement de
+   * ne rien afficher, ce qui est déjà l'état de cet instant-là.
+   */
+  const mode = detail?.serviceMode ?? 'on_site';
+
+  /**
    * Trajet routier du dépanneur.
    *
    * Demandé seulement une fois le garagiste engagé, et **reclé sur sa
    * position** : la position arrive par socket à chaque ping, le tracé n'est
    * redemandé que lorsqu'elle a changé de rue. Voir `useApproachRoute`.
    */
-  const approach = useApproachRoute(requestId ?? null, toClient?.position ?? null, engaged);
+  const approach = useApproachRoute(
+    requestId ?? null,
+    /*
+      La clé de rafraîchissement suit **celui qui bouge**. Rekeyer sur la
+      position du garagiste alors que c'est le client qui roule aurait figé le
+      tracé sur un atelier immobile : la route n'aurait jamais été redemandée,
+      et le client aurait suivi une ligne calculée au moment du départ.
+    */
+    (mode === 'on_site' ? toClient?.position : toGarage?.position) ?? null,
+    engaged,
+  );
 
   /**
    * L'acceptation est la seule bonne nouvelle de cet écran, et elle arrive
@@ -255,6 +286,30 @@ export default function SuiviScreen() {
   }
 
   if (engaged) {
+    /*
+      Deux écrans pour un même état, et l'aiguillage tient au seul mode.
+
+      Ce n'est pas une variante d'affichage : les gestes diffèrent. Sur
+      `LiveTracking` le client attend et confirme ; sur `DriveToGarage` il
+      déclare son départ, conduit, puis confirme. C'est ce départ déclaré qui
+      ouvre la fenêtre de lecture de sa trace — sans cet écran, un trajet client
+      ne serait jamais prouvable.
+    */
+    if (mode === 'at_garage') {
+      return (
+        <DriveToGarage
+          requestId={requestId ?? ''}
+          detail={detail}
+          status={status}
+          toGarage={toGarage}
+          route={approach.data ?? null}
+          connection={connection}
+          lastPacketAt={lastPacketAt}
+          onBack={leave}
+        />
+      );
+    }
+
     return (
       <LiveTracking
         requestId={requestId ?? ''}

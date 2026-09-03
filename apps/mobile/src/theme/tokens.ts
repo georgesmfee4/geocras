@@ -134,6 +134,36 @@ const lightColors = {
    * de densité en basculant de thème alors qu'il ne le devrait pas.
    */
   onHeroMuted: '#A8A196',
+  /**
+   * Aplat sombre **permanent**, et l'encre qui va dessus.
+   *
+   * Les deux jetons valent la même chose dans les deux thèmes, et c'est tout
+   * leur objet.
+   *
+   * ---
+   *
+   * **Le défaut qu'ils corrigent.** Ces panneaux étaient peints avec `ink`,
+   * qui est la couleur du **texte** et s'inverse donc avec le thème :
+   * `#1C1A17` en clair, `#FFFFFF` en sombre. Un panneau censé être sombre
+   * devenait blanc en mode sombre — et tous les libellés qu'il porte, écrits
+   * en blanc translucide ou en `tone="inverse"`, disparaissaient purement et
+   * simplement. Le panneau de suivi, le bandeau de navigation, le bloc de
+   * fidélité et les bulles de nom sur la carte étaient concernés.
+   *
+   * Un même jeton portait deux rôles opposés : « la couleur de l'encre », qui
+   * doit s'inverser, et « un aplat sombre », qui ne doit pas. On les sépare.
+   *
+   * `panel` ne peut pas suivre le thème pour une raison de fond : ces panneaux
+   * sont posés sur la **carte**, dont le style MapLibre est un document unique,
+   * clair dans les deux thèmes (cf. `mapColors`). Un panneau qui s'éclaircirait
+   * pendant que la carte reste claire ne s'en détacherait plus.
+   *
+   * `onFill` vaut aussi pour les aplats **saturés** — la pastille rouge, le
+   * disque vert d'une intervention terminée : là encore l'encre doit rester
+   * blanche quel que soit le thème.
+   */
+  panel: '#1C1A17',
+  onFill: '#FFFFFF',
   shadow: '#1C1A17',
 };
 
@@ -183,6 +213,36 @@ const darkColors: Colors = {
   hero: '#1F1C19',
   onHero: '#FFFFFF',
   onHeroMuted: '#A8A196',
+  /**
+   * Aplat sombre **permanent**, et l'encre qui va dessus.
+   *
+   * Les deux jetons valent la même chose dans les deux thèmes, et c'est tout
+   * leur objet.
+   *
+   * ---
+   *
+   * **Le défaut qu'ils corrigent.** Ces panneaux étaient peints avec `ink`,
+   * qui est la couleur du **texte** et s'inverse donc avec le thème :
+   * `#1C1A17` en clair, `#FFFFFF` en sombre. Un panneau censé être sombre
+   * devenait blanc en mode sombre — et tous les libellés qu'il porte, écrits
+   * en blanc translucide ou en `tone="inverse"`, disparaissaient purement et
+   * simplement. Le panneau de suivi, le bandeau de navigation, le bloc de
+   * fidélité et les bulles de nom sur la carte étaient concernés.
+   *
+   * Un même jeton portait deux rôles opposés : « la couleur de l'encre », qui
+   * doit s'inverser, et « un aplat sombre », qui ne doit pas. On les sépare.
+   *
+   * `panel` ne peut pas suivre le thème pour une raison de fond : ces panneaux
+   * sont posés sur la **carte**, dont le style MapLibre est un document unique,
+   * clair dans les deux thèmes (cf. `mapColors`). Un panneau qui s'éclaircirait
+   * pendant que la carte reste claire ne s'en détacherait plus.
+   *
+   * `onFill` vaut aussi pour les aplats **saturés** — la pastille rouge, le
+   * disque vert d'une intervention terminée : là encore l'encre doit rester
+   * blanche quel que soit le thème.
+   */
+  panel: '#1C1A17',
+  onFill: '#FFFFFF',
   shadow: '#000000',
 };
 
@@ -467,6 +527,21 @@ export const sectionRule = { width: 14, height: 2 } as const;
 
 /** Trait de l'onglet actif, collé au bord haut de la barre. */
 export const tabIndicator = { width: 26, height: 2.5 } as const;
+
+/**
+ * Taille du pictogramme d'onglet.
+ *
+ * Vingt-sept et non vingt-trois : la maquette les donne nettement plus
+ * présents, et la valeur d'origine les rendait plus discrets que le libellé
+ * placé dessous — alors que c'est l'icône qu'on vise en plein soleil, et le
+ * mot qui ne sert qu'à lever un doute.
+ *
+ * Un jeton plutôt qu'un nombre dans la barre : la règle du projet veut
+ * qu'aucune valeur visuelle ne vive dans un composant, et celle-ci a trois
+ * lecteurs — l'icône, la pastille de compteur qui se positionne par rapport à
+ * elle, et la hauteur de barre qui doit continuer de la contenir.
+ */
+export const tabIconSize = 27;
 
 export const tabBarHeight = 82;
 

@@ -10,6 +10,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET } from '../theme/tokens';
 import { BlinkingDot } from '../ui/BlinkingDot';
 import { CameraIcon, ChevronRightSmallIcon, MapPinIcon, TowTruckIcon } from '../ui/icons';
+import { ServiceModeTag } from '../ui/ServiceModeTag';
 import { Text } from '../ui/Text';
 import { UrgencyTag, urgencyColor } from './UrgencyTag';
 import { WaitingClock } from './WaitingClock';
@@ -88,8 +89,8 @@ export function JobRow({ job, onPress }: JobRowProps) {
                   backgroundColor: theme.colors.overlay,
                 }}
               >
-                <CameraIcon color={theme.colors.surface} size={10} />
-                <Text variant="numSm" style={{ color: theme.colors.surface }}>
+                <CameraIcon color={theme.colors.onFill} size={10} />
+                <Text variant="numSm" style={{ color: theme.colors.onFill }}>
                   {job.photos.length}
                 </Text>
               </View>
@@ -100,6 +101,12 @@ export function JobRow({ job, onPress }: JobRowProps) {
         <View style={{ flex: 1, gap: 5 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
             <UrgencyTag urgency={job.urgency} />
+            {/*
+              Rien en `on_site` — cf. `ServiceModeTag`. La ligne garde donc
+              exactement sa silhouette actuelle dans le cas courant, et ne
+              gagne un signe que là où le plan du garagiste change.
+            */}
+            <ServiceModeTag mode={job.serviceMode} />
             <View style={{ flex: 1 }} />
             {waiting ? (
               <WaitingClock since={job.selectedAt ?? job.createdAt} variant="numSm" />

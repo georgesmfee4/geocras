@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -20,6 +20,8 @@ import type { TranslationKey } from '../../src/i18n/translations';
 import { ActionBar, useActionBarInset } from '../../src/ui/ActionBar';
 import { JobLocationMap } from '../../src/jobs/JobLocationMap';
 import { JobPhotos } from '../../src/jobs/JobPhotos';
+import { JobDone } from '../../src/jobs/JobDone';
+import { ServiceModeBand } from '../../src/ui/ServiceModeTag';
 import { UrgencyTag, urgencyColor } from '../../src/jobs/UrgencyTag';
 import { WaitingClock } from '../../src/jobs/WaitingClock';
 import { useLocation } from '../../src/location/LocationProvider';
@@ -73,6 +75,19 @@ export default function JobDetailScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * L'intervention vient d'être close **par notre propre confirmation**.
+   *
+   * Retenu ici parce que la file ne peut pas le dire : `closed` en est exclu,
+   * donc la demande disparaît à la seconde où elle se termine. Sans ce
+   * témoin, l'écran retombait sur son message d'absence et annonçait une
+   * annulation du client là où le travail venait d'aboutir.
+   *
+   * La réponse du serveur est la seule source certaine : elle porte le statut
+   * réellement atteint, et non une déduction sur ce qu'on croyait savoir.
+   */
+  const [justClosed, setJustClosed] = useState(false);
+
   const barInset = useActionBarInset();
 
   const job = useMemo(() => {
@@ -119,7 +134,20 @@ export default function JobDetailScreen() {
     if (!job) return;
     void run(
       () => act.mutateAsync({ requestId: job.id, action: 'accept' }),
-      () => router.push(`/interventions/route/${job.id}` as never),
+      () => {
+        /*
+          On n'ouvre l'itinéraire que si l'on part quelque part.
+
+          En `at_garage` le garagiste ne bouge pas : lui pousser un écran de
+          navigation vers le lieu de la panne l'enverrait chercher un client
+          qui est déjà en train de venir. Il reste donc sur sa fiche, où la
+          barre d'action lui dit qu'il attend — et où il retrouvera le bouton
+          de confirmation quand le client sera là.
+        */
+        if (job.serviceMode === 'on_site') {
+          router.push(`/interventions/route/${job.id}` as never);
+        }
+      },
     );
   }, [job, act, router, run]);
 
@@ -159,13 +187,46 @@ export default function JobDetailScreen() {
 
   const onConfirmArrival = useCallback(() => {
     if (!job) return;
-    void run(() =>
-      confirmArrival.mutateAsync({
+    void run(async () => {
+      const updated = await confirmArrival.mutateAsync({
         requestId: job.id,
         position: fix ? { lat: fix.lat, lng: fix.lng } : null,
-      }),
-    );
+      });
+
+      // Les deux parties ont confirmé : la demande est close et quitte la file.
+      // On le sait par la réponse, avant même que la file ne se recharge.
+      if (updated.status === 'closed') setJustClosed(true);
+    });
   }, [job, confirmArrival, fix, run]);
+
+  /**
+   * Le dernier état connu du dossier.
+   *
+   * Une intervention close quitte la file : `job` retombe à `null` au moment
+   * même où l'on veut nommer ce qui vient de se terminer. On retient donc la
+   * dernière version vue — elle n'a pas à être fraîche, elle ne sert qu'à
+   * rappeler de quelle panne et de quel client il s'agissait.
+   */
+  const lastJob = useRef<Job | null>(null);
+
+  useEffect(() => {
+    if (job) lastJob.current = job;
+  }, [job]);
+
+  const leaveToDesk = useCallback(() => {
+    router.replace('/(drawer)/(tabs)/interventions' as never);
+  }, [router]);
+
+  /*
+    L'ordre compte : la clôture se teste **avant** l'absence.
+
+    Une demande close est justement une demande absente de la file. Tester
+    l'absence d'abord ferait retomber toutes les fins d'intervention réussies
+    dans le message d'erreur — c'est exactement le défaut qu'on corrige.
+  */
+  if (justClosed) {
+    return <JobDone job={lastJob.current} onClose={leaveToDesk} />;
+  }
 
   if (!job) {
     return (
@@ -216,8 +277,8 @@ export default function JobDetailScreen() {
               paddingVertical: theme.space.sm,
             }}
           >
-            <AlertIcon color={theme.colors.surface} size={16} />
-            <Text variant="h2" style={{ color: theme.colors.surface }}>
+            <AlertIcon color={theme.colors.onFill} size={16} />
+            <Text variant="h2" style={{ color: theme.colors.onFill }}>
               {t('jobs.dangerBanner')}
             </Text>
           </View>
@@ -251,6 +312,17 @@ export default function JobDetailScreen() {
               {job.client.plate ? <PlateTag plate={job.client.plate} /> : null}
             </View>
           </View>
+
+          {/*
+            Qui se déplace, avant les chiffres.
+
+            Placé ici et non plus bas parce qu'il **change la lecture du tableau
+            de bord** : les mêmes 3,2 km sont une distance à parcourir dans un
+            cas, la longueur du trajet que le client est en train de faire dans
+            l'autre. Poser le bandeau après aurait laissé lire les chiffres une
+            première fois de travers.
+          */}
+          <ServiceModeBand mode={job.serviceMode} />
 
           {/* — Les trois chiffres qui décident — */}
           <Metrics job={job} />
@@ -379,11 +451,40 @@ export default function JobDetailScreen() {
             onPress: onCall,
             disabled: !job.client.phone,
           }}
-          primary={
-            action === 'confirm_arrival'
-              ? { label: t('jobs.confirmArrival'), icon: CheckIcon, onPress: onConfirmArrival }
-              : { label: t('jobs.goThere'), icon: ChevronRightIcon, onPress: onNavigate }
-          }
+          {...(action === 'confirm_arrival'
+            ? {
+                primary: {
+                  label: t('jobs.confirmArrival'),
+                  icon: CheckIcon,
+                  onPress: onConfirmArrival,
+                },
+              }
+            : action === 'en_route'
+              ? {
+                  primary: {
+                    label: t('jobs.goThere'),
+                    icon: ChevronRightIcon,
+                    onPress: onNavigate,
+                  },
+                }
+              : {
+                  /*
+                    Rien à faire : la barre porte une **attente**, pas un bouton
+                    éteint. Le garagiste ne peut pas appuyer, donc rien ne doit
+                    ressembler à un bouton — cf. `WaitingSlot`.
+
+                    Deux attentes distinctes tombent ici, et les confondre sous
+                    un même mot laisserait sans réponse la seule question qu'il
+                    se pose : « et maintenant ? ». Son arrivée déjà confirmée,
+                    on attend que le client en convienne. Sinon, c'est une
+                    demande `at_garage` acceptée : on attend qu'il parte.
+                  */
+                  waiting: t(
+                    job.garageArrivedAt !== null
+                      ? 'jobs.awaitingClientShort'
+                      : 'jobs.awaitingDeparture',
+                  ),
+                })}
         />
       ) : (
         <ActionBar
@@ -421,7 +522,16 @@ function Metrics({ job }: { job: Job }) {
     >
       <Cell label={t('jobs.distance')} value={formatDistance(job.distanceM)} />
       <Divider />
-      <Cell label={t('jobs.approach')} value={`${job.etaMin} min`} />
+      {/*
+        La distance ne change pas de sens avec le mode — elle est symétrique —
+        mais la durée, si : « approche » nomme un trajet que le garagiste ne
+        fait pas en `at_garage`. Le chiffre reste le même, son intitulé dit de
+        qui il parle.
+      */}
+      <Cell
+        label={t(job.serviceMode === 'on_site' ? 'jobs.approach' : 'jobs.clientTrip')}
+        value={`${job.etaMin} min`}
+      />
       <Divider />
       <Cell
         label={t('jobs.waiting')}

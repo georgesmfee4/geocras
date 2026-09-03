@@ -60,6 +60,18 @@ export type NearbySearchParams = {
   matchAny?: boolean | undefined;
   openNow?: boolean | undefined;
   certifiedOnly?: boolean | undefined;
+  /**
+   * Écarte les garages détenus par ce compte.
+   *
+   * Sert au SOS et à lui seul : on ne propose pas à quelqu'un de se dépanner
+   * lui-même. La carte de recherche, elle, ne passe rien ici — un garagiste doit
+   * évidemment voir son propre atelier sur la carte.
+   *
+   * Le filtre est appliqué **dans la requête**, avant le calcul du rang. Écarter
+   * la ligne après coup laisserait un trou dans la numérotation des écussons,
+   * or le rang vient du serveur et le mobile ne le recalcule jamais.
+   */
+  excludeOwnedBy?: string | null | undefined;
 };
 
 /**
@@ -110,6 +122,18 @@ function candidatesCte(params: NearbySearchParams, constrainRadius: boolean) {
   // Filtre, pas tri : consomme l'index partiel `garages_certified_location_idx`.
   const certifiedFilter = params.certifiedOnly ? sql`AND g.certified` : sql``;
 
+  /*
+    On ne se propose pas à soi-même.
+
+    `IS DISTINCT FROM` et non `<>` : `owner_user_id` est nullable, et une
+    comparaison ordinaire rendrait NULL — donc faux — sur tous les garages du
+    seed, qui n'ont pas de propriétaire. Le filtre les aurait tous écartés, et
+    un SOS n'aurait plus rien renvoyé du tout.
+  */
+  const ownerFilter = params.excludeOwnedBy
+    ? sql`AND g.owner_user_id IS DISTINCT FROM ${params.excludeOwnedBy}::uuid`
+    : sql``;
+
   return sql`
     SELECT
       g.id,
@@ -136,6 +160,7 @@ function candidatesCte(params: NearbySearchParams, constrainRadius: boolean) {
     ${servicesFilter}
     ${openFilter}
     ${certifiedFilter}
+    ${ownerFilter}
   `;
 }
 

@@ -6,6 +6,7 @@ import {
   type ApproachRoute,
   type RequestDetail,
   type RequestStatus,
+  type ServiceMode,
   type TrackingEta,
 } from '@geocras/shared';
 import { useI18n } from '../i18n/I18nProvider';
@@ -20,7 +21,17 @@ export type LivePanelProps = {
   status: RequestStatus;
   mechanic: RequestDetail['mechanic'];
   garageName: string | null;
-  /** ETA serveur du garagiste vers la panne. `null` avant le premier ping. */
+  /**
+   * Qui se déplace.
+   *
+   * Le panneau **ne calcule rien** : il rend l'ETA qu'on lui donne, et
+   * l'appelant lui passe déjà le bon — celui du garagiste vers la panne, ou
+   * celui du client vers l'atelier. Le mode ne sert donc qu'aux **mots** :
+   * trois libellés changent de sujet, et « Arrive dans » affiché à quelqu'un
+   * qui conduit lui ferait chercher un dépanneur qui n'est jamais parti.
+   */
+  mode: ServiceMode;
+  /** ETA serveur du voyageur vers sa destination. `null` avant le premier ping. */
   toClient: TrackingEta | null;
   /** Trajet routier. Prioritaire sur l'ETA à vol d'oiseau quand il existe. */
   route: ApproachRoute | null;
@@ -54,6 +65,7 @@ export function LivePanel({
   status,
   mechanic,
   garageName,
+  mode,
   toClient,
   route,
   clientArrived,
@@ -62,6 +74,9 @@ export function LivePanel({
 }: LivePanelProps) {
   const theme = useTheme();
   const { t, locale, formatDistance } = useI18n();
+
+  /** C'est le lecteur de ce panneau qui conduit. */
+  const driving = mode === 'at_garage';
 
   /**
    * La durée vient du **calcul routier** dès qu'il existe, et de l'ETA du suivi
@@ -80,21 +95,26 @@ export function LivePanel({
   return (
     <View
       style={{
-        backgroundColor: theme.colors.ink,
+        // `panel` et non `ink` : ce fond doit rester sombre dans les deux
+        // thèmes, sinon il devient blanc en mode sombre et tous les libellés
+        // blancs ci-dessous disparaissent. Cf. le jeton.
+        backgroundColor: theme.colors.panel,
         paddingHorizontal: theme.space.lg,
         paddingTop: theme.space.lg,
         paddingBottom: theme.space.md,
         gap: theme.space.lg,
       }}
     >
-      <TrackingProgress status={status} clientArrived={clientArrived} />
+      <TrackingProgress status={status} clientArrived={clientArrived} mode={mode} />
 
       {/* — Le chiffre, et ce qu'il vaut — */}
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: theme.space.lg }}>
         <View style={{ gap: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
             <Text variant="lblb" style={{ color: 'rgba(255,255,255,0.55)' }}>
-              {arrived ? t('live.onSite') : t('live.arrivesIn')}
+              {arrived
+                ? t(driving ? 'live.atWorkshop' : 'live.onSite')
+                : t(driving ? 'live.youArriveIn' : 'live.arrivesIn')}
             </Text>
             {!arrived && connection === 'live' ? (
               <BlinkingDot size={6} color={theme.colors.success} />
@@ -103,7 +123,7 @@ export function LivePanel({
 
           <Text
             variant="numXl"
-            style={{ color: theme.colors.surface, fontSize: 44, lineHeight: 46 }}
+            style={{ color: theme.colors.onFill, fontSize: 44, lineHeight: 46 }}
           >
             {arrived ? '—' : durationS === null ? '···' : formatRouteDuration(durationS, locale)}
           </Text>
@@ -165,7 +185,7 @@ export function LivePanel({
 
       {route && !route.fromLive && !arrived ? (
         <Text variant="txt" style={{ color: 'rgba(255,255,255,0.6)' }}>
-          {t('live.notMovingYet')}
+          {t(driving ? 'live.youNotMovingYet' : 'live.notMovingYet')}
         </Text>
       ) : null}
 
@@ -196,13 +216,13 @@ export function LivePanel({
             justifyContent: 'center',
           }}
         >
-          <Text variant="h2b" style={{ color: theme.colors.surface }}>
+          <Text variant="h2b" style={{ color: theme.colors.onFill }}>
             {mechanic?.initials ?? '—'}
           </Text>
         </View>
 
         <View style={{ flex: 1, gap: 2 }}>
-          <Text variant="h2b" numberOfLines={1} style={{ color: theme.colors.surface }}>
+          <Text variant="h2b" numberOfLines={1} style={{ color: theme.colors.onFill }}>
             {mechanic?.fullName ?? garageName ?? '—'}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.xs }}>
@@ -225,7 +245,7 @@ function Row({ label, value }: { label: string; value: string }) {
       <Text variant="lblb" style={{ color: 'rgba(255,255,255,0.55)', width: 66 }}>
         {label}
       </Text>
-      <Text variant="num" style={{ color: theme.colors.surface }}>
+      <Text variant="num" style={{ color: theme.colors.onFill }}>
         {value}
       </Text>
     </View>

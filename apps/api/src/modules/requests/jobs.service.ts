@@ -79,6 +79,16 @@ function toJob(row: JobRow): Job {
     originPrecise: accepted,
     distanceM,
     etaMin: estimateEtaMinutes(distanceM),
+    /*
+      Le mode part **avant** l'acceptation, contrairement au numéro de
+      téléphone et au point exact.
+
+      Ce n'est pas une donnée personnelle : c'est la nature de la prestation
+      demandée, et c'est précisément ce dont le garagiste a besoin pour
+      décider. « Faut-il que je sorte la dépanneuse ? » se répond avant
+      d'accepter, pas après.
+    */
+    serviceMode: row.service_mode,
 
     createdAt: new Date(row.created_at).toISOString(),
     selectedAt: iso(row.selected_at),

@@ -139,3 +139,39 @@ describe('note bayésienne', () => {
     expect(text).toContain('review_count');
   });
 });
+
+describe('exclusion du propriétaire', () => {
+  const MOI = '11111111-1111-4111-8111-111111111111';
+
+  /**
+   * Un garagiste ne se dépanne pas lui-même.
+   *
+   * Le filtre entre **dans la requête** et non après elle : le rang est calculé
+   * par `ROW_NUMBER()`, donc écarter la ligne une fois les résultats rendus
+   * laisserait un trou dans la numérotation des écussons — or le rang vient du
+   * serveur et le mobile ne le recalcule jamais.
+   */
+  it('écarte les garages du demandeur, dans la requête elle-même', () => {
+    const { sql: texte, parameters } = compile({ ...base, excludeOwnedBy: MOI });
+
+    expect(texte).toContain('owner_user_id');
+    expect(parameters).toContain(MOI);
+  });
+
+  /**
+   * `IS DISTINCT FROM` et non `<>`.
+   *
+   * `owner_user_id` est nullable : une comparaison ordinaire rendrait NULL —
+   * donc faux — sur tous les garages sans propriétaire, c'est-à-dire la
+   * totalité de ceux du seed. Le filtre les aurait tous écartés et un SOS
+   * n'aurait plus rien renvoyé.
+   */
+  it('laisse passer les garages sans propriétaire', () => {
+    expect(compile({ ...base, excludeOwnedBy: MOI }).sql).toContain('IS DISTINCT FROM');
+  });
+
+  it('n’ajoute rien quand personne n’est à exclure', () => {
+    expect(compile(base).sql).not.toContain('owner_user_id');
+    expect(compile({ ...base, excludeOwnedBy: null }).sql).not.toContain('owner_user_id');
+  });
+});

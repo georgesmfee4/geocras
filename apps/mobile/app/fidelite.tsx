@@ -363,7 +363,7 @@ function NextTierCard({ summary }: { summary: LoyaltySummary }) {
   return (
     <View style={{ paddingHorizontal: theme.space.xl }}>
       <View
-        style={{ backgroundColor: theme.colors.ink, padding: theme.space.lg, gap: theme.space.md }}
+        style={{ backgroundColor: theme.colors.panel, padding: theme.space.lg, gap: theme.space.md }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.md }}>
           <Text variant="h2b" tone="inverse" style={{ flex: 1 }}>
