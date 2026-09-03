@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { coordinatesSchema, uuidSchema } from './common';
-import { PROBLEM_TYPES, REQUEST_VEHICLE_TYPES, URGENCY_LEVELS } from '../taxonomy';
+import {
+  PROBLEM_TYPES,
+  REQUEST_VEHICLE_TYPES,
+  SERVICE_MODES,
+  URGENCY_LEVELS,
+} from '../taxonomy';
 import { REQUEST_STATUSES } from './requests';
 
 /**
@@ -48,6 +53,29 @@ export type JobClient = z.infer<typeof jobClientSchema>;
 export const PRIVACY_UNTIL_ACCEPTED = {
   /** Le point exact est arrondi à cette maille, en degrés. ≈ 550 m. */
   originGridDegrees: 0.005,
+
+  /**
+   * Rayon du disque montré au garagiste avant acceptation, en mètres.
+   *
+   * **Mille mètres, alors que l'arrondi n'en déplace le point que de 394 au
+   * pire.** L'écart est délibéré, et c'est la décision la plus importante de
+   * cette constante.
+   *
+   * Un disque tracé à la taille réelle de l'incertitude est une **information**
+   * : il dit « le véhicule est quelque part dans ces quatre cents mètres », ce
+   * qui, dans un quartier qu'on connaît par cœur, désigne une rue et parfois un
+   * carrefour. Le but de l'arrondi était précisément d'empêcher cela.
+   *
+   * On dessine donc plus large que ce que l'on sait. Sur-déclarer l'incertitude
+   * est sans danger — le point vrai reste dans le disque, largement — alors que
+   * la sous-déclarer trahirait la promesse faite au client. Et un rayon d'un
+   * kilomètre reste parfaitement utile au garagiste : il lui dit le quartier,
+   * ce qui est exactement ce qu'on lui demande de juger avant d'accepter.
+   *
+   * Le libellé `jobs.areaOnly` cite cette valeur en toutes lettres : la changer
+   * ici demande de le changer là-bas.
+   */
+  previewRadiusMeters: 1_000,
 } as const;
 
 /**
@@ -114,6 +142,16 @@ export const jobSchema = z.object({
   distanceM: z.number().nonnegative(),
   /** Estimation d'approche, même calcul que celui montré au client. */
   etaMin: z.number().int().positive(),
+
+  /**
+   * Le client vient-il, ou faut-il aller le chercher ?
+   *
+   * La première chose que le garagiste doit savoir sur une demande, avant même
+   * la panne : elle décide s'il sort un véhicule. Elle est servie dès la file
+   * d'attente, et non seulement sur la fiche, parce que c'est en survolant la
+   * file qu'il arbitre entre trois demandes.
+   */
+  serviceMode: z.enum(SERVICE_MODES),
 
   createdAt: z.string().datetime(),
   /** Instant où le client a retenu ce garage : l'origine du temps d'attente. */
@@ -189,12 +227,25 @@ export function compareIncomingJobs(a: Job, b: Job): number {
  */
 export type JobAction = 'accept' | 'en_route' | 'confirm_arrival';
 
-export function nextJobAction(job: Pick<Job, 'status' | 'garageArrivedAt'>): JobAction | null {
+export function nextJobAction(
+  job: Pick<Job, 'status' | 'garageArrivedAt' | 'serviceMode'>,
+): JobAction | null {
   switch (job.status) {
     case 'selected':
       return 'accept';
+    /**
+     * Acceptée, et c'est maintenant le mode qui dit qui bouge.
+     *
+     * En `on_site`, le garagiste annonce son départ : c'est `en_route`, et
+     * c'est cet horodatage qui ouvre la fenêtre de lecture de sa trace.
+     *
+     * En `at_garage`, il n'a **rien à faire** — c'est le client qui prend la
+     * route, et lui seul peut le déclarer. Lui proposer « Je pars » ici serait
+     * un bouton que le serveur refuserait (`declareEnRoute` n'accepte que le
+     * voyageur du mode), et surtout un bouton qui mentirait sur qui conduit.
+     */
     case 'accepted':
-      return 'en_route';
+      return job.serviceMode === 'on_site' ? 'en_route' : null;
     case 'en_route':
       return 'confirm_arrival';
     /**

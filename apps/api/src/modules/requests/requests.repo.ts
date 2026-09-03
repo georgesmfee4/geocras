@@ -1,5 +1,5 @@
 import { sql, type Kysely, type Transaction } from 'kysely';
-import type { PartyRole, RequestEventType } from '@geocras/shared';
+import type { PartyRole, ProofPing, RequestEventType } from '@geocras/shared';
 import type { Database } from '../../db/types';
 import { latOf, lngOf, pointFromLatLng, type LatLng } from '../../db/geo';
 
@@ -19,6 +19,7 @@ const REQUEST_COLUMNS = [
   'r.vulnerable_passengers',
   'r.photo_url',
   'r.accuracy_m',
+  'r.service_mode',
   'r.status',
   'r.last_seq',
   'r.created_at',
@@ -384,4 +385,73 @@ export async function findGarageSummaryById(db: Db, garageId: string) {
     ])
     .where('g.id', '=', garageId)
     .executeTakeFirst();
+}
+
+/**
+ * Toute la trace d'un rôle sur une demande, dans l'ordre chronologique.
+ *
+ * Distinct de `findLatestPositions`, qui ne rend que le dernier point de chacun
+ * pour alimenter les ETA : ici on a besoin du **trajet entier**, parce que la
+ * preuve d'arrivée se lit sur sa forme — d'où il part, s'il entre dans le rayon,
+ * et surtout s'il s'y arrête au lieu de repartir.
+ *
+ * Le tri est fait par la base et non en mémoire : l'index
+ * `pings_role_idx (request_id, role, recorded_at DESC)` le rend gratuit, et une
+ * preuve comptable ne se fie pas à un ordre implicite.
+ *
+ * Aucune borne de volume : une intervention d'une heure produit quelques
+ * centaines de points, l'émetteur n'envoyant qu'au-delà de quinze mètres
+ * parcourus. Un `LIMIT` couperait la fin du trajet, c'est-à-dire exactement la
+ * partie qui prouve l'arrivée.
+ */
+export async function findTrail(
+  db: Db,
+  requestId: string,
+  role: PartyRole,
+): Promise<ProofPing[]> {
+  const { rows } = await sql<{ lat: number; lng: number; recorded_at: Date }>`
+    SELECT
+      ST_Y(location::geometry) AS lat,
+      ST_X(location::geometry) AS lng,
+      recorded_at
+    FROM position_pings
+    WHERE request_id = ${requestId} AND role = ${role}
+    ORDER BY recorded_at ASC
+  `.execute(db);
+
+  return rows.map((row) => ({
+    lat: Number(row.lat),
+    lng: Number(row.lng),
+    recordedAt: new Date(row.recorded_at).toISOString(),
+  }));
+}
+
+/**
+ * Ce client est-il déjà venu chez ce garage par GeoCras ?
+ *
+ * Distinct de `closedPairCount`, qui compte les clôtures des trente derniers
+ * jours pour plafonner les crédits de fidélité. Ici la question n'a pas de
+ * fenêtre : un client rencontré il y a huit mois reste un client que le garage
+ * connaît, et c'est précisément ce que la remise de moitié récompense — le fait
+ * de continuer à passer par l'app plutôt que d'appeler en direct.
+ *
+ * `excludeRequestId` n'est pas une commodité. L'appel se fait dans la
+ * transaction qui vient de clore la demande courante : sans l'exclure, toute
+ * première intervention se compterait elle-même et partirait à moitié prix.
+ */
+export async function hasEarlierClosedPair(
+  db: Db,
+  params: { clientId: string; garageId: string; excludeRequestId: string },
+): Promise<boolean> {
+  const row = await db
+    .selectFrom('assistance_requests')
+    .select('id')
+    .where('client_id', '=', params.clientId)
+    .where('garage_id', '=', params.garageId)
+    .where('status', '=', 'closed')
+    .where('id', '!=', params.excludeRequestId)
+    .limit(1)
+    .executeTakeFirst();
+
+  return row !== undefined;
 }

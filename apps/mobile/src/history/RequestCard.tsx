@@ -1,18 +1,27 @@
+import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import {
   isRequestOngoing,
   PROBLEM_LABELS,
-  REQUEST_STATUS_LABELS,
+  requestStatusLabel,
   VEHICLE_LABELS,
   type RequestHistoryResponse,
   type RequestStatus,
+  type ServiceMode,
 } from '@geocras/shared';
 import { useI18n } from '../i18n/I18nProvider';
 import type { TranslationKey } from '../i18n/translations';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TOUCH_TARGET } from '../theme/tokens';
 import { BlinkingDot } from '../ui/BlinkingDot';
-import { ChevronRightSmallIcon, ShieldCheckIcon, StarIcon } from '../ui/icons';
+import {
+  AlertIcon,
+  ChevronRightSmallIcon,
+  ShieldCheckIcon,
+  StarIcon,
+  type IconProps,
+} from '../ui/icons';
+import { ServiceModeTag } from '../ui/ServiceModeTag';
 import { Text } from '../ui/Text';
 
 export type HistoryRequest = RequestHistoryResponse['results'][number];
@@ -64,6 +73,7 @@ export function RequestCard({
   last,
   onPress,
   onRate,
+  onRequestAgain,
 }: {
   request: HistoryRequest;
   /** Le fil ne descend pas au-dessus du premier nœud du groupe. */
@@ -73,6 +83,14 @@ export function RequestCard({
   onPress: (() => void) | null;
   /** Fourni seulement quand la note est encore possible. */
   onRate: (() => void) | null;
+  /**
+   * Fourni seulement quand un nouveau SOS vers ce garage a un sens.
+   *
+   * C'est l'écran qui en décide — voir `requestAgain` dans `historique.tsx`.
+   * La carte ne connaît ni la machine à états ni le compte : elle affiche
+   * l'action quand on la lui donne, et rien sinon.
+   */
+  onRequestAgain: (() => void) | null;
 }) {
   const theme = useTheme();
   const { t, locale, formatDate, formatTime, formatDuration } = useI18n();
@@ -171,7 +189,7 @@ export function RequestCard({
         disabled={onPress === null}
         accessibilityRole={onPress ? 'button' : undefined}
         accessibilityLabel={`${PROBLEM_LABELS[request.problemType][locale]}, ${
-          REQUEST_STATUS_LABELS[request.status][locale]
+          requestStatusLabel(request.status, request.serviceMode)[locale]
         }, ${formatDate(request.createdAt)}`}
         style={({ pressed }) => ({
           flex: 1,
@@ -187,7 +205,12 @@ export function RequestCard({
             {PROBLEM_LABELS[request.problemType][locale]}
           </Text>
 
-          <StatusBadge status={request.status} color={color} asGarage={asGarage} />
+          <StatusBadge
+            status={request.status}
+            mode={request.serviceMode}
+            color={color}
+            asGarage={asGarage}
+          />
 
           {onPress ? <ChevronRightSmallIcon color={theme.colors.muted} size={14} /> : null}
         </View>
@@ -212,6 +235,13 @@ export function RequestCard({
           {asGarage ? null : request.garageCertified ? (
             <ShieldCheckIcon color={theme.colors.success} size={13} />
           ) : null}
+          {/*
+            Où la rencontre a eu lieu, sur la ligne qui dit **avec qui** — les
+            deux moitiés de la même information. Rien ne s'affiche sur un
+            dépannage sur place : c'est le cas courant, et l'historique doit
+            rester une liste qu'on parcourt, pas une liste qu'on décode.
+          */}
+          <ServiceModeTag mode={request.serviceMode} />
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
@@ -238,37 +268,141 @@ export function RequestCard({
         ) : null}
 
         {/*
-          La note se propose ici, et pas seulement sur la fiche du garage :
+          Les deux suites d'une intervention terminée, dans l'ordre où elles
+          servent.
+
+          **Refaire appel d'abord.** C'est la raison n°2 pour laquelle on ouvre
+          cet écran — « retrouver le garage qui est venu le mois dernier » — et
+          jusqu'ici l'écran s'arrêtait à mi-chemin : il menait à la fiche du
+          garage, laquelle ne porte volontairement aucun moyen de le contacter.
+          Le client y retrouvait un nom, puis devait recommencer un SOS depuis
+          la carte et rechercher ce garage parmi les résultats. Le chemin
+          existait, il n'était simplement pas offert là où le besoin naît.
+
+          **Noter ensuite.** Elle se propose ici et pas seulement sur la fiche :
           c'est en revoyant la ligne « Garage Central, mardi » qu'on se souvient
-          de ce qu'on en a pensé. Elle rapporte aussi des points, donc la
-          proposer là où elle manque n'est pas un ornement.
+          de ce qu'on en a pensé. Elle rapporte aussi des points.
+
+          Une rangée qui se replie, et non deux puces empilées d'office : sur un
+          écran de trois cent vingt points les deux libellés ne tiennent pas
+          côte à côte, et `flexWrap` les met l'une sous l'autre sans rien
+          tronquer.
         */}
-        {onRate ? (
-          <Pressable
-            onPress={onRate}
-            accessibilityRole="button"
-            accessibilityLabel={t('history.rate')}
-            hitSlop={8}
-            style={({ pressed }) => ({
+        {onRequestAgain || onRate ? (
+          <View
+            style={{
               flexDirection: 'row',
+              flexWrap: 'wrap',
               alignItems: 'center',
-              alignSelf: 'flex-start',
-              gap: theme.space.xs,
+              gap: theme.space.sm,
               marginTop: theme.space.xs,
-              paddingVertical: 5,
-              paddingHorizontal: theme.space.sm,
-              backgroundColor: theme.colors.highlightTint,
-              borderLeftWidth: 2,
-              borderLeftColor: theme.colors.highlight,
-              opacity: pressed ? 0.7 : 1,
-            })}
+            }}
           >
-            <StarIcon color={theme.colors.userPositionDeep} size={13} />
-            <Text variant="btnSm">{t('history.rate')}</Text>
-          </Pressable>
+            {onRequestAgain ? (
+              <ActionChip
+                label={t('history.requestAgain')}
+                hint={t('history.requestAgainHint')}
+                /*
+                  Le glyphe SOS, et non celui de la dépanneuse. Deux raisons,
+                  dont une de fond : cette puce **ouvre un SOS** — même parcours,
+                  même formulaire, même trace — et le triangle est le signe de
+                  ce geste partout ailleurs dans l'app.
+
+                  L'autre est une affaire de taille. `TowTruckIcon` porte deux
+                  roues et un crochet ; son propre commentaire raconte qu'il a
+                  fallu le redessiner d'un seul tracé pour qu'il tienne à quinze
+                  points. À treize, ses roues tombent sous le pixel.
+                */
+                icon={AlertIcon}
+                accent={theme.colors.primary}
+                background={theme.colors.primaryTint}
+                onPress={onRequestAgain}
+              />
+            ) : null}
+
+            {onRate ? (
+              <ActionChip
+                label={t('history.rate')}
+                hint={t('history.rate')}
+                icon={StarIcon}
+                accent={theme.colors.highlight}
+                background={theme.colors.highlightTint}
+                /*
+                  Le jaune vif tombe sous le seuil de lisibilité dès qu'il
+                  devient un trait : on garde l'ambre foncé pour le picto, comme
+                  partout ailleurs dans le produit. Même raison que
+                  `userPositionDeep`.
+                */
+                glyph={theme.colors.userPositionDeep}
+                onPress={onRate}
+              />
+            ) : null}
+          </View>
         ) : null}
       </Pressable>
     </View>
+  );
+}
+
+/**
+ * Puce d'action au pied d'une ligne d'historique.
+ *
+ * Le filet coloré à gauche et l'aplat pâle derrière sont la construction déjà
+ * employée par les encarts du produit : la couleur **borde**, elle ne remplit
+ * pas. C'est ce qui permet d'en poser deux côte à côte sans que la liste
+ * devienne une guirlande.
+ *
+ * Le libellé reste à l'encre par défaut, jamais à la couleur d'accent : en
+ * Bebas treize points, le rouge sur teinte primaire tombe à 3,7:1 et le jaune
+ * bien plus bas encore. C'est le filet qui porte le sens, le texte porte la
+ * lisibilité.
+ */
+function ActionChip({
+  label,
+  hint,
+  icon: Icon,
+  accent,
+  background,
+  glyph,
+  onPress,
+}: {
+  label: string;
+  /** Ce que le lecteur d'écran annonce, quand le libellé court ne suffit pas. */
+  hint: string;
+  icon: (props: IconProps) => ReactNode;
+  /** Couleur du filet de gauche. */
+  accent: string;
+  background: string;
+  /** Couleur du picto, quand l'accent est trop clair pour un trait. */
+  glyph?: string;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={hint}
+      // La puce fait vingt-six points de haut : le débord porte la cible
+      // tactile à quarante-six, au-dessus du minimum de quarante-quatre imposé
+      // par le cahier des charges.
+      hitSlop={10}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.space.xs,
+        paddingVertical: 5,
+        paddingHorizontal: theme.space.sm,
+        backgroundColor: background,
+        borderLeftWidth: 2,
+        borderLeftColor: accent,
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      {Icon({ color: glyph ?? accent, size: 13 })}
+      <Text variant="btnSm">{label}</Text>
+    </Pressable>
   );
 }
 
@@ -282,10 +416,12 @@ export function RequestCard({
  */
 function StatusBadge({
   status,
+  mode,
   color,
   asGarage,
 }: {
   status: RequestStatus;
+  mode: ServiceMode;
   color: string;
   asGarage: boolean;
 }) {
@@ -305,7 +441,14 @@ function StatusBadge({
   const label =
     asGarage && GARAGE_STATUS_LABELS[status]
       ? t(GARAGE_STATUS_LABELS[status]!)
-      : REQUEST_STATUS_LABELS[status][locale];
+      : /*
+          `requestStatusLabel` et non la table brute : « Garagiste en route »
+          sur une demande où c'est le **client** qui conduisait lui fait
+          relire son propre trajet comme celui de quelqu'un d'autre. La
+          fonction ne remplace que les deux libellés concernés — cf. son
+          commentaire dans le contrat.
+        */
+        requestStatusLabel(status, mode)[locale];
 
   return (
     <View

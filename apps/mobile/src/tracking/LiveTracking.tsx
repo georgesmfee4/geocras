@@ -249,6 +249,13 @@ export function LiveTracking({
 
         <LivePanel
           status={status}
+          /*
+            Cet écran n'existe que dans un sens : c'est le dépanneur qui vient.
+            L'autre cas a son propre écran (`DriveToGarage`), et la valeur est
+            donc écrite en clair plutôt que dérivée de la fiche — la lire de
+            `detail` laisserait croire que ce composant sait rendre les deux.
+          */
+          mode="on_site"
           mechanic={detail?.mechanic ?? null}
           garageName={detail?.garage?.name ?? null}
           toClient={toClient}

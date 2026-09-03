@@ -8,6 +8,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "scheme": "geocras",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d40a680e-be65-413a-a47c-5e52c287ca8f",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "cm.geocras.app",

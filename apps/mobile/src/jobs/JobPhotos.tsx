@@ -103,7 +103,7 @@ export function JobPhotos({ photos, label }: JobPhotosProps) {
   };
 
   return (
-    <View style={{ height: JOB_PHOTO_HEIGHT, backgroundColor: theme.colors.ink }}>
+    <View style={{ height: JOB_PHOTO_HEIGHT, backgroundColor: theme.colors.panel }}>
       <ScrollView
         horizontal
         pagingEnabled
@@ -148,7 +148,7 @@ export function JobPhotos({ photos, label }: JobPhotosProps) {
                 height: 2,
                 width: position === index ? 20 : 8,
                 backgroundColor:
-                  position === index ? theme.colors.surface : 'rgba(255,255,255,0.45)',
+                  position === index ? theme.colors.onFill : 'rgba(255,255,255,0.45)',
               }}
             />
           ))}
@@ -167,7 +167,7 @@ export function JobPhotos({ photos, label }: JobPhotosProps) {
         onRequestClose={() => setZoomed(null)}
         statusBarTranslucent
       >
-        <View style={{ flex: 1, backgroundColor: theme.colors.ink }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.panel }}>
           <ScrollView
             horizontal
             pagingEnabled
@@ -201,7 +201,7 @@ export function JobPhotos({ photos, label }: JobPhotosProps) {
                 opacity: pressed ? 0.6 : 1,
               })}
             >
-              <CloseIcon color={theme.colors.surface} size={24} />
+              <CloseIcon color={theme.colors.onFill} size={24} />
             </Pressable>
           </SafeAreaView>
         </View>

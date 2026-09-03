@@ -132,13 +132,36 @@ export function CommitmentRow({ job, onPress }: CommitmentRowProps) {
 
             <View style={{ flex: 1 }} />
 
+            {/*
+              Le bloc de queue **peut rétrécir**, et c'est ce qui manquait.
+
+              En React Native, `flexShrink` vaut zéro par défaut — l'inverse du
+              web. Sans le poser, ce bloc gardait sa largeur naturelle et
+              poussait le libellé hors du cadre au lieu de le tronquer : sur une
+              ligne déjà occupée par l'attente et la distance, « Attente client »
+              débordait par la droite. `numberOfLines` ne suffit pas — il ne
+              coupe que dans une largeur contrainte.
+            */}
             {action ? (
-              <>
-                <Text variant="btnSm" tone="primary" numberOfLines={1}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: theme.space.xs,
+                  flexShrink: 1,
+                }}
+              >
+                <Text
+                  variant="btnSm"
+                  tone="primary"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={{ flexShrink: 1 }}
+                >
                   {t(ACTION_LABELS[action])}
                 </Text>
                 <ChevronRightSmallIcon color={theme.colors.primary} size={15} />
-              </>
+              </View>
             ) : (
               /*
                 Le garage a confirmé son arrivée, le client pas encore : il n'y
@@ -147,9 +170,22 @@ export function CommitmentRow({ job, onPress }: CommitmentRowProps) {
                 qui dit que quelque chose tourne encore, et pas un bouton de
                 plus.
               */
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space.sm }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: theme.space.sm,
+                  flexShrink: 1,
+                }}
+              >
                 <BlinkingDot size={6} color={theme.colors.success} />
-                <Text variant="btnSm" tone="secondary" numberOfLines={1}>
+                <Text
+                  variant="btnSm"
+                  tone="secondary"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={{ flexShrink: 1 }}
+                >
                   {t('jobs.awaitingClientShort')}
                 </Text>
               </View>

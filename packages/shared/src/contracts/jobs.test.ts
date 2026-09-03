@@ -24,6 +24,7 @@ function job(patch: Partial<Job>): Job {
     originPrecise: false,
     distanceM: 800,
     etaMin: 3,
+    serviceMode: 'on_site',
     createdAt: '2026-08-12T02:00:00.000Z',
     selectedAt: '2026-08-12T02:10:00.000Z',
     acceptedAt: null,
@@ -125,5 +126,40 @@ describe('maille de confidentialité', () => {
     // l'autre ne doivent pas permettre de trianguler la position exacte en
     // observant le point bouger.
     expect(snapToPrivacyGrid(2.9281)).toBe(snapToPrivacyGrid(2.9284));
+  });
+});
+
+describe('action suivante — quand le client vient à l’atelier', () => {
+  const atGarage = (patch: Partial<Job>) => job({ serviceMode: 'at_garage', ...patch });
+
+  it('accepte comme dans l’autre sens', () => {
+    expect(nextJobAction(atGarage({ status: 'selected' }))).toBe('accept');
+  });
+
+  /**
+   * Le cœur du partage.
+   *
+   * `en_route` appartient à celui qui se déplace. Proposer « Je pars » à un
+   * garagiste qui ne bouge pas produirait deux dégâts : un bouton que le
+   * serveur refuse (`declareEnRoute` n'accepte que le voyageur du mode), et
+   * surtout un `en_route_at` posé par la mauvaise partie — c'est-à-dire la
+   * fenêtre de lecture de la trace du client ouverte par quelqu'un d'autre,
+   * au mauvais moment.
+   */
+  it('ne propose aucun départ au garagiste : ce n’est pas lui qui roule', () => {
+    expect(nextJobAction(atGarage({ status: 'accepted' }))).toBeNull();
+    expect(nextJobAction(job({ status: 'accepted' }))).toBe('en_route');
+  });
+
+  it('rouvre la confirmation dès que le client a pris la route', () => {
+    expect(nextJobAction(atGarage({ status: 'en_route' }))).toBe('confirm_arrival');
+  });
+
+  it('ne repropose pas une confirmation déjà enregistrée', () => {
+    expect(
+      nextJobAction(
+        atGarage({ status: 'awaiting_confirmation', garageArrivedAt: '2026-08-12T03:00:00.000Z' }),
+      ),
+    ).toBeNull();
   });
 });

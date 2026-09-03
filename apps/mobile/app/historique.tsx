@@ -8,6 +8,9 @@ import { forceProbe } from '../src/api/reachability';
 import { cameroonDateParts } from '../src/time/clock';
 import { useAuth } from '../src/auth/AuthProvider';
 import { RequestCard, RAIL_WIDTH, statusColor, type HistoryRequest } from '../src/history/RequestCard';
+import { canRequestAgain } from '../src/history/requestAgain';
+import { ActiveRequestSearch } from '../src/sos/ActiveRequestSearch';
+import { useSosEntry } from '../src/sos/useSosEntry';
 import { useI18n } from '../src/i18n/I18nProvider';
 import { useTheme } from '../src/theme/ThemeProvider';
 import { BlinkingDot } from '../src/ui/BlinkingDot';
@@ -39,7 +42,11 @@ type Row =
  *  1. **retrouver la demande en cours** — quelqu'un a fermé l'app pendant que
  *     le garagiste roulait vers lui. Elle est donc extraite de la liste et
  *     posée en tête, avec un seul bouton ;
- *  2. **retrouver un garage** — « celui qui est venu le mois dernier » ;
+ *  2. **retrouver un garage** — « celui qui est venu le mois dernier » — et
+ *     surtout **le rappeler**. L'écran s'arrêtait au premier de ces deux gestes :
+ *     il menait à la fiche du garage, laquelle ne porte volontairement aucun
+ *     moyen de le contacter. Chaque ligne terminée offre désormais « Refaire
+ *     appel », qui rouvre un SOS avec ce garage en tête des résultats ;
  *  3. **noter** ce qu'on n'a pas noté, ce qui rapporte des points.
  *
  * La liste est groupée par mois et cousue d'un fil du temps vertical. Le
@@ -57,6 +64,14 @@ export default function HistoriqueScreen() {
   const { user, status, role } = useAuth();
 
   const history = useMyRequestPages(user !== null);
+  /**
+   * Le même point d'entrée que le bouton SOS de la carte et de la fiche garage.
+   *
+   * Monté une fois pour l'écran, et non par ligne : sa modale d'attente doit
+   * être unique, et son état `checking` n'a pas à se dupliquer par demande
+   * affichée.
+   */
+  const sosEntry = useSosEntry();
 
   /**
    * Le compte gère-t-il un garage ?
@@ -140,10 +155,12 @@ export default function HistoriqueScreen() {
     if (isRequestOngoing(request.status)) {
       return () => router.push(`/suivi/${request.id}` as never);
     }
-    // Une demande close renvoie au garage : c'est de lui qu'on veut le numéro,
-    // les horaires ou la note. Une demande annulée sans garage ne mène nulle
-    // part — la ligne cesse alors d'être cliquable plutôt que d'ouvrir un écran
-    // vide.
+    // Une demande close renvoie à la fiche du garage : ses horaires, ses
+    // services, ses avis. Pas son numéro — la fiche n'en porte pas, et c'est
+    // une règle de produit. Pour le joindre, la puce « Refaire appel » de la
+    // ligne ouvre un SOS, qui décrit la panne et laisse une trace des deux
+    // côtés. Une demande annulée sans garage ne mène nulle part : la ligne
+    // cesse alors d'être cliquable plutôt que d'ouvrir un écran vide.
     if (request.garageId) {
       return () => router.push(`/garage/${request.garageId}` as never);
     }
@@ -160,6 +177,46 @@ export default function HistoriqueScreen() {
     // paramètre, on renverrait l'utilisateur chercher lui-même le bouton qu'il
     // vient de demander.
     return () => router.push(`/garage/${request.garageId}?review=1` as never);
+  };
+
+  /**
+   * Refaire appel au garage d'une intervention passée.
+   *
+   * C'est le geste que l'écran promettait sans l'offrir. Sa raison d'être n°2 —
+   * « retrouver un garage, celui qui est venu le mois dernier » — s'arrêtait à
+   * la fiche du garage, laquelle ne porte **volontairement** ni numéro ni bouton
+   * d'appel : le contact doit passer par une demande, qui décrit le véhicule et
+   * la panne et laisse une trace des deux côtés. Le client y trouvait donc un
+   * nom, puis devait repartir de la carte et retrouver ce garage dans les
+   * résultats. Le chemin existait déjà en entier ; il n'était pas proposé là où
+   * le besoin naît.
+   *
+   * Rien n'est réimplémenté ici : `useSosEntry` est exactement le point d'entrée
+   * du bouton SOS de la carte et de la fiche garage. Il vérifie d'abord qu'aucune
+   * demande n'est déjà ouverte — la base n'en autorise qu'une par client — et
+   * rouvre le bon écran le cas échéant, plutôt que de laisser découvrir la règle
+   * par un refus au bout de trois étapes de saisie. L'identifiant du garage n'est
+   * qu'une préférence : il le remonte en tête des résultats une fois la panne
+   * décrite, et le parcours reste identique.
+   *
+   * Les conditions d'ouverture vivent dans `canRequestAgain`, à part et sans
+   * React : trois gardes qui régressent en silence méritent d'être vérifiables
+   * sans monter d'écran.
+   *
+   * Le garage peut avoir fermé sa détection depuis, ou perdu sa vérification :
+   * l'écran de résultats le dit alors de lui-même — voir `pinnedMissing` — plutôt
+   * que de le laisser manquer en silence. Rien à contrôler ici : l'action ouvre
+   * un parcours, elle ne promet pas une disponibilité.
+   */
+  const requestAgain = (request: HistoryRequest): (() => void) | null => {
+    if (!canRequestAgain(request)) return null;
+
+    // `canRequestAgain` a déjà écarté le cas nul ; la copie locale est là pour
+    // que la fermeture ne capture pas un champ que TypeScript devrait revalider.
+    const garageId = request.garageId;
+    if (!garageId) return null;
+
+    return () => sosEntry.start(garageId);
   };
 
   const listEmpty = !history.isPending && all.length === 0;
@@ -281,6 +338,7 @@ export default function HistoriqueScreen() {
               last={item.last}
               onPress={openRequest(item.request)}
               onRate={rateRequest(item.request)}
+              onRequestAgain={requestAgain(item.request)}
             />
           )
         }
@@ -292,6 +350,15 @@ export default function HistoriqueScreen() {
           ) : null
         }
       />
+
+      {/*
+        L'attente pendant qu'on demande au serveur si une demande est déjà
+        ouverte. Sans elle, l'appui sur « Refaire appel » ne produit rien de
+        visible pendant une seconde, puis l'écran change tout seul — et
+        quelqu'un qui ne voit pas sa touche prise en compte appuie une
+        deuxième fois.
+      */}
+      <ActiveRequestSearch visible={sosEntry.checking} />
     </SafeAreaView>
   );
 }

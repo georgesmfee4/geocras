@@ -25,6 +25,7 @@ import {
   useJobRoute,
 } from '../../../src/api/hooks';
 import { useI18n } from '../../../src/i18n/I18nProvider';
+import { JobDone } from '../../../src/jobs/JobDone';
 import { ActionBar, useActionBarInset } from '../../../src/ui/ActionBar';
 import { MapCanvas, type MapCanvasRef } from '../../../src/map/MapCanvas';
 import { RouteLine } from '../../../src/map/RouteLine';
@@ -99,6 +100,15 @@ export default function JobRouteScreen() {
   const mapRef = useRef<MapCanvasRef>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * L'intervention vient d'être close par notre propre confirmation.
+   *
+   * Même témoin que sur la fiche, et pour la même raison : la file exclut
+   * `closed`, donc la demande disparaît à la seconde où elle aboutit. La
+   * réponse du serveur est la seule source certaine de ce qui s'est passé.
+   */
+  const [justClosed, setJustClosed] = useState(false);
   /** L'utilisateur a déplacé la carte : on cesse de la recentrer sous ses doigts. */
   const [freeCamera, setFreeCamera] = useState(false);
 
@@ -130,6 +140,20 @@ export default function JobRouteScreen() {
     const all = [...(jobs.data?.incoming ?? []), ...(jobs.data?.active ?? [])];
     return all.find((candidate) => candidate.id === requestId) ?? null;
   }, [jobs.data, requestId]);
+
+  /**
+   * Le dernier état connu du dossier.
+   *
+   * Une intervention close quitte la file : `job` retombe à `null` au moment
+   * même où l'on veut nommer ce qui vient de se terminer. On garde donc la
+   * dernière version vue, qui n'a pas à être fraîche — elle ne sert qu'à
+   * rappeler de quelle panne et de quel client il s'agissait.
+   */
+  const lastJob = useRef<Job | null>(null);
+
+  useEffect(() => {
+    if (job) lastJob.current = job;
+  }, [job]);
 
   /**
    * Position de départ **stabilisée**.
@@ -282,9 +306,24 @@ export default function JobRouteScreen() {
       if (job.enRouteAt === null) {
         await act.mutateAsync({ requestId: job.id, action: 'en_route' });
       }
-      await confirmArrival.mutateAsync({ requestId: job.id, position });
+      const updated = await confirmArrival.mutateAsync({ requestId: job.id, position });
+      if (updated.status === 'closed') setJustClosed(true);
     });
   }, [job, fix, run, act, confirmArrival]);
+
+  /*
+    La clôture avant l'absence — même raison que sur la fiche : une demande
+    close **est** une demande absente de la file, et la tester en second ferait
+    passer chaque fin d'intervention réussie pour une disparition.
+  */
+  if (justClosed) {
+    return (
+      <JobDone
+        job={lastJob.current}
+        onClose={() => router.replace('/(drawer)/(tabs)/interventions' as never)}
+      />
+    );
+  }
 
   if (!job) {
     return (
@@ -293,7 +332,7 @@ export default function JobRouteScreen() {
           {jobs.isLoading ? (
             <ActivityIndicator color={theme.colors.primary} />
           ) : (
-            <Text variant="txt" tone="secondary">
+            <Text variant="txt" tone="secondary" style={{ textAlign: 'center', paddingHorizontal: 32 }}>
               {t('jobs.gone')}
             </Text>
           )}
@@ -443,7 +482,8 @@ export default function JobRouteScreen() {
       >
         <View
           style={{
-            backgroundColor: theme.colors.ink,
+            // Sombre dans les deux thèmes — cf. le jeton `panel`.
+            backgroundColor: theme.colors.panel,
             paddingHorizontal: theme.space.lg,
             paddingTop: theme.space.lg,
             paddingBottom: theme.space.lg,
@@ -460,7 +500,7 @@ export default function JobRouteScreen() {
                 c'est celui que le garagiste lit en conduisant, et celui qu'il
                 annonce au téléphone.
               */}
-              <Text variant="numXl" style={{ color: theme.colors.surface, fontSize: 44, lineHeight: 46 }}>
+              <Text variant="numXl" style={{ color: theme.colors.onFill, fontSize: 44, lineHeight: 46 }}>
                 {leg ? formatRouteDuration(leg.durationS, locale) : '—'}
               </Text>
             </View>
@@ -550,12 +590,13 @@ export default function JobRouteScreen() {
                     label: t('jobs.confirmArrival'),
                     icon: CheckIcon,
                     onPress: () =>
-                      void run(() =>
-                        confirmArrival.mutateAsync({
+                      void run(async () => {
+                        const updated = await confirmArrival.mutateAsync({
                           requestId: job.id,
                           position: fix ? { lat: fix.lat, lng: fix.lng } : null,
-                        }),
-                      ),
+                        });
+                        if (updated.status === 'closed') setJustClosed(true);
+                      }),
                   }
                 : {
                     label: t('jobs.enRoute'),
@@ -579,7 +620,7 @@ function Metric({ label, value }: { label: string; value: string }) {
       <Text variant="lblb" style={{ color: 'rgba(255,255,255,0.55)', width: 74 }}>
         {label}
       </Text>
-      <Text variant="num" style={{ color: theme.colors.surface }}>
+      <Text variant="num" style={{ color: theme.colors.onFill }}>
         {value}
       </Text>
     </View>

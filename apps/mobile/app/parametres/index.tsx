@@ -14,6 +14,7 @@ import {
 } from '../../src/settings/preferences';
 import { useNotificationPermission } from '../../src/settings/useNotificationPermission';
 import { useTheme, type ThemePreference } from '../../src/theme/ThemeProvider';
+import { useOtaUpdate, type OtaState } from '../../src/updates/useOtaUpdate';
 import { PlateTag } from '../../src/ui/PlateTag';
 import { RadiusPicker } from '../../src/ui/RadiusPicker';
 import { Segmented } from '../../src/ui/Segmented';
@@ -22,6 +23,22 @@ import { ScreenHeader } from '../../src/ui/ScreenHeader';
 import { SectionLabel } from '../../src/ui/SectionLabel';
 import { Text } from '../../src/ui/Text';
 import type { Locale } from '@geocras/shared';
+import type { TranslationKey } from '../../src/i18n/translations';
+
+/**
+ * L'état de la mise à jour, tel qu'il s'écrit dans la colonne de droite.
+ *
+ * Une table plutôt qu'une cascade de ternaires dans le JSX : le jour où un
+ * état s'ajoute au module OTA, TypeScript signale ici la case manquante.
+ */
+const OTA_LABELS: Record<OtaState, TranslationKey> = {
+  disabled: 'settings.updateDisabled',
+  idle: 'settings.updateIdle',
+  checking: 'settings.updateChecking',
+  downloading: 'settings.updateDownloading',
+  ready: 'settings.updateReady',
+  failed: 'settings.updateFailed',
+};
 
 /**
  * Paramètres.
@@ -111,6 +128,17 @@ export default function ParametresScreen() {
     ? [defaultVehicle.brand, defaultVehicle.model].filter(Boolean).join(' ') ||
       VEHICLE_LABELS[defaultVehicle.type][locale]
     : t('settings.vehiclesNone');
+
+  const ota = useOtaUpdate();
+
+  /**
+   * Ce que la ligne fait dépend de ce qu'elle affiche.
+   *
+   * Prête, elle redémarre ; dans tous les autres cas elle relance une
+   * recherche. Deux commandes distinctes auraient demandé deux lignes, ou une
+   * ligne et un bouton, pour un réglage qu'on ne touche presque jamais.
+   */
+  const onUpdatePress = ota.state === 'ready' ? ota.apply : ota.check;
 
   const version = Constants.expoConfig?.version ?? '1.0.0';
 
@@ -235,6 +263,18 @@ export default function ParametresScreen() {
               label={t('settings.terms')}
               onPress={() => router.push('/conditions' as never)}
             />
+            <LinkRow
+              label={t('settings.update')}
+              hint={ota.state === 'ready' ? t('settings.updateReadyHint') : undefined}
+              // État de la liaison, donc mono — même famille que le numéro de
+              // version deux lignes plus bas, dont il est le complément.
+              value={
+                <Text variant="numSm" tone="muted">
+                  {t(OTA_LABELS[ota.state])}
+                </Text>
+              }
+              onPress={onUpdatePress}
+            />
           </SettingsCard>
         </Section>
 
@@ -250,6 +290,7 @@ export default function ParametresScreen() {
           style={{ textAlign: 'center', paddingTop: theme.space.lg }}
         >
           GEOCRAS V{version}
+          {ota.buildId ? ` · ${ota.buildId}` : ''}
         </Text>
       </ScrollView>
     </SafeAreaView>

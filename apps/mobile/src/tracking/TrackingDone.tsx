@@ -69,7 +69,7 @@ export function TrackingDone({ detail, onRate, onClose }: TrackingDoneProps) {
               justifyContent: 'center',
             }}
           >
-            <CheckIcon color={theme.colors.surface} size={26} />
+            <CheckIcon color={theme.colors.onFill} size={26} />
           </View>
 
           <Text variant="d1b" style={{ textAlign: 'center' }}>

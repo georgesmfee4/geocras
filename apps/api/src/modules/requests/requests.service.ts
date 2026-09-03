@@ -4,6 +4,8 @@ import {
   isProblemValidForVehicle,
   isTerminal,
   matchingServices,
+  serviceGeometry,
+  travellerFor,
   type ApproachRoute,
   type AssistanceRequest,
   type CreateRequestBody,
@@ -22,6 +24,7 @@ import { pointFromLatLng } from '../../db/geo';
 import { badRequest, conflict, forbidden, notFound } from '../../lib/errors';
 import { bus } from '../../realtime/bus';
 import { awardForClosedRequest } from '../loyalty/loyalty.service';
+import { recordCommission } from './commission';
 import { searchNearby } from '../garages/garages.service';
 import { computeRoute } from '../routing/routing.service';
 import {
@@ -66,6 +69,7 @@ function toAssistanceRequest(row: RequestRecord): AssistanceRequest {
     vulnerablePassengers: row.vulnerable_passengers,
     photoUrl: row.photo_url,
     origin: { lat: Number(row.origin_lat), lng: Number(row.origin_lng) },
+    serviceMode: row.service_mode,
     createdAt: new Date(row.created_at).toISOString(),
     selectedAt: iso(row.selected_at),
     acceptedAt: iso(row.accepted_at),
@@ -149,6 +153,7 @@ export async function createRequest(
           photo_url: body.photoUrl,
           origin: pointFromLatLng(body.origin),
           accuracy_m: body.accuracyM,
+          service_mode: body.serviceMode,
           status: 'pending',
         })
         .returning('id')
@@ -159,7 +164,20 @@ export async function createRequest(
         type: 'created',
         actorUserId: userId,
         actorRole: 'client',
-        payload: { vehicleType: body.vehicleType, problemType: body.problemType },
+        /*
+          Le mode entre au journal en même temps qu'en colonne.
+
+          La colonne se met à jour, le journal non : il est en ajout seul. Le
+          jour où l'on contestera une commission, c'est cette ligne-là qui dira
+          ce qui avait été convenu **au départ**, indépendamment de l'état
+          courant de la demande. Une colonne seule serait une affirmation ; une
+          colonne plus son événement fondateur est une preuve.
+        */
+        payload: {
+          vehicleType: body.vehicleType,
+          problemType: body.problemType,
+          serviceMode: body.serviceMode,
+        },
         location: body.origin,
       });
 
@@ -185,19 +203,29 @@ export async function createRequest(
    */
   const services = [...matchingServices(body.problemType, body.immobilized)];
 
-  const nearby = await searchNearby({
-    lat: body.origin.lat,
-    lng: body.origin.lng,
-    radiusKm: 15,
-    sort: body.sort,
-    limit: 20,
-    // Aucun filtre de confort sur un SOS : la personne est en panne, on lui
-    // montre tout ce qui peut l'aider et on laisse le tri faire le classement.
-    openNow: false,
-    certifiedOnly: false,
-    services,
-    matchAny: true,
-  });
+  const nearby = await searchNearby(
+    {
+      lat: body.origin.lat,
+      lng: body.origin.lng,
+      radiusKm: 15,
+      sort: body.sort,
+      limit: 20,
+      // Aucun filtre de confort sur un SOS : la personne est en panne, on lui
+      // montre tout ce qui peut l'aider et on laisse le tri faire le classement.
+      openNow: false,
+      certifiedOnly: false,
+      services,
+      matchAny: true,
+    },
+    /*
+      Un garagiste tombe aussi en panne, et il ne se dépanne pas lui-même. On
+      écarte donc son atelier de sa propre liste — plutôt que de le lui montrer
+      pour le refuser ensuite. La garantie, elle, est posée dans
+      `selectGarage` : celle-ci n'est que la politesse de ne pas proposer
+      l'impossible.
+    */
+    { excludeOwnedBy: userId },
+  );
 
   // Repli en cascade : plutôt qu'un écran vide, on relâche la contrainte de
   // compétence et on élargit le rayon. Un garage généraliste un peu plus loin
@@ -206,16 +234,19 @@ export async function createRequest(
     nearby.results.length > 0
       ? nearby.results
       : (
-          await searchNearby({
-            lat: body.origin.lat,
-            lng: body.origin.lng,
-            radiusKm: 25,
-            sort: body.sort,
-            limit: 20,
-            openNow: false,
-            certifiedOnly: false,
-            matchAny: false,
-          })
+          await searchNearby(
+            {
+              lat: body.origin.lat,
+              lng: body.origin.lng,
+              radiusKm: 25,
+              sort: body.sort,
+              limit: 20,
+              openNow: false,
+              certifiedOnly: false,
+              matchAny: false,
+            },
+            { excludeOwnedBy: userId },
+          )
         ).results;
 
   const request = await findRequestById(db, created);
@@ -238,6 +269,34 @@ export async function selectGarage(
 
   const garage = await findGarageSummaryById(db, garageId);
   if (!garage) throw notFound('GARAGE_NOT_FOUND', 'Garage introuvable');
+
+  /*
+    On ne se dépanne pas soi-même.
+
+    **La barrière qui compte.** Le SOS n'offre déjà plus les garages du
+    demandeur — `excludeOwnedBy` les écarte de la recherche et du repli — mais
+    une liste filtrée n'est qu'une commodité d'écran : l'identifiant du garage
+    voyage dans le corps de la requête, et rien n'empêche de l'écrire à la main.
+    C'est ici, au seul endroit par lequel une demande acquiert un garage, que la
+    règle devient une garantie.
+
+    Deux raisons, et la seconde suffirait à elle seule :
+
+     - **la fraude.** Une intervention dont les deux parties sont la même
+       personne fabrique des points de fidélité, une ligne au registre des
+       commissions et un avis, sans qu'aucun client n'ait été apporté ;
+     - **le blocage.** `resolveParty` teste `client_id` avant `owner_user_id` :
+       le propriétaire s'y voit rendre le rôle `client` et ne peut donc jamais
+       accepter sa propre demande. Elle reste en `selected`, et l'index
+       `requests_one_active_per_client_idx` interdit d'en ouvrir une autre — le
+       compte est gelé jusqu'à annulation manuelle.
+  */
+  if (garage.owner_user_id !== null && garage.owner_user_id === userId) {
+    throw conflict(
+      'OWN_GARAGE',
+      'Vous ne pouvez pas adresser une demande à votre propre garage',
+    );
+  }
 
   return applyTransition({
     requestId,
@@ -314,12 +373,36 @@ export async function declineRequest(
   });
 }
 
+/**
+ * Déclaration de départ — **par celui qui se déplace**.
+ *
+ * Le rôle autorisé n'est plus `garage` en dur : il se lit sur le mode de
+ * service. En `on_site` c'est le garagiste qui prend la route ; en
+ * `at_garage` c'est le client qui conduit vers l'atelier, et le garagiste
+ * n'a rien à déclarer puisqu'il ne bouge pas.
+ *
+ * L'enjeu dépasse l'ergonomie. `en_route_at` **ouvre la fenêtre de lecture de
+ * la trace GPS** : `proveArrival` ignore tout point antérieur. Laisser le
+ * garagiste poser cet horodatage en `at_garage` reviendrait à faire démarrer
+ * le chronomètre du trajet du client par quelqu'un d'autre — au mieux trop
+ * tôt, au pire après que le client soit déjà arrivé, ce qui effacerait sa
+ * trace entière et rendrait une preuve vide sur une intervention réelle.
+ */
 export async function declareEnRoute(
   requestId: string,
   userId: string,
 ): Promise<AssistanceRequest> {
   const { request, role } = await loadAsParty(requestId, userId);
-  if (role !== 'garage') throw forbidden('Seul le garage se déclare en route');
+
+  const traveller = travellerFor(request.service_mode);
+  if (role !== traveller) {
+    throw forbidden(
+      traveller === 'garage'
+        ? 'Seul le garage se déclare en route'
+        : 'Seul le client se déclare en route : c’est lui qui vient au garage',
+    );
+  }
+
   assertTransition(request.status, 'en_route');
 
   return applyTransition({
@@ -411,6 +494,21 @@ export async function confirmArrival(
         // Un refus de crédit (fraude suspectée) ne remet jamais en cause la
         // clôture, qui est un fait constaté par les deux parties.
         await awardForClosedRequest(trx, {
+          requestId,
+          clientId: current.client_id,
+          garageId: current.garage_id,
+        });
+
+        /*
+          Le registre des commissions, dans la même transaction et pour la même
+          raison que le crédit de fidélité : si l'intervention est close, la
+          ligne existe. Aucun état intermédiaire où une demande serait terminée
+          sans que le registre le sache.
+
+          Rien n'est prélevé — voir `commission.ts`. La ligne dit ce qu'on
+          *aurait* facturé, et c'est elle qui fixera le barème dans deux mois.
+        */
+        await recordCommission(trx, {
           requestId,
           clientId: current.client_id,
           garageId: current.garage_id,
@@ -667,21 +765,30 @@ export async function recordPosition(
 }
 
 /**
- * Trajet d'approche du garagiste, servi **aux deux parties**.
+ * Trajet d'approche, servi **aux deux parties**.
  *
- * Le garagiste a déjà `GET /:id/route`, où il fournit son départ. Le client, lui,
- * ne peut pas : il ne connaît pas la position du dépanneur, et rien ne
+ * Le garagiste a déjà `GET /:id/route`, où il fournit son départ. Le client,
+ * lui, ne peut pas : il ne connaît pas la position du dépanneur, et rien ne
  * justifierait de la lui faire transiter pour qu'il la renvoie. Le serveur
- * prend donc le **dernier point émis par le garage** — exactement la source de
- * l'ETA du suivi — et trace depuis là.
+ * prend donc le **dernier point émis par celui qui se déplace** — exactement la
+ * source de l'ETA du suivi — et trace depuis là.
  *
- * Une seule vérité, donc : le kilométrage que le client lit est celui que le
- * garagiste conduit, calculé par le même moteur avec les mêmes points. Deux
- * calculs séparés auraient fini par afficher deux distances différentes pour un
- * même trajet, et il n'y aurait eu aucun moyen de dire laquelle avait raison.
+ * Une seule vérité, donc : le kilométrage lu d'un côté est celui que l'autre
+ * conduit, calculé par le même moteur avec les mêmes points. Deux calculs
+ * séparés auraient fini par afficher deux distances différentes pour un même
+ * trajet, et il n'y aurait eu aucun moyen de dire laquelle avait raison.
  *
- * Sans aucun point émis, on part de l'adresse de l'atelier et `fromLive` le
- * dit. C'est le cas des premières secondes après l'acceptation.
+ * ---
+ *
+ * **Le sens du trajet suit le mode**, et `serviceGeometry` le décide :
+ *
+ *  - `on_site` — du dernier point du garage vers le lieu de la panne. À défaut
+ *    de point émis, depuis l'adresse de l'atelier ;
+ *  - `at_garage` — du dernier point du client vers l'atelier. À défaut, depuis
+ *    le lieu de la panne, qui est l'endroit d'où il annonce partir.
+ *
+ * `fromLive` dit dans les deux cas si le départ est une position réelle ou ce
+ * repli. C'est le cas des premières secondes après l'acceptation.
  */
 export async function getApproachRoute(
   requestId: string,
@@ -696,22 +803,36 @@ export async function getApproachRoute(
     throw notFound('GARAGE_NOT_FOUND', 'Aucun garage retenu sur cette demande');
   }
 
-  const positions = await findLatestPositions(db, requestId);
-  const garagePing = positions.find((position) => position.role === 'garage') ?? null;
-
   const garage = await findGarageSummaryById(db, request.garage_id);
   if (!garage) throw notFound('GARAGE_NOT_FOUND', 'Garage introuvable');
 
-  const from = garagePing
-    ? { lat: Number(garagePing.lat), lng: Number(garagePing.lng) }
-    : { lat: Number(garage.lat), lng: Number(garage.lng) };
+  const origin = { lat: Number(request.origin_lat), lng: Number(request.origin_lng) };
+  const garageLocation = { lat: Number(garage.lat), lng: Number(garage.lng) };
 
-  const leg = await computeRoute(from, {
-    lat: Number(request.origin_lat),
-    lng: Number(request.origin_lng),
-  });
+  const geometry = serviceGeometry(request.service_mode, { origin, garageLocation });
+  // Impossible ici : le garage vient d'être vérifié juste au-dessus, et c'est
+  // le seul cas où la géométrie est inconnue.
+  if (!geometry) throw notFound('GARAGE_NOT_FOUND', 'Garage introuvable');
 
-  return { ...leg, fromLive: garagePing !== null };
+  const positions = await findLatestPositions(db, requestId);
+  const travellerPing = positions.find((position) => position.role === geometry.traveller) ?? null;
+
+  /*
+    Le point de repli n'est pas le même des deux côtés, et ce n'est pas un
+    détail : c'est l'endroit d'où le voyageur est censé partir. Le garagiste
+    part de son atelier ; le client part de là où son véhicule est tombé en
+    panne, qui est précisément `origin`. Prendre l'atelier comme départ en
+    `at_garage` aurait tracé un itinéraire de longueur nulle.
+  */
+  const fallback = geometry.traveller === 'garage' ? garageLocation : origin;
+
+  const from = travellerPing
+    ? { lat: Number(travellerPing.lat), lng: Number(travellerPing.lng) }
+    : fallback;
+
+  const leg = await computeRoute(from, geometry.destination);
+
+  return { ...leg, fromLive: travellerPing !== null };
 }
 
 export async function getHistory(userId: string, page: number, pageSize: number) {

@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import type { RequestStatus } from '@geocras/shared';
+import type { RequestStatus, ServiceMode } from '@geocras/shared';
 import { useI18n } from '../i18n/I18nProvider';
 import { useTheme } from '../theme/ThemeProvider';
 import { CheckIcon } from '../ui/icons';
@@ -12,6 +12,15 @@ export type TrackingProgressProps = {
   status: RequestStatus;
   /** Le client a déjà confirmé l'arrivée de son côté. */
   clientArrived: boolean;
+  /**
+   * Qui se déplace.
+   *
+   * Deux des trois jalons changent de sujet avec lui. « En route » et « Sur
+   * place » décrivent le dépanneur ; quand c'est le client qui conduit, les
+   * mêmes mots lui feraient suivre le trajet de quelqu'un qui ne bouge pas —
+   * et masqueraient que le rail parle de **lui**.
+   */
+  mode: ServiceMode;
 };
 
 /**
@@ -29,16 +38,22 @@ export type TrackingProgressProps = {
  * Le jalon franchi porte une coche, jamais une couleur seule : sous le soleil,
  * un point vert et un point gris se ressemblent, une coche non.
  */
-export function TrackingProgress({ status, clientArrived }: TrackingProgressProps) {
+export function TrackingProgress({ status, clientArrived, mode }: TrackingProgressProps) {
   const theme = useTheme();
   const { t } = useI18n();
 
   const reached = stepOf(status);
+  const driving = mode === 'at_garage';
 
   const steps = [
     { key: 'accepted', label: t('live.stepAccepted') },
-    { key: 'enRoute', label: t('live.stepEnRoute') },
-    { key: 'arrived', label: clientArrived ? t('live.stepConfirmed') : t('live.stepArrived') },
+    { key: 'enRoute', label: t(driving ? 'live.stepDriving' : 'live.stepEnRoute') },
+    {
+      key: 'arrived',
+      label: clientArrived
+        ? t('live.stepConfirmed')
+        : t(driving ? 'live.stepAtWorkshop' : 'live.stepArrived'),
+    },
   ];
 
   return (
@@ -62,7 +77,7 @@ export function TrackingProgress({ status, clientArrived }: TrackingProgressProp
                   borderColor: 'rgba(255,255,255,0.35)',
                 }}
               >
-                {done ? <CheckIcon color={theme.colors.surface} size={10} /> : null}
+                {done ? <CheckIcon color={theme.colors.onFill} size={10} /> : null}
               </View>
 
               {/* Pas de rail après le dernier jalon : un trait qui pend au bord
@@ -83,7 +98,7 @@ export function TrackingProgress({ status, clientArrived }: TrackingProgressProp
               variant="lblb"
               numberOfLines={2}
               style={{
-                color: active ? theme.colors.surface : 'rgba(255,255,255,0.5)',
+                color: active ? theme.colors.onFill : 'rgba(255,255,255,0.5)',
                 paddingRight: theme.space.sm,
               }}
             >

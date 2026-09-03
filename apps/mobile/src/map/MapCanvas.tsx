@@ -14,7 +14,7 @@ import { MAP_PITCH_3D } from '../theme/tokens';
 import { SectionLabel } from '../ui/SectionLabel';
 import { Text } from '../ui/Text';
 import { boundsOf, centerOf, isDegenerate } from './bounds';
-import { buildMapStyle, INITIAL_VIEW } from './style';
+import { buildBlindMapStyle, buildMapStyle, INITIAL_VIEW } from './style';
 
 export type MapCanvasRef = {
   /** Recentre sur la position de l'utilisateur — bouton croix de visée. */
@@ -81,6 +81,18 @@ export type MapCanvasProps = {
    * licence OpenStreetMap, pas une décoration d'interface.
    */
   interactive?: boolean;
+  /**
+   * Fond de carte **sans repère de localisation**.
+   *
+   * Retire voies, noms et bâti — voir `buildBlindMapStyle`. Réservé à l'aperçu
+   * d'une position que l'on ne veut pas laisser situer : la fiche d'une demande
+   * que le garage n'a pas encore acceptée.
+   *
+   * Une propriété de la toile et non un style passé de l'extérieur : la règle
+   * du projet veut qu'aucun écran ne connaisse le fournisseur de tuiles ni la
+   * composition du style. Un écran demande « sans repères », pas « ce style-ci ».
+   */
+  blind?: boolean;
 };
 
 /**
@@ -124,6 +136,7 @@ export const MapCanvas = forwardRef<MapCanvasRef, MapCanvasProps>(function MapCa
     paddingTop = 0,
     paddingBottom = 0,
     interactive = true,
+    blind = false,
   },
   ref,
 ) {
@@ -131,8 +144,13 @@ export const MapCanvas = forwardRef<MapCanvasRef, MapCanvasProps>(function MapCa
   const cameraRef = useRef<CameraRef>(null);
 
   const mapStyle = useMemo(
-    () => (env.maptilerKey ? buildMapStyle(env.maptilerKey) : null),
-    [],
+    () =>
+      env.maptilerKey
+        ? blind
+          ? buildBlindMapStyle(env.maptilerKey)
+          : buildMapStyle(env.maptilerKey)
+        : null,
+    [blind],
   );
 
   /**

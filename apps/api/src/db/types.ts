@@ -1,3 +1,4 @@
+import type { ProofLevel, TariffClass } from '@geocras/shared';
 import type { ColumnType, Generated, RawBuilder } from 'kysely';
 
 /**
@@ -34,6 +35,7 @@ export type RequestStatus =
   | 'closed'
   | 'cancelled';
 export type PartyRole = 'client' | 'garage';
+export type ServiceModeKind = 'on_site' | 'at_garage';
 export type LedgerState = 'pending' | 'confirmed' | 'reversed';
 
 export type UsersTable = {
@@ -118,6 +120,8 @@ export type AssistanceRequestsTable = {
   photo_url: string | null;
   origin: GeographyPoint;
   accuracy_m: number | null;
+  /** Qui se déplace vers qui. Cf. migration 0009. */
+  service_mode: ColumnType<ServiceModeKind, ServiceModeKind | undefined, ServiceModeKind>;
   status: ColumnType<RequestStatus, RequestStatus | undefined, RequestStatus>;
   last_seq: ColumnType<number, number | undefined, number>;
   created_at: Generated<Date>;
@@ -174,6 +178,35 @@ export type ReviewsTable = {
   rating: number;
   comment: string | null;
   created_at: Generated<Date>;
+};
+
+export type CommissionState = 'pending' | 'confirmed' | 'reversed' | 'waived';
+
+/**
+ * Registre des commissions — voir la migration 0008.
+ *
+ * En observation : les lignes s'ecrivent, aucun franc ne bouge.
+ */
+export type CommissionLedgerTable = {
+  id: Generated<string>;
+  garage_id: string;
+  request_id: string;
+  client_id: string;
+  amount_xaf: number;
+  tariff_class: TariffClass;
+  proof_level: ProofLevel;
+  /** Sens de l'intervention : sans lui, `travelled_m` n'a pas de sujet. */
+  service_mode: ColumnType<ServiceModeKind, ServiceModeKind | undefined, ServiceModeKind>;
+  repeat_pair: ColumnType<boolean, boolean | undefined, boolean>;
+  problem_type: string;
+  travelled_m: number | null;
+  dwell_s: number | null;
+  closest_m: number | null;
+  state: ColumnType<CommissionState, CommissionState | undefined, CommissionState>;
+  state_reason: string | null;
+  idempotency_key: string;
+  created_at: Generated<Date>;
+  settled_at: Timestamp | null;
 };
 
 export type LoyaltyLedgerTable = {
@@ -242,6 +275,7 @@ export type Database = {
   position_pings: PositionPingsTable;
   reviews: ReviewsTable;
   loyalty_ledger: LoyaltyLedgerTable;
+  commission_ledger: CommissionLedgerTable;
   badges: BadgesTable;
   user_badges: UserBadgesTable;
   driving_sessions: DrivingSessionsTable;

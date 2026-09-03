@@ -1,0 +1,3 @@
+# Fichier intermédiaire : le gabarit HTML gonflé des polices en base64.
+# Régénéré à chaque `npm run docs:pdf`, il n'a pas sa place dans le dépôt.
+.build/
