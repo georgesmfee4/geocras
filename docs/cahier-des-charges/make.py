@@ -7,8 +7,18 @@ import optimize
 import pypdf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(HERE, "source.txt")
-DOCX = os.path.join(HERE, "GeoCras-Cahier-des-charges.docx")
+# Deux documents partagent la même chaîne : le cahier des charges et le manuel
+# technique. Le premier argument choisit lequel composer.
+DOCS = {
+    "cahier": ("source.txt", "GeoCras-Cahier-des-charges.docx", "Cahier des charges"),
+    "manuel": ("manuel-source.txt", "GeoCras-Manuel-technique.docx", "Manuel technique"),
+}
+_which = sys.argv[1] if len(sys.argv) > 1 else "cahier"
+if _which not in DOCS:
+    raise SystemExit(f"document inconnu : {_which} (attendu : {', '.join(DOCS)})")
+_src, _out, FOOTER = DOCS[_which]
+SRC = os.path.join(HERE, _src)
+DOCX = os.path.join(HERE, _out)
 
 
 def norm(s):
@@ -51,7 +61,7 @@ def measure(pdf_path, heads, figs, n_front=0):
 def main():
     optimize.main()
     print("passe 1 — composition à blanc")
-    b = B.build(SRC, DOCX)
+    b = B.build(SRC, DOCX, footer_title=FOOTER)
     pdf = B.to_pdf(DOCX, HERE)
     toc, ftoc, n = measure(pdf, b._pre_heads, b._pre_figs, b._n_front)
     print(f"   {n} pages, {sum(1 for v in toc.values() if v)}/{len(toc)} titres localisés, "
@@ -59,7 +69,7 @@ def main():
 
     for it in range(2, 4):
         print(f"passe {it} — sommaire paginé")
-        b = B.build(SRC, DOCX, toc_pages=toc, fig_pages=ftoc)
+        b = B.build(SRC, DOCX, toc_pages=toc, fig_pages=ftoc, footer_title=FOOTER)
         pdf = B.to_pdf(DOCX, HERE)
         toc2, ftoc2, n2 = measure(pdf, b._pre_heads, b._pre_figs, b._n_front)
         stable = (toc2 == toc and ftoc2 == ftoc)

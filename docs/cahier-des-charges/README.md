@@ -60,3 +60,22 @@ doublement mauvais : le fichier grossit et le texte fin bave. `build.py` passe d
 200 ppi en palette de 128 teintes. Le PDF final est linéarisé.
 
 Sans ces deux précautions, le document pèse trois mégaoctets et ses diagrammes sont flous.
+
+## Le manuel technique
+
+Second document, écrit pour soi et non pour un lecteur extérieur : installation pas à pas,
+chaque bibliothèque expliquée, les composants et leurs liaisons, les algorithmes de
+cartographie détaillés, les choix du backend, les pièges connus et les commandes de
+référence.
+
+- [`GeoCras-Manuel-technique.pdf`](GeoCras-Manuel-technique.pdf) — 43 pages
+- [`GeoCras-Manuel-technique.docx`](GeoCras-Manuel-technique.docx)
+
+```bash
+python3 make.py manuel      # le manuel
+python3 make.py cahier      # le cahier des charges (défaut)
+```
+
+Les deux documents partagent `build.py`, `svgkit.py`, les figures et la chaîne de
+pagination en deux passes. Seuls la source, la couverture et le titre de pied de page
+diffèrent.

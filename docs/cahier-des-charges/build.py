@@ -199,8 +199,9 @@ def add_rich(par, text, size=10.5, font=SERIF, color=INK):
 # rendu
 # --------------------------------------------------------------------------- #
 class Builder:
-    def __init__(self, toc_pages=None, fig_pages=None):
+    def __init__(self, toc_pages=None, fig_pages=None, footer_title="Cahier des charges"):
         self.doc = Document()
+        self.footer_title = footer_title
         self.toc_pages = toc_pages or {}
         self.fig_pages = fig_pages or {}
         self.headings = []          # (niveau, numéro, titre)
@@ -587,7 +588,7 @@ class Builder:
             sec.different_first_page_header_footer = True
             f = sec.footer.paragraphs[0]
             f.paragraph_format.tab_stops.add_tab_stop(CONTENT_W, WD_TAB_ALIGNMENT.RIGHT)
-            style_run(f.add_run("GeoCras · Cahier des charges"), font=SANS, size=8, color=MUTED)
+            style_run(f.add_run("GeoCras · " + self.footer_title), font=SANS, size=8, color=MUTED)
             style_run(f.add_run("\t"), font=SANS, size=8)
             r = field(f, " PAGE ")
             style_run(r, font=MONO, size=9, color=INK, bold=True)
@@ -634,9 +635,9 @@ def heads_before_toc(blocks):
     return n
 
 
-def build(source, out_docx, toc_pages=None, fig_pages=None):
+def build(source, out_docx, toc_pages=None, fig_pages=None, footer_title="Cahier des charges"):
     blocks = parse(source)
-    b = Builder(toc_pages, fig_pages)
+    b = Builder(toc_pages, fig_pages, footer_title)
     b.headings, b.figures = precount(blocks)
     b._pre_heads, b._pre_figs = list(b.headings), list(b.figures)
     b._n_front = heads_before_toc(blocks)
